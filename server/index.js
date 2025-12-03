@@ -3,104 +3,97 @@ const multer = require("multer");
 const { exec } = require("child_process");
 const path = require("path");
 const fs = require("fs");
+const cors = require("cors");
 
 const app = express();
 
-// 1. INCREASE TIMEOUT (Crucial for 1GB)
-// 20 Minutes (in milliseconds)
-// If upload takes longer than this, Node cuts it off.
-const TIMEOUT_MS = 20 * 60 * 1000;
-// 1. Ensure uploads directory exists
+// 1. Setup Uploads
 const uploadDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
-// 2. CONFIGURE MULTER LIMITS
+// 2. High Limits (2GB / 20 Mins)
+const TIMEOUT_MS = 20 * 60 * 1000;
 const upload = multer({
   dest: uploadDir,
-  limits: {
-    fileSize: 1024 * 1024 * 1024 * 2, // Limit to 2GB (Safety buffer)
-    fieldSize: 1024 * 1024 * 1024 * 2,
-  },
+  limits: { fileSize: 1024 * 1024 * 1024 * 2 },
 });
-app.use(require("cors")());
 
-// --- THE BOUNCER (Authentication Middleware) ---
-const validKeys = new Set([
-  "sk_test_123", // Hardcoded key for testing
-  "sk_live_abc", // You can add more later
-]);
+app.use(cors());
+
+// NEW: Serve static files (The UI) from the 'public' folder
+app.use(express.static("public"));
+
+// --- THE BOUNCER ---
+const validKeys = new Set(["sk_test_123", "sk_live_abc"]);
 
 const authenticate = (req, res, next) => {
-  // 1. Get the header
+  // Check Header
   const authHeader = req.headers["authorization"];
-
-  // 2. Check if it exists and looks like "Bearer sk_..."
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ error: "Missing or malformed API Key" });
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const token = authHeader.split(" ")[1];
+    if (validKeys.has(token)) return next();
   }
 
-  // 3. Extract the token
-  const token = authHeader.split(" ")[1];
+  // Check URL Param (for easy browser testing: ?key=sk_test_123)
+  if (req.query.key && validKeys.has(req.query.key)) return next();
 
-  // 4. Validate
-  if (validKeys.has(token)) {
-    next(); // Come on in!
-  } else {
-    return res.status(403).json({ error: "Invalid API Key" });
-  }
+  return res.status(401).json({ error: "Invalid or Missing API Key" });
 };
 
+// --- THE ENDPOINT ---
 app.post("/optimize", authenticate, upload.single("file"), (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No file" });
 
-  // Filenames (e.g. "a1b2c3d4")
+  // 1. INPUTS
   const inputFilename = req.file.filename;
   const outputFilename = `${req.file.filename}_opt.glb`;
 
-  // Absolute Paths (for cleanup later)
   const absoluteInputPath = path.join(uploadDir, inputFilename);
   const absoluteOutputPath = path.join(uploadDir, outputFilename);
 
-  // COMMAND: Run binary using simple filenames, but force CWD to uploads folder
-  const command = `mesh-optimizer --input "${inputFilename}" --output "${outputFilename}" --ratio 0.1`;
+  // 2. PARSE RATIO (The New Logic)
+  // Front-end sends 0-100. We convert to 0.0-1.0. Default to 0.5.
+  let userRatio = parseFloat(req.body.ratio);
+  if (isNaN(userRatio) || userRatio <= 0 || userRatio > 1) {
+    userRatio = 0.5; // Default safe value
+  }
+  console.log(
+    `[JOB] File: ${req.file.originalname} | Size: ${req.file.size} | Ratio: ${userRatio}`,
+  );
 
-  console.log(`[EXEC] ${command} (in ${uploadDir})`);
+  // 3. RUN COMMAND
+  const command = `mesh-optimizer --input "${inputFilename}" --output "${outputFilename}" --ratio ${userRatio}`;
 
-  const execOptions = {
-    cwd: uploadDir, // Crucial: Run AS IF we are inside the uploads folder
-  };
+  const execOptions = { cwd: uploadDir };
 
   exec(command, execOptions, (error, stdout, stderr) => {
     // Log Rust output
     if (stdout) console.log(`[RUST LOG] ${stdout}`);
-    if (stderr) console.error(`[RUST ERR] ${stderr}`);
 
-    // Cleanup INPUT file immediately
+    // Cleanup Input
     fs.unlink(absoluteInputPath, () => {});
 
     if (error) {
-      console.error(`Exec Error: ${error}`);
+      console.error(`[EXEC ERR] ${stderr}`);
       return res
         .status(500)
-        .json({ error: "Optimization Process Failed", stderr });
+        .json({ error: "Optimization Failed", details: stderr });
     }
 
-    // Check if OUTPUT file exists
     if (fs.existsSync(absoluteOutputPath)) {
-      console.log(`Success! Sending ${outputFilename}`);
+      // Send File
       res.download(absoluteOutputPath, "optimized.glb", (err) => {
         if (err) console.error("Send Error:", err);
-        // Cleanup OUTPUT file after sending
-        fs.unlink(absoluteOutputPath, () => {});
+        fs.unlink(absoluteOutputPath, () => {}); // Cleanup Output
       });
     } else {
-      console.error("Rust finished but output file is missing.");
       res.status(500).json({ error: "Output file missing", logs: stdout });
     }
   });
 });
 
 const PORT = 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-// 3. APPLY TIMEOUT TO SERVER
+const server = app.listen(PORT, () =>
+  console.log(`Server running on port ${PORT}`),
+);
 server.setTimeout(TIMEOUT_MS);

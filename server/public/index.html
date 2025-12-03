@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>MeshOpt Dashboard</title>
+        <!-- 3D Viewer Component -->
+        <script
+            type="module"
+            src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"
+        ></script>
+        <style>
+            :root {
+                --bg: #111;
+                --panel: #1a1a1a;
+                --primary: #3b82f6;
+                --text: #eee;
+            }
+            body {
+                margin: 0;
+                font-family:
+                    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                    sans-serif;
+                background: var(--bg);
+                color: var(--text);
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+            }
+
+            header {
+                padding: 20px;
+                border-bottom: 1px solid #333;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            h1 {
+                margin: 0;
+                font-size: 1.2rem;
+                font-weight: 600;
+                letter-spacing: -0.5px;
+            }
+
+            .container {
+                display: flex;
+                flex: 1;
+                height: 100%;
+            }
+
+            /* Controls Sidebar */
+            .sidebar {
+                width: 300px;
+                background: var(--panel);
+                padding: 20px;
+                border-right: 1px solid #333;
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            input[type="text"] {
+                background: #333;
+                border: 1px solid #444;
+                color: white;
+                padding: 10px;
+                border-radius: 4px;
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+            .dropzone {
+                border: 2px dashed #444;
+                border-radius: 8px;
+                padding: 40px 20px;
+                text-align: center;
+                cursor: pointer;
+                transition: 0.2s;
+            }
+            .dropzone:hover {
+                border-color: var(--primary);
+                background: #333;
+            }
+            .dropzone.dragging {
+                border-color: #10b981;
+                background: #064e3b;
+            }
+
+            .slider-group {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+            .slider-header {
+                display: flex;
+                justify-content: space-between;
+                font-size: 0.9rem;
+                color: #aaa;
+            }
+            input[type="range"] {
+                width: 100%;
+            }
+
+            button {
+                background: var(--primary);
+                color: white;
+                border: none;
+                padding: 12px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-weight: bold;
+                transition: 0.2s;
+            }
+            button:hover {
+                opacity: 0.9;
+            }
+            button:disabled {
+                background: #444;
+                cursor: not-allowed;
+            }
+
+            /* Viewer Area */
+            .viewer {
+                flex: 1;
+                position: relative;
+                background: #000;
+            }
+            model-viewer {
+                width: 100%;
+                height: 100%;
+            }
+
+            .loading {
+                display: none;
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(0, 0, 0, 0.8);
+                padding: 20px;
+                border-radius: 8px;
+                z-index: 10;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <h1>MeshOpt <span style="color: var(--primary)">Console</span></h1>
+            <div style="font-size: 0.8rem; color: #666">v1.0.0</div>
+        </header>
+
+        <div class="container">
+            <div class="sidebar">
+                <!-- Auth -->
+                <div>
+                    <label style="font-size: 0.8rem; color: #aaa"
+                        >API KEY</label
+                    >
+                    <input
+                        type="text"
+                        id="apiKey"
+                        value="sk_test_123"
+                        placeholder="sk_..."
+                    />
+                </div>
+
+                <!-- Upload -->
+                <div class="dropzone" id="dropzone">
+                    <div id="dropText">
+                        Drag .OBJ file here<br /><span
+                            style="font-size: 0.8rem; color: #666"
+                            >or click to browse</span
+                        >
+                    </div>
+                    <input
+                        type="file"
+                        id="fileInput"
+                        accept=".obj"
+                        style="display: none"
+                    />
+                </div>
+                <div
+                    id="fileName"
+                    style="font-size: 0.9rem; color: #10b981"
+                ></div>
+
+                <!-- Controls -->
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span>Target Quality</span>
+                        <span id="ratioVal">50%</span>
+                    </div>
+                    <input
+                        type="range"
+                        id="ratio"
+                        min="1"
+                        max="100"
+                        value="50"
+                    />
+                    <p style="font-size: 0.75rem; color: #666; margin: 0">
+                        Lower = Smaller File. Higher = More Detail.
+                    </p>
+                </div>
+
+                <button id="processBtn" disabled>OPTIMIZE MESH</button>
+            </div>
+
+            <div class="viewer">
+                <model-viewer
+                    id="mv"
+                    camera-controls
+                    auto-rotate
+                    shadow-intensity="1"
+                    background-color="#000"
+                ></model-viewer>
+                <div class="loading" id="loader">
+                    Processing... <br /><small>(This may take a minute)</small>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const dropzone = document.getElementById("dropzone");
+            const fileInput = document.getElementById("fileInput");
+            const ratioSlider = document.getElementById("ratio");
+            const ratioVal = document.getElementById("ratioVal");
+            const processBtn = document.getElementById("processBtn");
+            const mv = document.getElementById("mv");
+            const loader = document.getElementById("loader");
+
+            let selectedFile = null;
+
+            // Slider Logic
+            ratioSlider.addEventListener("input", (e) => {
+                ratioVal.textContent = e.target.value + "%";
+            });
+
+            // Drag & Drop
+            dropzone.addEventListener("click", () => fileInput.click());
+            dropzone.addEventListener("dragover", (e) => {
+                e.preventDefault();
+                dropzone.classList.add("dragging");
+            });
+            dropzone.addEventListener("dragleave", () =>
+                dropzone.classList.remove("dragging"),
+            );
+            dropzone.addEventListener("drop", (e) => {
+                e.preventDefault();
+                dropzone.classList.remove("dragging");
+                handleFile(e.dataTransfer.files[0]);
+            });
+            fileInput.addEventListener("change", (e) =>
+                handleFile(e.target.files[0]),
+            );
+
+            function handleFile(file) {
+                if (!file) return;
+                selectedFile = file;
+                document.getElementById("fileName").textContent =
+                    file.name +
+                    " (" +
+                    (file.size / 1024 / 1024).toFixed(2) +
+                    " MB)";
+                document.getElementById("dropText").style.display = "none";
+                processBtn.disabled = false;
+                processBtn.style.background = "#10b981";
+            }
+
+            // Optimize Logic
+            processBtn.addEventListener("click", async () => {
+                const apiKey = document.getElementById("apiKey").value;
+                if (!apiKey) return alert("Enter API Key");
+
+                loader.style.display = "block";
+                processBtn.disabled = true;
+
+                const formData = new FormData();
+                formData.append("file", selectedFile);
+
+                // Convert 50% -> 0.5
+                const ratioFloat = parseInt(ratioSlider.value) / 100;
+                formData.append("ratio", ratioFloat);
+
+                try {
+                    const res = await fetch("/optimize", {
+                        method: "POST",
+                        headers: { Authorization: "Bearer " + apiKey },
+                        body: formData,
+                    });
+
+                    if (!res.ok)
+                        throw new Error((await res.json()).error || "Failed");
+
+                    // Convert response blob to URL for viewer
+                    const blob = await res.blob();
+                    const url = URL.createObjectURL(blob);
+
+                    mv.src = url; // Load into 3D viewer
+
+                    // Log new size
+                    const reduction =
+                        100 - (blob.size / selectedFile.size) * 100;
+                    alert(
+                        `Done! New size: ${(blob.size / 1024 / 1024).toFixed(2)} MB (-${reduction.toFixed(1)}%)`,
+                    );
+                } catch (e) {
+                    alert("Error: " + e.message);
+                } finally {
+                    loader.style.display = "none";
+                    processBtn.disabled = false;
+                }
+            });
+        </script>
+    </body>
+</html>
