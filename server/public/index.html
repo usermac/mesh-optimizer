@@ -151,6 +151,19 @@
 
         <div class="container">
             <div class="sidebar">
+                <!-- Buy License -->
+                <div style="border-top: 1px solid #333; padding-top: 20px">
+                    <button
+                        id="buyBtn"
+                        style="
+                            background: #333;
+                            border: 1px solid #555;
+                            width: 100%;
+                        "
+                    >
+                        Buy License ($49)
+                    </button>
+                </div>
                 <!-- Auth -->
                 <div>
                     <label style="font-size: 0.8rem; color: #aaa"
@@ -310,6 +323,16 @@
                     processBtn.disabled = false;
                 }
             });
+            // Add event listener for buy button
+            document
+                .getElementById("buyBtn")
+                .addEventListener("click", async () => {
+                    const res = await fetch("/create-checkout-session", {
+                        method: "POST",
+                    });
+                    const data = await res.json();
+                    window.location.href = data.url; // Go to Stripe
+                });
         </script>
     </body>
 </html>
