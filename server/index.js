@@ -34,6 +34,7 @@ app.use("/webhook", express.raw({ type: "application/json" }));
 // Everything else needs JSON
 app.use(express.json());
 app.use(express.static("public"));
+app.use("/download", express.static("uploads"));
 app.use(cors());
 
 // --- THE BOUNCER (Authentication) ---
@@ -165,6 +166,7 @@ app.post("/optimize", authenticate, upload.single("file"), (req, res) => {
   const originalExt = path.extname(req.file.originalname).toLowerCase();
   const inputFilename = req.file.filename + originalExt;
   const outputFilename = `${req.file.filename}_opt.glb`;
+  const usdzFilename = `${req.file.filename}_opt.usdz`;
 
   // Rename file to include extension (Rust needs this to detect format)
   const tempPath = req.file.path;
@@ -179,7 +181,7 @@ app.post("/optimize", authenticate, upload.single("file"), (req, res) => {
 
   // 3. RUN COMMAND
   // Note: We use the global binary name 'mesh-optimizer'
-  const command = `mesh-optimizer --input "${inputFilename}" --output "${outputFilename}" --ratio ${userRatio}`;
+  const command = `mesh-optimizer --input "${inputFilename}" --output "${outputFilename}" --ratio ${userRatio} --usdz`;
 
   console.log(`[EXEC] ${command} (in ${uploadDir})`);
 
@@ -199,9 +201,9 @@ app.post("/optimize", authenticate, upload.single("file"), (req, res) => {
     }
 
     if (fs.existsSync(absoluteOutputPath)) {
-      res.download(absoluteOutputPath, "optimized.glb", (err) => {
-        if (err) console.error("Send Error:", err);
-        fs.unlink(absoluteOutputPath, () => {}); // Cleanup Output
+      res.json({
+        glb: `/download/${outputFilename}`,
+        usdz: `/download/${usdzFilename}`,
       });
     } else {
       res.status(500).json({ error: "Output file missing", logs: stdout });

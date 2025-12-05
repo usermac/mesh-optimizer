@@ -1,6 +1,7 @@
 use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 use fbxcel_dom::any::AnyDocument;
+
 use fbxcel_dom::v7400::object::model::TypedModelHandle;
 use fbxcel_dom::v7400::object::TypedObjectHandle;
 use meshopt::VertexDataAdapter;
@@ -17,6 +18,8 @@ struct Args {
     output: PathBuf,
     #[arg(short, long, default_value_t = 0.5)]
     ratio: f32,
+    #[arg(long, default_value_t = false)]
+    usdz: bool,
 }
 
 // "Fat Vertex" holding Position, Normal, UV
@@ -75,6 +78,14 @@ fn main() -> Result<()> {
 
     // 4. Export to GLB
     save_glb(&args.output, &vertices, &simplified_indices)?;
+
+    // 5. Export to USDZ (Optional)
+    if args.usdz {
+        let usdz_path = args.output.with_extension("usdz");
+        save_usdz(&usdz_path, &vertices, &simplified_indices)?;
+        println!("EXPORTED: {:?}", usdz_path);
+    }
+
     println!("RUST_DONE");
     Ok(())
 }
@@ -245,8 +256,9 @@ fn load_fbx(path: &PathBuf) -> Result<(Vec<Vertex>, Vec<u32>)> {
                                         // It requires handling MappingMode and ReferenceMode combinations.
                                         // For now, we load geometry correctly and default attributes.
 
+                                        // Z-up to Y-up conversion (X, Y, Z) -> (X, Z, -Y)
                                         vertices.push(Vertex {
-                                            pos: [p.x as f32, p.y as f32, p.z as f32],
+                                            pos: [p.x as f32, p.z as f32, -p.y as f32],
                                             normal: [0.0, 1.0, 0.0],
                                             uv: [0.0, 0.0],
                                         });
@@ -265,6 +277,88 @@ fn load_fbx(path: &PathBuf) -> Result<(Vec<Vertex>, Vec<u32>)> {
         }
         _ => Err(anyhow!("Unsupported FBX version (Must be 7.4 or newer)")),
     }
+}
+
+// --- USDZ WRITER ---
+
+fn save_usdz(path: &PathBuf, vertices: &[Vertex], indices: &[u32]) -> Result<()> {
+    let file = File::create(path)?;
+    let mut zip = zip::ZipWriter::new(file);
+
+    // USDZ requires uncompressed (Stored)
+    let options =
+        zip::write::FileOptions::<()>::default().compression_method(zip::CompressionMethod::Stored);
+
+    zip.start_file("model.usda", options)?;
+
+    // Generate USDA content
+    // Note: For large meshes, writing directly to the stream would be faster,
+    // but building a string is simpler for this implementation.
+    let mut s = String::with_capacity(vertices.len() * 100);
+
+    s.push_str("#usda 1.0\n(\n    defaultPrim = \"Mesh\"\n    upAxis = \"Y\"\n)\n\n");
+    s.push_str("def Mesh \"Mesh\"\n{\n");
+
+    // 1. Face Vertex Counts (All triangles = 3)
+    let triangle_count = indices.len() / 3;
+    s.push_str("    int[] faceVertexCounts = [");
+    for i in 0..triangle_count {
+        if i > 0 {
+            s.push_str(", ");
+        }
+        s.push_str("3");
+    }
+    s.push_str("]\n");
+
+    // 2. Indices
+    s.push_str("    int[] faceVertexIndices = [");
+    for (i, idx) in indices.iter().enumerate() {
+        if i > 0 {
+            s.push_str(", ");
+        }
+        s.push_str(&idx.to_string());
+    }
+    s.push_str("]\n");
+
+    // 3. Points
+    s.push_str("    point3f[] points = [");
+    for (i, v) in vertices.iter().enumerate() {
+        if i > 0 {
+            s.push_str(", ");
+        }
+        s.push_str(&format!("({}, {}, {})", v.pos[0], v.pos[1], v.pos[2]));
+    }
+    s.push_str("]\n");
+
+    // 4. Normals
+    s.push_str("    normal3f[] primvars:normals = [");
+    for (i, v) in vertices.iter().enumerate() {
+        if i > 0 {
+            s.push_str(", ");
+        }
+        s.push_str(&format!(
+            "({}, {}, {})",
+            v.normal[0], v.normal[1], v.normal[2]
+        ));
+    }
+    s.push_str("] (\n        interpolation = \"vertex\"\n    )\n");
+
+    // 5. UVs (Flip V for USD)
+    s.push_str("    texCoord2f[] primvars:st = [");
+    for (i, v) in vertices.iter().enumerate() {
+        if i > 0 {
+            s.push_str(", ");
+        }
+        s.push_str(&format!("({}, {})", v.uv[0], 1.0 - v.uv[1]));
+    }
+    s.push_str("] (\n        interpolation = \"vertex\"\n    )\n");
+
+    s.push_str("}\n");
+
+    zip.write_all(s.as_bytes())?;
+    zip.finish()?;
+
+    Ok(())
 }
 
 // --- GLB WRITER ---

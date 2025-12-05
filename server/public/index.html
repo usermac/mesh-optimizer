@@ -358,7 +358,7 @@
                 </div>
 
                 <button id="processBtn" disabled>OPTIMIZE MESH</button>
-                <button
+                <!-- <button
                     id="downloadBtn"
                     style="
                         display: none;
@@ -367,7 +367,7 @@
                     "
                 >
                     DOWNLOAD RESULT
-                </button>
+                </button> -->
             </div>
 
             <div class="viewer">
@@ -392,7 +392,7 @@
             const ratioSlider = document.getElementById("ratio");
             const ratioVal = document.getElementById("ratioVal");
             const processBtn = document.getElementById("processBtn");
-            const downloadBtn = document.getElementById("downloadBtn");
+            // const downloadBtn = document.getElementById("downloadBtn");
             const mv = document.getElementById("mv");
             const loader = document.getElementById("loader");
 
@@ -401,7 +401,9 @@
 
             function resetToOptimize() {
                 processBtn.style.display = "block";
-                downloadBtn.style.display = "none";
+                // downloadBtn.style.display = "none";
+                const dlContainer = document.getElementById("dlContainer");
+                if (dlContainer) dlContainer.style.display = "none";
                 processBtn.disabled = false;
             }
 
@@ -465,18 +467,69 @@
                     if (!res.ok)
                         throw new Error((await res.json()).error || "Failed");
 
-                    // Convert response blob to URL for viewer
-                    const blob = await res.blob();
-                    const url = URL.createObjectURL(blob);
-                    currentBlobUrl = url;
+                    // Handle JSON response
+                    const data = await res.json();
 
-                    mv.src = url; // Load into 3D viewer
+                    mv.src = data.glb; // Load into 3D viewer
 
                     // Switch Buttons
                     processBtn.style.display = "none";
-                    downloadBtn.style.display = "block";
-                    downloadBtn.textContent = `DOWNLOAD (${(blob.size / 1024 / 1024).toFixed(2)} MB)`;
-                    downloadBtn.style.background = "#3b82f6"; // Blue
+
+                    // Create or Update Dual Buttons
+                    let dlContainer = document.getElementById("dlContainer");
+                    if (!dlContainer) {
+                        dlContainer = document.createElement("div");
+                        dlContainer.id = "dlContainer";
+                        dlContainer.style.display = "flex";
+                        dlContainer.style.gap = "10px";
+                        dlContainer.style.marginBottom = "1rem";
+
+                        // Base styling from processBtn
+                        const baseClass = processBtn.className
+                            .replace("bg-emerald-500", "bg-blue-500")
+                            .replace(
+                                "hover:bg-emerald-600",
+                                "hover:bg-blue-600",
+                            )
+                            .replace("mb-4", "");
+
+                        const mkBtn = (text, href, bg) => {
+                            const a = document.createElement("a");
+                            a.className = baseClass;
+                            a.style.flex = "1";
+                            a.style.textAlign = "center";
+                            a.style.textDecoration = "none";
+                            a.style.color = "white";
+                            a.style.backgroundColor = bg;
+                            a.textContent = text;
+                            a.href = href;
+                            a.download = "";
+                            return a;
+                        };
+
+                        const btnGlb = mkBtn(
+                            "Download GLB",
+                            data.glb,
+                            "#3b82f6",
+                        );
+                        const btnUsdz = mkBtn(
+                            "Download USDZ",
+                            data.usdz,
+                            "#3b82f6",
+                        );
+
+                        dlContainer.appendChild(btnGlb);
+                        dlContainer.appendChild(btnUsdz);
+
+                        processBtn.parentNode.insertBefore(
+                            dlContainer,
+                            processBtn.nextSibling,
+                        );
+                    } else {
+                        dlContainer.style.display = "flex";
+                        dlContainer.children[0].href = data.glb;
+                        dlContainer.children[1].href = data.usdz;
+                    }
                 } catch (e) {
                     alert("Error: " + e.message);
                 } finally {
@@ -487,18 +540,8 @@
                 }
             });
 
-            downloadBtn.addEventListener("click", () => {
-                const a = document.createElement("a");
-                a.href = currentBlobUrl;
-                a.download =
-                    selectedFile.name.replace(/\.[^/.]+$/, "") +
-                    "_optimized.glb";
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-
-                resetToOptimize();
-            });
+            // Legacy download button handler removed.
+            // Downloads are now handled by direct links in the generated buttons.
 
             // Add event listener for buy button
             document

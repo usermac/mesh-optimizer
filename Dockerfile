@@ -19,6 +19,7 @@ RUN mkdir src && echo "fn main() {}" > src/main.rs
 RUN cargo build --release
 RUN rm -rf src
 COPY src ./src
+RUN touch src/main.rs
 RUN cargo build --release
 RUN cp target/release/mesh-optimizer /usr/local/bin/mesh-optimizer
 
