@@ -4,6 +4,13 @@ FROM node:20-bullseye
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
+# Caddy Persistence
+ENV XDG_DATA_HOME=/data
+ENV XDG_CONFIG_HOME=/config
+
+# Install Build Tools
+RUN apt-get update && apt-get install -y build-essential cmake && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 # 2. Build Rust
@@ -29,9 +36,12 @@ RUN apt-get update && apt-get install -y -q --no-install-recommends \
     && apt-get update \
     && apt-get install -y caddy
 
-# 5. Configure Caddy (Domain: webdeliveryengine.com)
+# 5. Configure Caddy (Domain: www.webdeliveryengine.com)
 # IMPORTANT: This block tells Caddy to handle SSL and proxy to Node
-RUN echo "webdeliveryengine.com {" > /etc/caddy/Caddyfile && \
+RUN echo "{" > /etc/caddy/Caddyfile && \
+    echo "    email Brian@BrianGinn.com" >> /etc/caddy/Caddyfile && \
+    echo "}" >> /etc/caddy/Caddyfile && \
+    echo "www.webdeliveryengine.com {" >> /etc/caddy/Caddyfile && \
     echo "    reverse_proxy localhost:3000" >> /etc/caddy/Caddyfile && \
     echo "}" >> /etc/caddy/Caddyfile
 

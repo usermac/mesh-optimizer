@@ -83,8 +83,8 @@ app.post("/create-checkout-session", async (req, res) => {
       ],
       mode: "payment",
       success_url:
-        "https://webdeliveryengine.com/success?session_id={CHECKOUT_SESSION_ID}",
-      cancel_url: "https://webdeliveryengine.com/",
+        "https://www.webdeliveryengine.com/success?session_id={CHECKOUT_SESSION_ID}",
+      cancel_url: "https://www.webdeliveryengine.com/",
     });
 
     console.log("Session Created:", session.url); // NEW LOG
@@ -202,6 +202,33 @@ app.post("/optimize", authenticate, upload.single("file"), (req, res) => {
     }
   });
 });
+
+// --- CLEANUP TASK ---
+const CLEANUP_AGE = 60 * 60 * 1000; // 1 hour
+const CLEANUP_INTERVAL = 15 * 60 * 1000; // 15 minutes
+
+function cleanupUploads() {
+  fs.readdir(uploadDir, (err, files) => {
+    if (err) return console.error("Cleanup scan failed:", err);
+
+    const now = Date.now();
+    files.forEach((file) => {
+      const filePath = path.join(uploadDir, file);
+      fs.stat(filePath, (err, stats) => {
+        if (err) return; // Ignore missing files
+        if (now - stats.mtimeMs > CLEANUP_AGE) {
+          fs.unlink(filePath, (err) => {
+            if (err) console.error(`Failed to delete stale file ${file}:`, err);
+            else console.log(`[CLEANUP] Deleted stale file: ${file}`);
+          });
+        }
+      });
+    });
+  });
+}
+
+// Start the cleanup timer
+setInterval(cleanupUploads, CLEANUP_INTERVAL);
 
 const PORT = 3000;
 const server = app.listen(PORT, () =>
