@@ -162,9 +162,15 @@ app.post("/optimize", authenticate, upload.single("file"), (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No file" });
 
   // 1. INPUTS
-  const inputFilename = req.file.filename;
+  const originalExt = path.extname(req.file.originalname).toLowerCase();
+  const inputFilename = req.file.filename + originalExt;
   const outputFilename = `${req.file.filename}_opt.glb`;
+
+  // Rename file to include extension (Rust needs this to detect format)
+  const tempPath = req.file.path;
   const absoluteInputPath = path.join(uploadDir, inputFilename);
+  fs.renameSync(tempPath, absoluteInputPath);
+
   const absoluteOutputPath = path.join(uploadDir, outputFilename);
 
   // 2. PARSE RATIO

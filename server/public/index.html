@@ -1,9 +1,79 @@
 <!doctype html>
 <html lang="en">
     <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>MeshOpt Dashboard</title>
+        <!-- 1. Technical Essentials -->
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1, shrink-to-fit=no"
+        />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+        <!-- 2. Core SEO (The "Google" Tags) -->
+        <!-- Title: Formula = Product Name | Main Benefit | Key Tech -->
+        <title>
+            MeshOpt API | Automate 3D Compression & Conversion to GLB/USDZ
+        </title>
+
+        <!-- Description: The Sales Pitch. 150-160 chars max. -->
+        <meta
+            name="description"
+            content="High-performance API for 3D mesh decimation. Convert heavy OBJ/STEP files into web-ready GLB & USDZ assets instantly. Reduce file sizes by 95% for E-commerce & AR."
+        />
+
+        <!-- Keywords: Still useful for niche dev tools -->
+        <meta
+            name="keywords"
+            content="3d optimization api, glb converter, mesh decimation, reduce obj size, shopify 3d, three.js optimization, rust 3d tools, usdz converter api"
+        />
+
+        <!-- Author/Copyright -->
+        <meta name="author" content="Brian Ginn" />
+
+        <!-- 3. Open Graph / Social (Slack, Discord, LinkedIn Previews) -->
+        <!-- CRITICAL: This determines how your link looks when shared in a dev Slack channel -->
+        <!--
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://webdeliveryengine.com/" />
+        <meta
+            property="og:title"
+            content="Automate 3D Asset Optimization for Web & AR"
+        />
+        <meta
+            property="og:description"
+            content="Don't use Blender manually. Use our API to shrink 200MB CAD files to 3MB GLB/USDZ automatically. Built for developers. This tool was built by an engineer, not a marketer."
+        />
+        <meta
+            property="og:image"
+            content="https://webdeliveryengine.com/social-preview-v1.jpg"
+        />
+        <meta property="og:site_name" content="MeshOpt API" />
+        -->
+
+        <!-- 4. Twitter Card (Large Image for maximum visibility) -->
+        <!--
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta
+            name="twitter:title"
+            content="MeshOpt API | The Headless 3D Pipeline"
+        />
+        <meta
+            name="twitter:description"
+            content="Stop manual retopology. API-first 3D optimization for high-scale E-commerce."
+        />
+        <meta
+            name="twitter:image"
+            content="https://webdeliveryengine.com/social-preview-v1.jpg"
+        />
+        -->
+
+        <!-- 5. Favicons & UI -->
+        <meta name="theme-color" content="#000000" />
+        <!-- Matches your dark mode aesthetic -->
+        <link rel="icon" type="image/png" href="/favicon.png" />
+        <link rel="canonical" href="https://webdeliveryengine.com/" />
+
+        <!-- 6. Scripts & Styles -->
         <!-- 3D Viewer Component -->
         <script
             type="module"
@@ -149,6 +219,78 @@
             <div style="font-size: 0.8rem; color: #666">v1.0.0</div>
         </header>
 
+        <div
+            style="background: #222; border-bottom: 1px solid #333; color: #ccc"
+        >
+            <details
+                style="
+                    padding: 15px;
+                    max-width: 900px;
+                    margin: 0 auto;
+                    cursor: pointer;
+                "
+            >
+                <summary style="font-weight: 600; color: #fff; outline: none">
+                    The "Nightmare" I'm currently...
+                </summary>
+                <div
+                    style="
+                        margin-top: 15px;
+                        line-height: 1.6;
+                        font-size: 0.95rem;
+                    "
+                >
+                    <p>
+                        Living. It starts with the handover. A product designer
+                        sends me a Dropbox link containing a
+                        <strong>300MB `.STEP` or High-Res `.OBJ` file</strong>
+                        (meant for manufacturing, not the web). Then comes the
+                        "Oh Sh*t" moment when I try to load this file into
+                        Three.js or Shopify. The browser crashes, or the frame
+                        rate drops to 1 FPS.
+                    </p>
+
+                    <p>
+                        Now I'm forced into the context switch. I have to stop
+                        coding, download <strong>Blender</strong>, and open a UI
+                        that looks like the cockpit of a 747. What follows is
+                        the manual labor; I spend 45 minutes watching YouTube
+                        tutorials on <em>"How to bake normals"</em> and
+                        <em>"Retopology."</em> I manually delete vertices, break
+                        the UV maps, and ruin the textures. Finally, the export.
+                        I export a `.glb`. It looks terrible. I try again. I'll
+                        eventually get it right but hey, time.
+                    </p>
+
+                    <p>
+                        That's when the scale issue hits me. I realize I have
+                        <strong>500 more products</strong> in the catalog to do.
+                    </p>
+
+                    <p>
+                        <strong>Your Solution:</strong> I delete Blender, run
+                        one `curl` command, and go back to coding.
+                    </p>
+
+                    <h3>This tool was built by an engineer, not a marketer.</h3>
+                    <p>
+                        <strong
+                            >This is the "JPEG of 3D" and what Shopify/iPhone
+                            requires.*</strong
+                        >
+                    </p>
+
+                    <ol>
+                        <li>Runs natively (no heavy Blender overhead).</li>
+                        <li>
+                            Uses advanced math (QEM) to shrink files by 90%+.
+                        </li>
+                        <li>Outputs web-standard .glb binary files.</li>
+                    </ol>
+                </div>
+            </details>
+        </div>
+
         <div class="container">
             <div class="sidebar">
                 <!-- Buy License -->
@@ -180,15 +322,15 @@
                 <!-- Upload -->
                 <div class="dropzone" id="dropzone">
                     <div id="dropText">
-                        Drag .OBJ file here<br /><span
+                        Drag 3D file here<br /><span
                             style="font-size: 0.8rem; color: #666"
-                            >or click to browse</span
+                            >(.obj, .fbx, .glb, .gltf)</span
                         >
                     </div>
                     <input
                         type="file"
                         id="fileInput"
-                        accept=".obj"
+                        accept=".obj,.fbx,.glb,.gltf"
                         style="display: none"
                     />
                 </div>
@@ -216,6 +358,16 @@
                 </div>
 
                 <button id="processBtn" disabled>OPTIMIZE MESH</button>
+                <button
+                    id="downloadBtn"
+                    style="
+                        display: none;
+                        background: #333;
+                        border: 1px solid #555;
+                    "
+                >
+                    DOWNLOAD RESULT
+                </button>
             </div>
 
             <div class="viewer">
@@ -224,6 +376,8 @@
                     camera-controls
                     auto-rotate
                     shadow-intensity="1"
+                    environment-image="neutral"
+                    shadow-softness="1"
                     background-color="#000"
                 ></model-viewer>
                 <div class="loading" id="loader">
@@ -238,14 +392,22 @@
             const ratioSlider = document.getElementById("ratio");
             const ratioVal = document.getElementById("ratioVal");
             const processBtn = document.getElementById("processBtn");
+            const downloadBtn = document.getElementById("downloadBtn");
             const mv = document.getElementById("mv");
             const loader = document.getElementById("loader");
 
             let selectedFile = null;
+            let currentBlobUrl = null;
 
-            // Slider Logic
+            function resetToOptimize() {
+                processBtn.style.display = "block";
+                downloadBtn.style.display = "none";
+                processBtn.disabled = false;
+            }
+
             ratioSlider.addEventListener("input", (e) => {
                 ratioVal.textContent = e.target.value + "%";
+                resetToOptimize();
             });
 
             // Drag & Drop
@@ -275,11 +437,10 @@
                     (file.size / 1024 / 1024).toFixed(2) +
                     " MB)";
                 document.getElementById("dropText").style.display = "none";
-                processBtn.disabled = false;
+                resetToOptimize();
                 processBtn.style.background = "#10b981";
             }
 
-            // Optimize Logic
             processBtn.addEventListener("click", async () => {
                 const apiKey = document.getElementById("apiKey").value;
                 if (!apiKey) return alert("Enter API Key");
@@ -307,22 +468,38 @@
                     // Convert response blob to URL for viewer
                     const blob = await res.blob();
                     const url = URL.createObjectURL(blob);
+                    currentBlobUrl = url;
 
                     mv.src = url; // Load into 3D viewer
 
-                    // Log new size
-                    const reduction =
-                        100 - (blob.size / selectedFile.size) * 100;
-                    alert(
-                        `Done! New size: ${(blob.size / 1024 / 1024).toFixed(2)} MB (-${reduction.toFixed(1)}%)`,
-                    );
+                    // Switch Buttons
+                    processBtn.style.display = "none";
+                    downloadBtn.style.display = "block";
+                    downloadBtn.textContent = `DOWNLOAD (${(blob.size / 1024 / 1024).toFixed(2)} MB)`;
+                    downloadBtn.style.background = "#3b82f6"; // Blue
                 } catch (e) {
                     alert("Error: " + e.message);
                 } finally {
                     loader.style.display = "none";
-                    processBtn.disabled = false;
+                    if (processBtn.style.display !== "none") {
+                        processBtn.disabled = false;
+                    }
                 }
             });
+
+            downloadBtn.addEventListener("click", () => {
+                const a = document.createElement("a");
+                a.href = currentBlobUrl;
+                a.download =
+                    selectedFile.name.replace(/\.[^/.]+$/, "") +
+                    "_optimized.glb";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                resetToOptimize();
+            });
+
             // Add event listener for buy button
             document
                 .getElementById("buyBtn")
