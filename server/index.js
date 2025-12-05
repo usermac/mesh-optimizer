@@ -159,37 +159,59 @@ app.get("/success", async (req, res) => {
 });
 
 // --- OPTIMIZE ROUTE ---
-app.post("/optimize", authenticate, upload.single("file"), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: "No file" });
+app.post("/optimize", authenticate, upload.array("file", 50), (req, res) => {
+  if (!req.files || req.files.length === 0)
+    return res.status(400).json({ error: "No files" });
 
-  // 1. INPUTS
-  const originalExt = path.extname(req.file.originalname).toLowerCase();
-  const inputFilename = req.file.filename + originalExt;
-  const outputFilename = `${req.file.filename}_opt.glb`;
-  const usdzFilename = `${req.file.filename}_opt.usdz`;
+  // 1. PREPARE BATCH
+  const batchId = Date.now().toString();
+  const batchDir = path.join(uploadDir, batchId);
+  fs.mkdirSync(batchDir);
 
-  // Rename file to include extension (Rust needs this to detect format)
-  const tempPath = req.file.path;
-  const absoluteInputPath = path.join(uploadDir, inputFilename);
-  fs.renameSync(tempPath, absoluteInputPath);
+  let inputFilename = null;
 
-  const absoluteOutputPath = path.join(uploadDir, outputFilename);
+  // Move files to batch folder with original names
+  for (const file of req.files) {
+    const destPath = path.join(batchDir, file.originalname);
+    fs.renameSync(file.path, destPath);
 
-  // 2. PARSE RATIO
+    const ext = path.extname(file.originalname).toLowerCase();
+    if ([".obj", ".fbx", ".glb", ".gltf"].includes(ext)) {
+      inputFilename = file.originalname;
+    }
+  }
+
+  if (!inputFilename) {
+    fs.rmSync(batchDir, { recursive: true, force: true });
+    return res.status(400).json({ error: "No supported 3D model found" });
+  }
+
+  const outputBase = path.parse(inputFilename).name;
+  const outputFilename = `${outputBase}_opt.glb`;
+  const usdzFilename = `${outputBase}_opt.usdz`;
+
+  const absoluteOutputPath = path.join(batchDir, outputFilename);
+  const absoluteUsdzPath = path.join(batchDir, usdzFilename);
+
+  // 2. PARSE RATIO & FORMAT
   let userRatio = parseFloat(req.body.ratio);
   if (isNaN(userRatio) || userRatio <= 0 || userRatio > 1) userRatio = 0.5;
 
+  const format = req.body.format || "glb";
+
   // 3. RUN COMMAND
-  // Note: We use the global binary name 'mesh-optimizer'
-  const command = `mesh-optimizer --input "${inputFilename}" --output "${outputFilename}" --ratio ${userRatio} --usdz`;
+  let command = `mesh-optimizer --input "${inputFilename}" --output "${outputFilename}" --ratio ${userRatio}`;
 
-  console.log(`[EXEC] ${command} (in ${uploadDir})`);
+  if (format === "json" || format === "usdz") {
+    command += " --usdz";
+  }
 
-  const execOptions = { cwd: uploadDir };
+  console.log(`[EXEC] ${command} (in ${batchDir})`);
+
+  const execOptions = { cwd: batchDir };
 
   exec(command, execOptions, (error, stdout, stderr) => {
-    // Cleanup Input
-    fs.unlink(absoluteInputPath, () => {});
+    // We keep input files for debugging until cleanup job runs
 
     if (stdout) console.log(`[RUST LOG] ${stdout}`);
 
@@ -201,10 +223,22 @@ app.post("/optimize", authenticate, upload.single("file"), (req, res) => {
     }
 
     if (fs.existsSync(absoluteOutputPath)) {
-      res.json({
-        glb: `/download/${outputFilename}`,
-        usdz: `/download/${usdzFilename}`,
-      });
+      if (format === "json") {
+        res.json({
+          glb: `/download/${batchId}/${outputFilename}`,
+          usdz: `/download/${batchId}/${usdzFilename}`,
+        });
+      } else if (format === "usdz") {
+        if (fs.existsSync(absoluteUsdzPath)) {
+          res.download(absoluteUsdzPath, "optimized.usdz");
+        } else {
+          res
+            .status(500)
+            .json({ error: "USDZ generation failed", logs: stdout });
+        }
+      } else {
+        res.download(absoluteOutputPath, "optimized.glb");
+      }
     } else {
       res.status(500).json({ error: "Output file missing", logs: stdout });
     }
@@ -223,11 +257,11 @@ function cleanupUploads() {
     files.forEach((file) => {
       const filePath = path.join(uploadDir, file);
       fs.stat(filePath, (err, stats) => {
-        if (err) return; // Ignore missing files
+        if (err) return;
         if (now - stats.mtimeMs > CLEANUP_AGE) {
-          fs.unlink(filePath, (err) => {
-            if (err) console.error(`Failed to delete stale file ${file}:`, err);
-            else console.log(`[CLEANUP] Deleted stale file: ${file}`);
+          fs.rm(filePath, { recursive: true, force: true }, (err) => {
+            if (err) console.error(`Failed to delete stale ${file}:`, err);
+            else console.log(`[CLEANUP] Deleted stale: ${file}`);
           });
         }
       });

@@ -4,10 +4,11 @@ use fbxcel_dom::any::AnyDocument;
 
 use fbxcel_dom::v7400::object::model::TypedModelHandle;
 use fbxcel_dom::v7400::object::TypedObjectHandle;
+use image::GenericImageView;
 use meshopt::VertexDataAdapter;
 use serde::Serialize;
 use std::fs::File;
-use std::io::{BufReader, Write};
+use std::io::{BufReader, Cursor, Write};
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
@@ -48,7 +49,7 @@ fn main() -> Result<()> {
         .ok_or(anyhow!("Unknown file extension"))?;
 
     // 2. Load Geometry based on format
-    let (vertices, indices) = match extension.as_str() {
+    let (vertices, indices, texture_data, base_color) = match extension.as_str() {
         "obj" => load_obj(&args.input)?,
         "glb" | "gltf" => load_gltf(&args.input)?,
         "fbx" => load_fbx(&args.input)?,
@@ -56,6 +57,12 @@ fn main() -> Result<()> {
     };
 
     println!("STATS: {} verts, {} indices", vertices.len(), indices.len());
+    if let Some(ref tex) = texture_data {
+        println!("TEXTURE: Found ({} bytes)", tex.len());
+    }
+    if let Some(color) = base_color {
+        println!("COLOR: Found {:?}", color);
+    }
     if vertices.is_empty() {
         return Err(anyhow!("Model contains no vertices"));
     }
@@ -77,7 +84,13 @@ fn main() -> Result<()> {
     );
 
     // 4. Export to GLB
-    save_glb(&args.output, &vertices, &simplified_indices)?;
+    save_glb(
+        &args.output,
+        &vertices,
+        &simplified_indices,
+        texture_data.as_deref(),
+        base_color,
+    )?;
 
     // 5. Export to USDZ (Optional)
     if args.usdz {
@@ -92,8 +105,8 @@ fn main() -> Result<()> {
 
 // --- LOADERS ---
 
-fn load_obj(path: &PathBuf) -> Result<(Vec<Vertex>, Vec<u32>)> {
-    let (models, _) = tobj::load_obj(
+fn load_obj(path: &PathBuf) -> Result<(Vec<Vertex>, Vec<u32>, Option<Vec<u8>>, Option<[f32; 3]>)> {
+    let (models, materials) = tobj::load_obj(
         path,
         &tobj::LoadOptions {
             single_index: true,
@@ -103,6 +116,51 @@ fn load_obj(path: &PathBuf) -> Result<(Vec<Vertex>, Vec<u32>)> {
         },
     )
     .context("Failed to load OBJ")?;
+
+    // Load Texture (if any) or Color
+    let mut texture_data = None;
+    let mut base_color = None;
+
+    if let Ok(mats) = materials {
+        if !mats.is_empty() {
+            // 1. Try Texture
+            if let Some(diffuse) = &mats[0].diffuse_texture {
+                if !diffuse.is_empty() {
+                    let parent = path.parent().unwrap_or(std::path::Path::new("."));
+                    let tex_path = parent.join(diffuse);
+                    println!("LOADING TEXTURE: {:?}", tex_path);
+
+                    match image::open(&tex_path) {
+                        Ok(img) => {
+                            let (w, h) = img.dimensions();
+                            let img = if w > 2048 || h > 2048 {
+                                println!("RESIZING: {}x{} -> 2048x2048", w, h);
+                                img.resize(2048, 2048, image::imageops::FilterType::Lanczos3)
+                            } else {
+                                img
+                            };
+                            let mut bytes: Vec<u8> = Vec::new();
+                            if let Err(e) =
+                                img.write_to(&mut Cursor::new(&mut bytes), image::ImageFormat::Png)
+                            {
+                                println!("Warning: Failed to encode texture: {:?}", e);
+                            } else {
+                                texture_data = Some(bytes);
+                            }
+                        }
+                        Err(e) => {
+                            println!("Warning: Could not load texture {:?}: {:?}", tex_path, e)
+                        }
+                    }
+                }
+            }
+
+            // 2. If no texture, try Diffuse Color (Kd)
+            if texture_data.is_none() {
+                base_color = mats[0].diffuse;
+            }
+        }
+    }
 
     if models.is_empty() {
         return Err(anyhow!("No models found in OBJ"));
@@ -146,10 +204,10 @@ fn load_obj(path: &PathBuf) -> Result<(Vec<Vertex>, Vec<u32>)> {
         index_offset += n_vertices as u32;
     }
 
-    Ok((all_vertices, all_indices))
+    Ok((all_vertices, all_indices, texture_data, base_color))
 }
 
-fn load_gltf(path: &PathBuf) -> Result<(Vec<Vertex>, Vec<u32>)> {
+fn load_gltf(path: &PathBuf) -> Result<(Vec<Vertex>, Vec<u32>, Option<Vec<u8>>, Option<[f32; 3]>)> {
     let (document, buffers, _) = gltf::import(path).context("Failed to load GLTF/GLB")?;
     let mut vertices = Vec::new();
     let mut indices = Vec::new();
@@ -196,10 +254,10 @@ fn load_gltf(path: &PathBuf) -> Result<(Vec<Vertex>, Vec<u32>)> {
         }
     }
 
-    Ok((vertices, indices))
+    Ok((vertices, indices, None, None))
 }
 
-fn load_fbx(path: &PathBuf) -> Result<(Vec<Vertex>, Vec<u32>)> {
+fn load_fbx(path: &PathBuf) -> Result<(Vec<Vertex>, Vec<u32>, Option<Vec<u8>>, Option<[f32; 3]>)> {
     let file = File::open(path).context("Failed to open FBX file")?;
     let reader = BufReader::new(file);
 
@@ -273,7 +331,7 @@ fn load_fbx(path: &PathBuf) -> Result<(Vec<Vertex>, Vec<u32>)> {
                     }
                 }
             }
-            Ok((vertices, indices))
+            Ok((vertices, indices, None, None))
         }
         _ => Err(anyhow!("Unsupported FBX version (Must be 7.4 or newer)")),
     }
@@ -372,6 +430,14 @@ struct GltfHeader {
     buffers: Vec<Buffer>,
     bufferViews: Vec<BufferView>,
     accessors: Vec<Accessor>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    images: Vec<Image>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    textures: Vec<Texture>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    materials: Vec<Material>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    samplers: Vec<Sampler>,
 }
 #[derive(Serialize)]
 struct Asset {
@@ -394,6 +460,8 @@ struct Primitive {
     attributes: Attributes,
     indices: u32,
     mode: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    material: Option<u32>,
 }
 #[derive(Serialize)]
 struct Attributes {
@@ -424,7 +492,47 @@ struct Accessor {
     max: Option<[f32; 3]>,
 }
 
-fn save_glb(path: &PathBuf, vertices: &[Vertex], indices: &[u32]) -> Result<()> {
+// New structs for Textures
+#[derive(Serialize)]
+struct Image {
+    bufferView: u32,
+    mimeType: String,
+}
+#[derive(Serialize)]
+struct Texture {
+    sampler: u32,
+    source: u32,
+}
+#[derive(Serialize)]
+struct Material {
+    pbrMetallicRoughness: PbrMetallicRoughness,
+}
+#[derive(Serialize)]
+struct PbrMetallicRoughness {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    baseColorTexture: Option<TextureInfo>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    baseColorFactor: Option<[f32; 4]>,
+    metallicFactor: f32,
+    roughnessFactor: f32,
+}
+#[derive(Serialize)]
+struct TextureInfo {
+    index: u32,
+}
+#[derive(Serialize)]
+struct Sampler {
+    magFilter: u32,
+    minFilter: u32,
+}
+
+fn save_glb(
+    path: &PathBuf,
+    vertices: &[Vertex],
+    indices: &[u32],
+    texture: Option<&[u8]>,
+    base_color: Option<[f32; 3]>,
+) -> Result<()> {
     let mut min = [f32::MAX; 3];
     let mut max = [f32::MIN; 3];
     for v in vertices {
@@ -443,8 +551,86 @@ fn save_glb(path: &PathBuf, vertices: &[Vertex], indices: &[u32]) -> Result<()> 
 
     let i_pad = (4 - (indices_u8.len() % 4)) % 4;
     let v_pad = (4 - (vertices_u8.len() % 4)) % 4;
-    let total_bin_len = indices_u8.len() + i_pad + vertices_u8.len() + v_pad;
+
+    // Calculate total length including texture
+    let texture_len = texture.map(|t| t.len()).unwrap_or(0);
+    let t_pad = if texture_len > 0 {
+        (4 - (texture_len % 4)) % 4
+    } else {
+        0
+    };
+
+    let total_bin_len = indices_u8.len() + i_pad + vertices_u8.len() + v_pad + texture_len + t_pad;
     let stride = std::mem::size_of::<Vertex>();
+
+    let mut buffer_views = vec![
+        BufferView {
+            buffer: 0,
+            byteOffset: 0,
+            byteLength: indices_u8.len(),
+            byteStride: None,
+            target: 34963,
+        },
+        BufferView {
+            buffer: 0,
+            byteOffset: indices_u8.len() + i_pad,
+            byteLength: vertices_u8.len(),
+            byteStride: Some(stride),
+            target: 34962,
+        },
+    ];
+
+    // Optional: Add Texture BufferView
+    if let Some(tex_bytes) = texture {
+        buffer_views.push(BufferView {
+            buffer: 0,
+            byteOffset: indices_u8.len() + i_pad + vertices_u8.len() + v_pad,
+            byteLength: tex_bytes.len(),
+            byteStride: None,
+            target: 0, // 0 for Image data
+        });
+    }
+
+    let mut images = Vec::new();
+    let mut textures = Vec::new();
+    let mut materials = Vec::new();
+    let mut samplers = Vec::new();
+    let mut material_idx = None;
+
+    if texture.is_some() || base_color.is_some() {
+        let mut pbr = PbrMetallicRoughness {
+            baseColorTexture: None,
+            baseColorFactor: None,
+            metallicFactor: 0.0,
+            roughnessFactor: 1.0,
+        };
+
+        if texture.is_some() {
+            images.push(Image {
+                bufferView: 2, // Index of the buffer view we just added
+                mimeType: "image/png".to_string(),
+            });
+            samplers.push(Sampler {
+                magFilter: 9729, // LINEAR
+                minFilter: 9987, // LINEAR_MIPMAP_LINEAR (approx) or 9729
+            });
+            textures.push(Texture {
+                sampler: 0,
+                source: 0,
+            });
+            pbr.baseColorTexture = Some(TextureInfo { index: 0 });
+        }
+
+        if let Some(c) = base_color {
+            // GLTF uses RGBA
+            pbr.baseColorFactor = Some([c[0], c[1], c[2], 1.0]);
+        }
+
+        materials.push(Material {
+            pbrMetallicRoughness: pbr,
+        });
+        material_idx = Some(0);
+    }
 
     let header = GltfHeader {
         asset: Asset {
@@ -461,27 +647,13 @@ fn save_glb(path: &PathBuf, vertices: &[Vertex], indices: &[u32]) -> Result<()> 
                 },
                 indices: 0,
                 mode: 4,
+                material: material_idx,
             }],
         }],
         buffers: vec![Buffer {
             byteLength: total_bin_len,
         }],
-        bufferViews: vec![
-            BufferView {
-                buffer: 0,
-                byteOffset: 0,
-                byteLength: indices_u8.len(),
-                byteStride: None,
-                target: 34963,
-            },
-            BufferView {
-                buffer: 0,
-                byteOffset: indices_u8.len() + i_pad,
-                byteLength: vertices_u8.len(),
-                byteStride: Some(stride),
-                target: 34962,
-            },
-        ],
+        bufferViews: buffer_views,
         accessors: vec![
             Accessor {
                 bufferView: 0,
@@ -520,6 +692,10 @@ fn save_glb(path: &PathBuf, vertices: &[Vertex], indices: &[u32]) -> Result<()> 
                 max: None,
             },
         ],
+        images,
+        textures,
+        materials,
+        samplers,
     };
 
     let mut json_bytes = serde_json::to_vec(&header)?;
@@ -544,6 +720,13 @@ fn save_glb(path: &PathBuf, vertices: &[Vertex], indices: &[u32]) -> Result<()> 
     file.write_all(vertices_u8)?;
     for _ in 0..v_pad {
         file.write_all(&[0])?;
+    }
+
+    if let Some(tex_bytes) = texture {
+        file.write_all(tex_bytes)?;
+        for _ in 0..t_pad {
+            file.write_all(&[0])?;
+        }
     }
 
     Ok(())
