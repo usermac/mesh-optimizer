@@ -467,9 +467,8 @@
 
             function resetToOptimize() {
                 processBtn.style.display = "block";
-                // downloadBtn.style.display = "none";
                 const dlContainer = document.getElementById("dlContainer");
-                if (dlContainer) dlContainer.style.display = "none";
+                if (dlContainer) dlContainer.remove();
                 processBtn.disabled = false;
             }
 
@@ -477,6 +476,13 @@
                 ratioVal.textContent = e.target.value + "%";
                 resetToOptimize();
             });
+
+            document
+                .getElementById("mtlInput")
+                .addEventListener("change", resetToOptimize);
+            document
+                .getElementById("texInput")
+                .addEventListener("change", resetToOptimize);
 
             // Drag & Drop
             dropzone.addEventListener("click", () => fileInput.click());
@@ -574,9 +580,6 @@
                     const data = await res.json();
 
                     mv.src = data.glb; // Load into 3D viewer
-
-                    // Switch Buttons
-                    processBtn.style.display = "none";
 
                     // Create or Update Dual Buttons
                     let dlContainer = document.getElementById("dlContainer");
