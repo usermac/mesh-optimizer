@@ -15,13 +15,9 @@ WORKDIR /app
 
 # 2. Build Rust
 COPY Cargo.toml ./
-RUN mkdir src && echo "fn main() {}" > src/main.rs
+COPY crates ./crates
 RUN cargo build --release
-RUN rm -rf src
-COPY src ./src
-RUN touch src/main.rs
-RUN cargo build --release
-RUN cp target/release/mesh-optimizer /usr/local/bin/mesh-optimizer
+RUN cp target/release/mesh-worker /usr/local/bin/mesh-optimizer
 
 # 3. Setup Node & Dependencies
 COPY server/package.json ./server/
