@@ -1,40 +1,53 @@
-FROM node:20-bullseye
+FROM rust:1.85-bullseye as builder
 
-# 1. Install Rust
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-ENV PATH="/root/.cargo/bin:${PATH}"
+WORKDIR /usr/src/app
 
-# Caddy Persistence
-ENV XDG_DATA_HOME=/data
-ENV XDG_CONFIG_HOME=/config
-
-# Install Build Tools
-RUN apt-get update && apt-get install -y build-essential cmake && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /app
-
-# 2. Build Rust
-COPY Cargo.toml ./
+COPY Cargo.toml Cargo.lock ./
 COPY crates ./crates
+
+# Build workspace (binaries: mesh-worker, mesh-api)
 RUN cargo build --release
-RUN cp target/release/mesh-worker /usr/local/bin/mesh-optimizer
 
-# 3. Setup Node & Dependencies
-COPY server/package.json ./server/
-WORKDIR /app/server
-RUN npm install
-COPY server ./
+# --- Runtime Stage ---
+FROM debian:bullseye-slim
 
-# 4. Install Caddy (HTTPS)
+# Install dependencies
+# - ca-certificates: for HTTPS (Stripe)
+# - caddy: web server
+# - libssl/openssl: for reqwest/stripe networking
 RUN apt-get update && apt-get install -y -q --no-install-recommends \
-    debian-keyring debian-archive-keyring apt-transport-https curl gnupg ca-certificates \
+    ca-certificates \
+    curl \
+    gnupg \
+    libssl-dev \
+    debian-keyring \
+    debian-archive-keyring \
+    apt-transport-https \
     && curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg \
     && curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list \
     && apt-get update \
-    && apt-get install -y caddy
+    && apt-get install -y caddy \
+    && rm -rf /var/lib/apt/lists/*
 
-# 5. Configure Caddy (Domain: www.webdeliveryengine.com)
-# IMPORTANT: This block tells Caddy to handle SSL and proxy to Node
+WORKDIR /app
+
+# Copy compiled binaries
+# Worker (renamed to what the API expects: "mesh-optimizer")
+COPY --from=builder /usr/src/app/target/release/mesh-worker /usr/local/bin/mesh-optimizer
+# API Server
+COPY --from=builder /usr/src/app/target/release/mesh-api /usr/local/bin/mesh-api
+
+# Copy static assets (Code expects them at ./server/public)
+COPY server/public ./server/public
+
+# Ensure directory for DB mount exists
+RUN mkdir -p server
+
+# Caddy Environment for persistence
+ENV XDG_DATA_HOME=/data
+ENV XDG_CONFIG_HOME=/config
+
+# Configure Caddy (Same config as before)
 RUN echo "{" > /etc/caddy/Caddyfile && \
     echo "    email Brian@BrianGinn.com" >> /etc/caddy/Caddyfile && \
     echo "}" >> /etc/caddy/Caddyfile && \
@@ -42,8 +55,7 @@ RUN echo "{" > /etc/caddy/Caddyfile && \
     echo "    reverse_proxy localhost:3000" >> /etc/caddy/Caddyfile && \
     echo "}" >> /etc/caddy/Caddyfile
 
-# 6. Expose Both Ports
 EXPOSE 80 443
 
-# 7. Start Caddy AND Node
-CMD caddy start --config /etc/caddy/Caddyfile && node index.js
+# Start Caddy in background, then run API
+CMD caddy start --config /etc/caddy/Caddyfile && mesh-api

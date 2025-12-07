@@ -280,7 +280,7 @@ fn load_fbx(path: &PathBuf) -> Result<(Vec<Vertex>, Vec<u32>, Option<Vec<u8>>, O
                     // FBX polygons are lists of indices. Last index of a poly is negative (XOR -1).
                     let mut poly_indices = Vec::new();
 
-                    for (raw_idx_in_buffer, &raw_index) in raw_indices.iter().enumerate() {
+                    for (_raw_idx_in_buffer, &raw_index) in raw_indices.iter().enumerate() {
                         // Decode index
                         let index = if raw_index < 0 {
                             (raw_index ^ -1) as usize
