@@ -303,7 +303,7 @@
                             width: 100%;
                         "
                     >
-                        Buy License ($49)
+                        Buy License
                     </button>
                 </div>
                 <!-- Auth -->
@@ -648,6 +648,18 @@
 
             // Legacy download button handler removed.
             // Downloads are now handled by direct links in the generated buttons.
+
+            // Fetch pricing config
+            fetch("/config")
+                .then((res) => res.json())
+                .then((data) => {
+                    document.getElementById("buyBtn").textContent =
+                        "Buy License ($" +
+                        data.cost +
+                        ") - " +
+                        data.credits +
+                        " Credits";
+                });
 
             // Add event listener for buy button
             document

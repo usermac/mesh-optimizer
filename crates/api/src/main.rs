@@ -11,6 +11,7 @@ use axum::{
 };
 use serde::Deserialize;
 use serde_json::json;
+use sha2::Digest;
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -74,9 +75,11 @@ async fn main() -> Result<()> {
     // 5. Build Router
     let app = Router::new()
         // Public Routes
+        .route("/config", get(get_config))
         .route("/create-checkout-session", post(create_checkout_session))
         .route("/webhook", post(stripe_webhook))
         .route("/success", get(success_page))
+        .route("/admin/add-credits", post(admin_add_credits))
         // Static Files
         .nest_service("/", ServeDir::new("server/public")) // Assuming public dir is here
         .nest_service("/download", ServeDir::new(UPLOAD_DIR))
@@ -134,10 +137,35 @@ async fn auth_middleware(
 
 // --- HANDLERS ---
 
+async fn get_config() -> Json<serde_json::Value> {
+    let cost = std::env::var("CREDIT_COST")
+        .ok()
+        .and_then(|v| v.parse::<i64>().ok())
+        .unwrap_or(49);
+    let credits = std::env::var("CREDIT_INCREMENT")
+        .ok()
+        .and_then(|v| v.parse::<i32>().ok())
+        .unwrap_or(100);
+
+    Json(json!({
+        "cost": cost,
+        "credits": credits
+    }))
+}
+
 async fn create_checkout_session(
     State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
     info!("Starting Checkout Session...");
+
+    let credit_cost = std::env::var("CREDIT_COST")
+        .ok()
+        .and_then(|v| v.parse::<i64>().ok())
+        .unwrap_or(49);
+    let credit_amount = std::env::var("CREDIT_INCREMENT")
+        .ok()
+        .and_then(|v| v.parse::<i32>().ok())
+        .unwrap_or(100);
 
     let params = CreateCheckoutSession {
         payment_method_types: Some(vec![CreateCheckoutSessionPaymentMethodTypes::Card]),
@@ -145,10 +173,10 @@ async fn create_checkout_session(
             price_data: Some(CreateCheckoutSessionLineItemsPriceData {
                 currency: Currency::USD,
                 product_data: Some(CreateCheckoutSessionLineItemsPriceDataProductData {
-                    name: "MeshOpt Pro License".to_string(),
+                    name: format!("MeshOpt Pro License ({} Credits)", credit_amount),
                     ..Default::default()
                 }),
-                unit_amount: Some(4900), // $49.00
+                unit_amount: Some(credit_cost * 100), // Convert to cents
                 ..Default::default()
             }),
             quantity: Some(1),
@@ -198,14 +226,33 @@ async fn stripe_webhook(
                     };
                     info!("💰 Payment received from {}", email);
 
-                    let _ = state
-                        .db
-                        .create_key(email.clone(), customer_id)
-                        .await
-                        .map_err(|e| {
-                            error!("DB Error: {:?}", e);
-                            StatusCode::INTERNAL_SERVER_ERROR
-                        })?;
+                    let credit_amount = std::env::var("CREDIT_INCREMENT")
+                        .ok()
+                        .and_then(|v| v.parse::<i32>().ok())
+                        .unwrap_or(100);
+
+                    // Check if user exists
+                    if let Some(existing_key) = state.db.get_key_by_email(&email).await {
+                        info!("Top Up: Adding credits to existing user {}", email);
+                        let _ = state
+                            .db
+                            .add_credits(&existing_key, credit_amount)
+                            .await
+                            .map_err(|e| {
+                                error!("DB Error adding credits: {:?}", e);
+                                StatusCode::INTERNAL_SERVER_ERROR
+                            })?;
+                    } else {
+                        info!("New User: Creating key for {}", email);
+                        let _ = state
+                            .db
+                            .create_key(email.clone(), customer_id, credit_amount)
+                            .await
+                            .map_err(|e| {
+                                error!("DB Error creating key: {:?}", e);
+                                StatusCode::INTERNAL_SERVER_ERROR
+                            })?;
+                    }
                 }
             }
         }
@@ -302,6 +349,7 @@ async fn optimize_handler(
     let mut ratio = 0.5;
     let mut format = "glb".to_string();
     let mut input_filepath: Option<PathBuf> = None;
+    let mut file_hash = String::new();
 
     while let Ok(Some(field)) = multipart.next_field().await {
         let name = field.name().unwrap_or_default().to_string();
@@ -311,12 +359,15 @@ async fn optimize_handler(
                 let filepath = batch_dir.join(&filename);
                 input_filepath = Some(filepath.clone());
 
-                // Stream file to disk
+                // Stream file to disk AND hash it
                 if let Ok(mut file) = tokio::fs::File::create(&filepath).await {
+                    let mut hasher = sha2::Sha256::new();
                     let mut stream = field;
                     while let Ok(Some(chunk)) = stream.chunk().await {
                         let _ = file.write_all(&chunk).await;
+                        sha2::Digest::update(&mut hasher, &chunk);
                     }
+                    file_hash = hex::encode(sha2::Digest::finalize(hasher));
                 }
 
                 let ext = Path::new(&filename)
@@ -360,6 +411,40 @@ async fn optimize_handler(
     let output_filename = format!("{}_opt.glb", output_base);
     let usdz_filename = format!("{}_opt.usdz", output_base);
 
+    // Fair Billing Logic
+    let should_charge = state
+        .db
+        .should_charge_for_file(&auth_key.0, &file_hash)
+        .await;
+    let mut deducted = false;
+
+    if should_charge {
+        match state
+            .db
+            .record_transaction(
+                &auth_key.0,
+                -1,
+                "optimization_charge",
+                Some(file_hash.clone()),
+            )
+            .await
+        {
+            Ok(_) => deducted = true,
+            Err(_) => {
+                let _ = fs::remove_dir_all(&batch_dir);
+                return (
+                    StatusCode::PAYMENT_REQUIRED,
+                    "Insufficient Credits. Please top up.",
+                )
+                    .into_response();
+            }
+        }
+    } else {
+        info!("Free Re-roll for hash: {}", file_hash);
+    }
+
+    let credits_remaining = state.db.get_credits(&auth_key.0).await.unwrap_or(0);
+
     // Run Command
     let mut cmd = tokio::process::Command::new("mesh-optimizer");
     cmd.arg("--input")
@@ -380,6 +465,13 @@ async fn optimize_handler(
         Ok(o) => o,
         Err(e) => {
             error!("Execution failed: {:?}", e);
+            // Refund Credit (only if we charged them)
+            if deducted {
+                let _ = state
+                    .db
+                    .record_transaction(&auth_key.0, 1, "system_error_refund", Some(file_hash))
+                    .await;
+            }
             // Log Failure
             let _ = state
                 .db
@@ -407,11 +499,19 @@ async fn optimize_handler(
         .get("x-session-id")
         .and_then(|h| h.to_str().ok())
         .map(|s| s.to_string());
-    let user_identifier = session_header.unwrap_or(auth_key.0);
+    let user_identifier = session_header.unwrap_or_else(|| auth_key.0.clone());
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         error!("Worker Error: {}", stderr);
+        // Refund Credit (Process Failure)
+        if deducted {
+            let _ = state
+                .db
+                .record_transaction(&auth_key.0, 1, "process_failure_refund", Some(file_hash))
+                .await;
+        }
+
         // Log User Error (likely bad mesh)
         state
             .db
@@ -468,7 +568,7 @@ async fn optimize_handler(
     // Response
     let dl_base = format!("/download/{}", batch_id);
 
-    if format == "json" {
+    let mut response = if format == "json" {
         Json(json!({
             "glb": format!("{}/{}", dl_base, output_filename),
             "usdz": format!("{}/{}", dl_base, usdz_filename)
@@ -482,10 +582,42 @@ async fn optimize_handler(
         // Redirect to download GLB
         axum::response::Redirect::temporary(&format!("{}/{}", dl_base, output_filename))
             .into_response()
-    }
+    };
+
+    response.headers_mut().insert(
+        "X-Credits-Remaining",
+        credits_remaining.to_string().parse().unwrap(),
+    );
+
+    response
 }
 
 // --- CLEANUP ---
+#[derive(Deserialize)]
+struct AdminAddCredits {
+    key: String,
+    amount: i32,
+    secret: String,
+}
+
+async fn admin_add_credits(
+    State(state): State<AppState>,
+    Json(payload): Json<AdminAddCredits>,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    // In production, set ADMIN_SECRET in env
+    let admin_secret =
+        std::env::var("ADMIN_SECRET").unwrap_or_else(|_| "supersecret123".to_string());
+
+    if payload.secret != admin_secret {
+        return Err(StatusCode::UNAUTHORIZED);
+    }
+
+    match state.db.add_credits(&payload.key, payload.amount).await {
+        Ok(new_balance) => Ok(Json(json!({ "success": true, "new_balance": new_balance }))),
+        Err(_) => Err(StatusCode::NOT_FOUND),
+    }
+}
+
 async fn cleanup_task() {
     let cleanup_age = Duration::from_secs(60 * 60); // 1 Hour
     let interval = Duration::from_secs(15 * 60); // 15 Min

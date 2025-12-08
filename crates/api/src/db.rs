@@ -20,6 +20,18 @@ pub struct KeyInfo {
     pub stripe_customer_id: String,
     pub created: u64, // Milliseconds since epoch
     pub active: bool,
+    #[serde(default)]
+    pub credits: i32,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Transaction {
+    pub id: i64,
+    pub user_key: String,
+    pub amount: i32,
+    pub description: String,
+    pub reference_job_hash: Option<String>,
+    pub created_at: i64,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
@@ -106,6 +118,15 @@ impl Database {
                 quality_ratio REAL NOT NULL,
                 status TEXT NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS credit_transactions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_key TEXT NOT NULL,
+                amount INTEGER NOT NULL,
+                description TEXT NOT NULL,
+                reference_job_hash TEXT,
+                created_at INTEGER NOT NULL
+            );
             "#;
             if let Err(e) = sqlx::query(schema).execute(p).await {
                 error!("Failed to run SQLite migration: {:?}", e);
@@ -144,7 +165,12 @@ impl Database {
         }
     }
 
-    pub async fn create_key(&self, email: String, stripe_customer_id: String) -> Result<String> {
+    pub async fn create_key(
+        &self,
+        email: String,
+        stripe_customer_id: String,
+        initial_credits: i32,
+    ) -> Result<String> {
         let new_key = format!("sk_{}", Uuid::new_v4().simple());
 
         let now = std::time::SystemTime::now()
@@ -162,6 +188,7 @@ impl Database {
                     stripe_customer_id: stripe_customer_id.clone(),
                     created: now,
                     active: true,
+                    credits: initial_credits,
                 },
             );
 
@@ -185,6 +212,98 @@ impl Database {
             .iter()
             .find(|(_, info)| info.email == email)
             .map(|(k, _)| k.clone())
+    }
+
+    pub async fn add_credits(&self, key: &str, amount: i32) -> Result<i32> {
+        // Just a wrapper around the ledger now
+        self.record_transaction(key, amount, "admin_add", None)
+            .await
+    }
+
+    // Updated to use Ledger
+    pub async fn record_transaction(
+        &self,
+        key: &str,
+        amount: i32,
+        description: &str,
+        job_hash: Option<String>,
+    ) -> Result<i32> {
+        let new_balance;
+
+        // 1. Update In-Memory Balance (Source of Truth for speed)
+        {
+            let mut data = self.data.write().await;
+            if let Some(info) = data.keys.get_mut(key) {
+                info.credits += amount;
+                new_balance = info.credits;
+            } else {
+                return Err(anyhow::anyhow!("Key not found"));
+            }
+        }
+        // Persist JSON immediately
+        self.persist().await?;
+
+        // 2. Log to SQLite Ledger
+        if let Some(pool) = &self.pool {
+            let now = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_millis() as i64;
+
+            let query = r#"
+            INSERT INTO credit_transactions (user_key, amount, description, reference_job_hash, created_at)
+            VALUES (?, ?, ?, ?, ?)
+            "#;
+
+            let _ = sqlx::query(query)
+                .bind(key)
+                .bind(amount)
+                .bind(description)
+                .bind(job_hash)
+                .bind(now)
+                .execute(pool)
+                .await;
+        }
+
+        Ok(new_balance)
+    }
+
+    // Check if we should charge for this file (Fairness Logic)
+    pub async fn should_charge_for_file(&self, key: &str, file_hash: &str) -> bool {
+        if let Some(pool) = &self.pool {
+            // Check for transactions in last 24 hours for this hash
+            let one_day_ago = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_millis() as i64
+                - (24 * 60 * 60 * 1000);
+
+            let query = r#"
+            SELECT COUNT(*) FROM credit_transactions
+            WHERE user_key = ?
+            AND reference_job_hash = ?
+            AND amount < 0
+            AND created_at > ?
+            "#;
+
+            let count: (i64,) = sqlx::query_as(query)
+                .bind(key)
+                .bind(file_hash)
+                .bind(one_day_ago)
+                .fetch_one(pool)
+                .await
+                .unwrap_or((0,));
+
+            // If count > 0, they already paid. Don't charge.
+            return count.0 == 0;
+        }
+        // Default to charging if DB is down (safety)
+        true
+    }
+
+    pub async fn get_credits(&self, key: &str) -> Option<i32> {
+        let data = self.data.read().await;
+        data.keys.get(key).map(|info| info.credits)
     }
 
     // --- Metrics / Logging ---
