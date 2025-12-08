@@ -79,7 +79,7 @@ async fn main() -> Result<()> {
             )),
         )
         // Global Middleware
-        .layer(DefaultBodyLimit::max(2 * 1024 * 1024 * 1024)) // 2GB
+        .layer(DefaultBodyLimit::max(5 * 1024 * 1024 * 1024)) // 5GB
         .layer(CorsLayer::permissive())
         .with_state(state);
 
