@@ -6,3 +6,5 @@ uploads/
 .DS_Store
 ship.sh
 .env
+server/database.json
+server/stats.db

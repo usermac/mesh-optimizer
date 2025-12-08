@@ -1,10 +1,16 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
+use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
+use sqlx::{Pool, Sqlite};
 use std::collections::HashMap;
+use std::env;
 use std::fs;
 use std::path::PathBuf;
+use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use tracing::{error, info};
 use uuid::Uuid;
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
@@ -32,34 +38,99 @@ pub struct DbData {
 pub struct Database {
     file_path: PathBuf,
     data: Arc<RwLock<DbData>>,
+    pool: Option<Pool<Sqlite>>,
+    salt: String,
 }
 
 impl Database {
-    pub fn new(file_path: PathBuf) -> Self {
+    pub async fn new(json_path: PathBuf, sqlite_path: PathBuf) -> Self {
+        // --- 1. JSON Flat File Setup ---
         // Ensure directory exists
-        if let Some(parent) = file_path.parent() {
+        if let Some(parent) = json_path.parent() {
             let _ = fs::create_dir_all(parent);
         }
 
-        let data = if file_path.exists() {
-            match fs::read_to_string(&file_path) {
+        let data = if json_path.exists() {
+            match fs::read_to_string(&json_path) {
                 Ok(content) => serde_json::from_str(&content).unwrap_or_default(),
-                Err(_) => DbData::default(),
+                Err(e) => {
+                    error!("Failed to read JSON DB: {:?}", e);
+                    DbData::default()
+                }
             }
         } else {
             DbData::default()
         };
 
+        // --- 2. SQLite Setup ---
+        // Ensure directory exists for SQLite db
+        if let Some(parent) = sqlite_path.parent() {
+            let _ = tokio::fs::create_dir_all(parent).await;
+        }
+
+        // Create file if not exists (sqlx requires it for file-based URLs sometimes, or handles it via create_if_missing)
+        let db_url = format!("sqlite://{}", sqlite_path.to_string_lossy());
+
+        let pool = match SqlitePoolOptions::new()
+            .max_connections(5)
+            .connect_with(
+                SqliteConnectOptions::from_str(&db_url)
+                    .unwrap_or_else(|_| SqliteConnectOptions::new().filename(&sqlite_path))
+                    .create_if_missing(true),
+            )
+            .await
+        {
+            Ok(p) => {
+                info!("Connected to SQLite at {:?}", sqlite_path);
+                Some(p)
+            }
+            Err(e) => {
+                error!("Failed to connect to SQLite: {:?}", e);
+                None
+            }
+        };
+
+        // --- 3. Schema Migration ---
+        if let Some(ref p) = pool {
+            let schema = r#"
+            CREATE TABLE IF NOT EXISTS job_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                user_hash TEXT NOT NULL,
+                file_fingerprint TEXT NOT NULL,
+                input_format TEXT NOT NULL,
+                output_format TEXT NOT NULL,
+                input_size_bytes INTEGER NOT NULL,
+                output_size_bytes INTEGER NOT NULL,
+                processing_time_ms INTEGER NOT NULL,
+                quality_ratio REAL NOT NULL,
+                status TEXT NOT NULL
+            );
+            "#;
+            if let Err(e) = sqlx::query(schema).execute(p).await {
+                error!("Failed to run SQLite migration: {:?}", e);
+            }
+        }
+
+        // --- 4. Load Salt ---
+        let salt = env::var("METRICS_SALT").unwrap_or_else(|_| "default-insecure-salt".to_string());
+        if salt == "default-insecure-salt" {
+            error!("WARNING: METRICS_SALT not set. Using default.");
+        }
+
         Database {
-            file_path,
+            file_path: json_path,
             data: Arc::new(RwLock::new(data)),
+            pool,
+            salt,
         }
     }
 
-    /// Persist the current state to disk
+    /// Persist the current state to disk (JSON)
     async fn persist(&self) -> Result<()> {
         let data = self.data.read().await;
         let json = serde_json::to_string_pretty(&*data)?;
+        // Use blocking IO for safety with critical JSON data or just std::fs since it's rarely written
         fs::write(&self.file_path, json)?;
         Ok(())
     }
@@ -114,5 +185,60 @@ impl Database {
             .iter()
             .find(|(_, info)| info.email == email)
             .map(|(k, _)| k.clone())
+    }
+
+    // --- Metrics / Logging ---
+
+    fn hash_string(&self, input: &str) -> String {
+        let mut hasher = Sha256::new();
+        hasher.update(&self.salt);
+        hasher.update(input);
+        hex::encode(hasher.finalize())
+    }
+
+    pub async fn log_job(
+        &self,
+        user_identifier: &str, // API Key or Session ID
+        filename: &str,
+        file_size_bytes: u64,
+        input_format: &str,
+        output_format: &str,
+        output_size_bytes: u64,
+        processing_time_ms: u64,
+        quality_ratio: f32,
+        status: &str,
+    ) {
+        if let Some(pool) = &self.pool {
+            // Pseudonymize User
+            let user_hash = self.hash_string(user_identifier);
+
+            // Fingerprint Content (Salt + Filename + Size) ensures same file uploaded twice gets same ID,
+            // but is unrelated to the actual filename reversibly.
+            let raw_fingerprint = format!("{}{}", filename, file_size_bytes);
+            let file_fingerprint = self.hash_string(&raw_fingerprint);
+
+            let query = r#"
+            INSERT INTO job_history
+            (user_hash, file_fingerprint, input_format, output_format, input_size_bytes, output_size_bytes, processing_time_ms, quality_ratio, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            "#;
+
+            let res = sqlx::query(query)
+                .bind(user_hash)
+                .bind(file_fingerprint)
+                .bind(input_format)
+                .bind(output_format)
+                .bind(file_size_bytes as i64)
+                .bind(output_size_bytes as i64)
+                .bind(processing_time_ms as i64)
+                .bind(quality_ratio)
+                .bind(status)
+                .execute(pool)
+                .await;
+
+            if let Err(e) = res {
+                error!("Failed to log job metrics: {:?}", e);
+            }
+        }
     }
 }

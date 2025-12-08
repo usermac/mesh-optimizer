@@ -3,20 +3,18 @@ mod db;
 use anyhow::{Context, Result};
 use axum::{
     extract::{DefaultBodyLimit, Multipart, Query, Request, State},
-    http::StatusCode,
+    http::{HeaderMap, StatusCode},
     middleware::{self, Next},
     response::{Html, IntoResponse, Response},
     routing::{get, post},
-    Json, Router,
+    Extension, Json, Router,
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::json;
 use std::{
     fs,
     path::{Path, PathBuf},
-    process::Stdio,
     str::FromStr,
-    sync::Arc,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 use stripe::{
@@ -31,6 +29,7 @@ use tracing::{error, info};
 // --- CONFIGURATION ---
 const UPLOAD_DIR: &str = "uploads";
 const DB_FILE: &str = "server/database.json";
+const DB_SQLITE_FILE: &str = "server/stats.db";
 
 #[derive(Clone)]
 struct AppState {
@@ -38,6 +37,9 @@ struct AppState {
     stripe_client: stripe::Client,
     stripe_webhook_secret: String,
 }
+
+#[derive(Clone)]
+struct AuthKey(String);
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -58,7 +60,7 @@ async fn main() -> Result<()> {
     }
 
     // 3. Initialize State
-    let db = db::Database::new(PathBuf::from(DB_FILE));
+    let db = db::Database::new(PathBuf::from(DB_FILE), PathBuf::from(DB_SQLITE_FILE)).await;
     let stripe_client = stripe::Client::new(stripe_secret_key);
     let state = AppState {
         db,
@@ -104,7 +106,7 @@ async fn main() -> Result<()> {
 
 async fn auth_middleware(
     State(state): State<AppState>,
-    req: Request,
+    mut req: Request,
     next: Next,
 ) -> Result<Response, StatusCode> {
     let token = req
@@ -122,7 +124,10 @@ async fn auth_middleware(
         });
 
     match token {
-        Some(t) if t == "sk_test_123" || state.db.is_valid_key(&t).await => Ok(next.run(req).await),
+        Some(t) if t == "sk_test_123" || state.db.is_valid_key(&t).await => {
+            req.extensions_mut().insert(AuthKey(t));
+            Ok(next.run(req).await)
+        }
         _ => Err(StatusCode::UNAUTHORIZED),
     }
 }
@@ -274,7 +279,13 @@ async fn success_page(
 
 // --- OPTIMIZATION HANDLER ---
 
-async fn optimize_handler(State(_): State<AppState>, mut multipart: Multipart) -> Response {
+async fn optimize_handler(
+    State(state): State<AppState>,
+    Extension(auth_key): Extension<AuthKey>,
+    headers: HeaderMap,
+    mut multipart: Multipart,
+) -> Response {
+    let start_time = std::time::Instant::now();
     let batch_id = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
@@ -290,6 +301,7 @@ async fn optimize_handler(State(_): State<AppState>, mut multipart: Multipart) -
     let mut input_filename: Option<String> = None;
     let mut ratio = 0.5;
     let mut format = "glb".to_string();
+    let mut input_filepath: Option<PathBuf> = None;
 
     while let Ok(Some(field)) = multipart.next_field().await {
         let name = field.name().unwrap_or_default().to_string();
@@ -297,6 +309,7 @@ async fn optimize_handler(State(_): State<AppState>, mut multipart: Multipart) -
         if name == "file" {
             if let Some(filename) = field.file_name().map(|s| s.to_string()) {
                 let filepath = batch_dir.join(&filename);
+                input_filepath = Some(filepath.clone());
 
                 // Stream file to disk
                 if let Ok(mut file) = tokio::fs::File::create(&filepath).await {
@@ -336,6 +349,9 @@ async fn optimize_handler(State(_): State<AppState>, mut multipart: Multipart) -
         }
     };
 
+    let input_path = input_filepath.unwrap();
+    let input_size = fs::metadata(&input_path).map(|m| m.len()).unwrap_or(0);
+
     let output_base = Path::new(&input_filename)
         .file_stem()
         .unwrap()
@@ -364,19 +380,90 @@ async fn optimize_handler(State(_): State<AppState>, mut multipart: Multipart) -
         Ok(o) => o,
         Err(e) => {
             error!("Execution failed: {:?}", e);
+            // Log Failure
+            let _ = state
+                .db
+                .log_job(
+                    &auth_key.0,
+                    &input_filename,
+                    input_size,
+                    "unknown",
+                    &format,
+                    0,
+                    start_time.elapsed().as_millis() as u64,
+                    ratio,
+                    "system_error",
+                )
+                .await;
             return (StatusCode::INTERNAL_SERVER_ERROR, "Optimization Failed").into_response();
         }
     };
 
+    let processing_time = start_time.elapsed().as_millis() as u64;
+
+    // Collect metrics identifiers
+    // If X-Session-ID header is present (Web UI), use that. Otherwise use API Key.
+    let session_header = headers
+        .get("x-session-id")
+        .and_then(|h| h.to_str().ok())
+        .map(|s| s.to_string());
+    let user_identifier = session_header.unwrap_or(auth_key.0);
+
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         error!("Worker Error: {}", stderr);
+        // Log User Error (likely bad mesh)
+        state
+            .db
+            .log_job(
+                &user_identifier,
+                &input_filename,
+                input_size,
+                "unknown", // Could extract from filename extension
+                &format,
+                0,
+                processing_time,
+                ratio,
+                "worker_error",
+            )
+            .await;
+
         return (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(json!({ "error": "Optimization Failed", "details": stderr })),
         )
             .into_response();
     }
+
+    // Success - Calculate Output Size
+    // If JSON requested, we probably generated both GLB and USDZ.
+    // Ideally we sum them or pick the primary one. For simplicity let's pick GLB or USDZ size.
+    let output_path = if format == "usdz" {
+        batch_dir.join(&usdz_filename)
+    } else {
+        batch_dir.join(&output_filename)
+    };
+    let output_size = fs::metadata(&output_path).map(|m| m.len()).unwrap_or(0);
+
+    let input_ext = Path::new(&input_filename)
+        .extension()
+        .and_then(|s| s.to_str())
+        .unwrap_or("unknown");
+
+    state
+        .db
+        .log_job(
+            &user_identifier,
+            &input_filename,
+            input_size,
+            input_ext,
+            &format,
+            output_size,
+            processing_time,
+            ratio,
+            "success",
+        )
+        .await;
 
     // Response
     let dl_base = format!("/download/{}", batch_id);
