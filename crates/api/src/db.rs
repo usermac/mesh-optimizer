@@ -24,7 +24,7 @@ pub struct KeyInfo {
     pub credits: i32,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Transaction {
     pub id: i64,
     pub user_key: String,
@@ -304,6 +304,28 @@ impl Database {
     pub async fn get_credits(&self, key: &str) -> Option<i32> {
         let data = self.data.read().await;
         data.keys.get(key).map(|info| info.credits)
+    }
+
+    pub async fn get_history(&self, key: &str, limit: i32) -> Result<Vec<Transaction>> {
+        if let Some(pool) = &self.pool {
+            let query = r#"
+            SELECT id, user_key, amount, description, reference_job_hash, created_at
+            FROM credit_transactions
+            WHERE user_key = ?
+            ORDER BY created_at DESC
+            LIMIT ?
+            "#;
+
+            let history: Vec<Transaction> = sqlx::query_as(query)
+                .bind(key)
+                .bind(limit)
+                .fetch_all(pool)
+                .await?;
+
+            Ok(history)
+        } else {
+            Ok(vec![])
+        }
     }
 
     // --- Metrics / Logging ---

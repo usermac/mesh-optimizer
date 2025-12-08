@@ -76,6 +76,13 @@ async fn main() -> Result<()> {
     let app = Router::new()
         // Public Routes
         .route("/config", get(get_config))
+        .route(
+            "/history",
+            get(history_handler).layer(middleware::from_fn_with_state(
+                state.clone(),
+                auth_middleware,
+            )),
+        )
         .route("/create-checkout-session", post(create_checkout_session))
         .route("/webhook", post(stripe_webhook))
         .route("/success", get(success_page))
@@ -424,7 +431,7 @@ async fn optimize_handler(
             .record_transaction(
                 &auth_key.0,
                 -1,
-                "optimization_charge",
+                &format!("optimized: {}", input_filename),
                 Some(file_hash.clone()),
             )
             .await
@@ -615,6 +622,16 @@ async fn admin_add_credits(
     match state.db.add_credits(&payload.key, payload.amount).await {
         Ok(new_balance) => Ok(Json(json!({ "success": true, "new_balance": new_balance }))),
         Err(_) => Err(StatusCode::NOT_FOUND),
+    }
+}
+
+async fn history_handler(
+    State(state): State<AppState>,
+    Extension(auth_key): Extension<AuthKey>,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    match state.db.get_history(&auth_key.0, 50).await {
+        Ok(transactions) => Ok(Json(serde_json::to_value(transactions).unwrap())),
+        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
     }
 }
 
