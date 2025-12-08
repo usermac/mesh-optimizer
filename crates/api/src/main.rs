@@ -419,10 +419,18 @@ async fn optimize_handler(
     let usdz_filename = format!("{}_opt.usdz", output_base);
 
     // Fair Billing Logic
-    let should_charge = state
-        .db
-        .should_charge_for_file(&auth_key.0, &file_hash)
-        .await;
+    let test_key = std::env::var("TEST_KEY").unwrap_or_default();
+    let is_test_key = !test_key.is_empty() && auth_key.0 == test_key;
+
+    let should_charge = if is_test_key {
+        info!("Test Key used. Skipping billing.");
+        false
+    } else {
+        state
+            .db
+            .should_charge_for_file(&auth_key.0, &file_hash)
+            .await
+    };
     let mut deducted = false;
 
     if should_charge {

@@ -651,8 +651,19 @@
                         body: formData,
                     });
 
-                    if (!res.ok)
-                        throw new Error((await res.json()).error || "Failed");
+                    if (!res.ok) {
+                        const contentType = res.headers.get("content-type");
+                        if (
+                            contentType &&
+                            contentType.includes("application/json")
+                        ) {
+                            const errorJson = await res.json();
+                            throw new Error(errorJson.error || "Failed");
+                        } else {
+                            const errorText = await res.text();
+                            throw new Error(errorText || "Failed");
+                        }
+                    }
 
                     // Handle JSON response
                     const data = await res.json();
