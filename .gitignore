@@ -5,3 +5,4 @@ uploads/
 *.glb
 .DS_Store
 ship.sh
+.env

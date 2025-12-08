@@ -29,22 +29,26 @@ use tower_http::{cors::CorsLayer, services::ServeDir};
 use tracing::{error, info};
 
 // --- CONFIGURATION ---
-const STRIPE_SECRET_KEY: &str = "sk_test_51OoumnD2a0WQ2ytfq0fpUoxpoe4VUhGt6JECIxGCmqtwQPHVTbOCNaPmSifRDeNYLMpLqRQ5l8HyVXTJAtidkLzg0093vaPiAQ";
-const STRIPE_WEBHOOK_SECRET: &str = "whsec_UJLaOJGaFq1cqIUrQkx2xe8itJL0lzw5";
 const UPLOAD_DIR: &str = "uploads";
 const DB_FILE: &str = "server/database.json";
-const TIMEOUT_MS: u64 = 20 * 60 * 1000; // 20 Mins
 
 #[derive(Clone)]
 struct AppState {
     db: db::Database,
     stripe_client: stripe::Client,
+    stripe_webhook_secret: String,
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     // 1. Initialize Logging
     tracing_subscriber::fmt::init();
+    dotenvy::dotenv().ok();
+
+    let stripe_secret_key =
+        std::env::var("STRIPE_SECRET_KEY").expect("STRIPE_SECRET_KEY must be set");
+    let stripe_webhook_secret =
+        std::env::var("STRIPE_WEBHOOK_SECRET").expect("STRIPE_WEBHOOK_SECRET must be set");
 
     // 2. Setup Filesystem
     fs::create_dir_all(UPLOAD_DIR).context("Failed to create upload dir")?;
@@ -55,8 +59,12 @@ async fn main() -> Result<()> {
 
     // 3. Initialize State
     let db = db::Database::new(PathBuf::from(DB_FILE));
-    let stripe_client = stripe::Client::new(STRIPE_SECRET_KEY);
-    let state = AppState { db, stripe_client };
+    let stripe_client = stripe::Client::new(stripe_secret_key);
+    let state = AppState {
+        db,
+        stripe_client,
+        stripe_webhook_secret,
+    };
 
     // 4. Start Cleanup Task
     tokio::spawn(cleanup_task());
@@ -171,7 +179,7 @@ async fn stripe_webhook(
         .and_then(|v| v.to_str().ok())
         .ok_or(StatusCode::BAD_REQUEST)?;
 
-    let event = Webhook::construct_event(&body, sig, STRIPE_WEBHOOK_SECRET)
+    let event = Webhook::construct_event(&body, sig, &state.stripe_webhook_secret)
         .map_err(|_| StatusCode::BAD_REQUEST)?;
 
     if event.type_ == EventType::CheckoutSessionCompleted {
