@@ -327,16 +327,23 @@ async fn success_page(
         r#"
         <html><body style="font-family:sans-serif; background:#111; color:white; text-align:center; padding:50px;">
             <h1 style="color:#10b981">Payment Successful!</h1>
-            <p>Thank you {}</p>
-            <p>Here is your API Key:</p>
-            <div style="background:#333; padding:20px; font-size:24px; font-family:monospace; border-radius:10px; display:inline-block; border: 1px solid #555;">
-                {}
+            <p>Thank you for your purchase!</p>
+
+            <div style="background:#fee2e2; color:#991b1b; padding:20px; border-radius:8px; margin:30px auto; max-width:500px; border-left:4px solid #dc2626;">
+                <strong style="font-size:1.1em;">⚠️ IMPORTANT - SAVE YOUR KEY NOW</strong>
+                <p style="margin-top:10px; margin-bottom:0;">This is the ONLY time you will see your API key. If you lose it, you'll need to contact support.</p>
             </div>
-            <p style="color:#aaa">Save this key.</p>
-            <a href="/" style="color:#3b82f6; text-decoration:none; margin-top:20px; display:inline-block;">&larr; Back to Dashboard</a>
+
+            <p style="margin-top:30px; margin-bottom:10px; color:#aaa;">Your API Key:</p>
+            <div style="background:#1f2937; padding:20px; font-size:18px; font-family:monospace; border-radius:8px; display:inline-block; border: 2px solid #3b82f6; word-break:break-all; max-width:400px;">
+                <strong style="color:#3b82f6;">{}</strong>
+            </div>
+
+            <p style="color:#888; font-size:0.9em; margin-top:20px;">Use this key in the API Key field on the dashboard to optimize your 3D models.</p>
+            <a href="/" style="color:#3b82f6; text-decoration:none; margin-top:30px; display:inline-block; padding:10px 20px; border:1px solid #3b82f6; border-radius:6px;">&larr; Back to Dashboard</a>
         </body></html>
     "#,
-        email, key
+        key
     );
 
     Html(html).into_response()

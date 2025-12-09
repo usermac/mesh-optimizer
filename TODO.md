@@ -5,6 +5,14 @@
 - [x] **Payment Integration**: Stripe payments (or top-ups) now automatically add credits.
 - [x] **Admin Tools**: "God Mode" API endpoint created to manually add/refund credits.
 - [x] **Configurable Pricing**: `CREDIT_COST` and `CREDIT_INCREMENT` are now loaded from `.env`.
+- [x] **Transaction History UI**: Realtime search/filter by activity, date, and amount with CSV export.
+- [x] **Process Failure Refunds**: Include filename in transaction description for better debugging.
+
+## Testing Required
+- [ ] **Test Payment Success Page**: Verify the enhanced success page displays the API key prominently with the "SAVE YOUR KEY NOW" warning. Confirm users can copy the key easily.
+- [ ] **Test Key-Based History**: Verify users can paste their API key in the Web UI and see their transaction history correctly.
+- [ ] **Test Transaction Search**: Verify realtime search/filter works correctly for activity descriptions, dates, and amounts.
+- [ ] **Test CSV Download**: Verify CSV download works with proper formatting and filename (transaction-history-YYYY-MM-DD.csv).
 
 ## Security (Critical for Production)
 - [ ] **Remove Hardcoded Admin Secret**: `ADMIN_SECRET` must not default to `"supersecret123"`. Make it required and fail loudly if not set.
