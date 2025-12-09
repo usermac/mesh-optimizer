@@ -2,16 +2,18 @@ mod db;
 
 use anyhow::{Context, Result};
 use axum::{
-    extract::{DefaultBodyLimit, Multipart, Query, Request, State},
+    extract::{DefaultBodyLimit, Multipart, Path as AxumPath, Query, Request, State},
     http::{HeaderMap, StatusCode},
     middleware::{self, Next},
     response::{Html, IntoResponse, Response},
     routing::{get, post},
     Extension, Json, Router,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sha2::Digest;
+use std::collections::HashMap;
+use std::sync::Arc;
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -24,6 +26,7 @@ use stripe::{
     CreateCheckoutSessionPaymentMethodTypes, Currency, EventObject, EventType, Expandable, Webhook,
 };
 use tokio::io::AsyncWriteExt;
+use tokio::sync::RwLock;
 use tower_http::{cors::CorsLayer, services::ServeDir};
 use tracing::{error, info};
 
@@ -32,11 +35,25 @@ const UPLOAD_DIR: &str = "uploads";
 const DB_FILE: &str = "server/database.json";
 const DB_SQLITE_FILE: &str = "server/stats.db";
 
-#[derive(Clone)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum JobStatus {
+    Queued,
+    Processing,
+    Completed {
+        output_size: u64,
+        glb_url: String,
+        usdz_url: String,
+    },
+    Failed {
+        error: String,
+    },
+}
+
 struct AppState {
     db: db::Database,
     stripe_client: stripe::Client,
     stripe_webhook_secret: String,
+    jobs: Arc<RwLock<HashMap<String, JobStatus>>>,
 }
 
 #[derive(Clone)]
@@ -66,10 +83,12 @@ async fn main() -> Result<()> {
     // 3. Initialize State
     let db = db::Database::new(PathBuf::from(DB_FILE), PathBuf::from(DB_SQLITE_FILE)).await;
     let stripe_client = stripe::Client::new(stripe_secret_key);
+    let jobs = Arc::new(RwLock::new(HashMap::new()));
     let state = AppState {
         db,
         stripe_client,
         stripe_webhook_secret,
+        jobs,
     };
 
     // 4. Start Cleanup Task
@@ -79,6 +98,7 @@ async fn main() -> Result<()> {
     let app = Router::new()
         // Public Routes
         .route("/config", get(get_config))
+        .route("/job/:id", get(job_status_handler))
         .route(
             "/history",
             get(history_handler).layer(middleware::from_fn_with_state(
@@ -351,6 +371,18 @@ async fn success_page(
 
 // --- OPTIMIZATION HANDLER ---
 
+async fn job_status_handler(
+    State(state): State<AppState>,
+    AxumPath(id): AxumPath<String>,
+) -> Json<serde_json::Value> {
+    let jobs = state.jobs.read().await;
+    if let Some(status) = jobs.get(&id) {
+        Json(json!({ "status": status }))
+    } else {
+        Json(json!({ "error": "Job not found" }))
+    }
+}
+
 async fn optimize_handler(
     State(state): State<AppState>,
     Extension(auth_key): Extension<AuthKey>,
@@ -368,6 +400,11 @@ async fn optimize_handler(
     if let Err(e) = fs::create_dir_all(&batch_dir) {
         error!("Failed to create batch dir: {:?}", e);
         return (StatusCode::INTERNAL_SERVER_ERROR, "Server Error").into_response();
+    }
+
+    {
+        let mut jobs = state.jobs.write().await;
+        jobs.insert(batch_id.clone(), JobStatus::Processing);
     }
 
     let mut input_filename: Option<String> = None;
@@ -506,54 +543,6 @@ async fn optimize_handler(
 
     let credits_remaining = state.db.get_credits(&auth_key.0).await.unwrap_or(0);
 
-    // Run Command
-    let mut cmd = tokio::process::Command::new("mesh-optimizer");
-    cmd.arg("--input")
-        .arg(&input_filename)
-        .arg("--output")
-        .arg(&output_filename)
-        .arg("--ratio")
-        .arg(ratio.to_string())
-        .current_dir(&batch_dir); // IMPORTANT: Run inside batch dir
-
-    if format == "json" || format == "usdz" {
-        cmd.arg("--usdz");
-    }
-
-    info!("Executing: {:?}", cmd);
-
-    let output = match cmd.output().await {
-        Ok(o) => o,
-        Err(e) => {
-            error!("Execution failed: {:?}", e);
-            // Refund Credit (only if we charged them)
-            if deducted {
-                let _ = state
-                    .db
-                    .record_transaction(&auth_key.0, 1, "system_error_refund", Some(file_hash))
-                    .await;
-            }
-            // Log Failure
-            let _ = state
-                .db
-                .log_job(
-                    &auth_key.0,
-                    &input_filename,
-                    input_size,
-                    "unknown",
-                    &format,
-                    0,
-                    start_time.elapsed().as_millis() as u64,
-                    ratio,
-                    "system_error",
-                )
-                .await;
-            return (StatusCode::INTERNAL_SERVER_ERROR, "Optimization Failed").into_response();
-        }
-    };
-
-    let processing_time = start_time.elapsed().as_millis() as u64;
-
     // Collect metrics identifiers
     // If X-Session-ID header is present (Web UI), use that. Otherwise use API Key.
     let session_header = headers
@@ -562,93 +551,214 @@ async fn optimize_handler(
         .map(|s| s.to_string());
     let user_identifier = session_header.unwrap_or_else(|| auth_key.0.clone());
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        error!("Worker Error: {}", stderr);
-        // Refund Credit (Process Failure)
-        if deducted {
-            let _ = state
-                .db
-                .record_transaction(
-                    &auth_key.0,
-                    1,
-                    &format!("process_failure_refund: {}", input_filename),
-                    Some(file_hash),
-                )
-                .await;
+    // Spawn Background Task
+    let state_clone = state.clone();
+    let auth_key_str = auth_key.0.clone();
+    let batch_id_clone = batch_id.clone();
+    let batch_dir_clone = batch_dir.clone();
+    let input_filename_clone = input_filename.clone();
+    let output_filename_clone = output_filename.clone();
+    let usdz_filename_clone = usdz_filename.clone();
+    let file_hash_clone = file_hash.clone();
+    let format_clone = format.clone();
+
+    tokio::spawn(async move {
+        // Run Command
+        let mut cmd = tokio::process::Command::new("mesh-optimizer");
+        cmd.arg("--input")
+            .arg(&input_filename_clone)
+            .arg("--output")
+            .arg(&output_filename_clone)
+            .arg("--ratio")
+            .arg(ratio.to_string())
+            .current_dir(&batch_dir_clone); // IMPORTANT: Run inside batch dir
+
+        if format_clone == "json" || format_clone == "usdz" {
+            cmd.arg("--usdz");
         }
 
-        // Log User Error (likely bad mesh)
-        state
+        info!("Executing: {:?}", cmd);
+
+        let output = match tokio::time::timeout(Duration::from_secs(300), cmd.output()).await {
+            Ok(Ok(o)) => o,
+            Ok(Err(e)) => {
+                {
+                    let mut jobs = state_clone.jobs.write().await;
+                    jobs.insert(
+                        batch_id_clone.clone(),
+                        JobStatus::Failed {
+                            error: "System Error".to_string(),
+                        },
+                    );
+                }
+                error!("Execution failed: {:?}", e);
+                // Refund Credit (only if we charged them)
+                if deducted {
+                    let _ = state_clone
+                        .db
+                        .record_transaction(
+                            &auth_key_str,
+                            1,
+                            "system_error_refund",
+                            Some(file_hash_clone),
+                        )
+                        .await;
+                }
+                // Log Failure
+                let _ = state_clone
+                    .db
+                    .log_job(
+                        &auth_key_str,
+                        &input_filename_clone,
+                        input_size,
+                        "unknown",
+                        &format_clone,
+                        0,
+                        start_time.elapsed().as_millis() as u64,
+                        ratio,
+                        "system_error",
+                    )
+                    .await;
+                return;
+            }
+            Err(_) => {
+                {
+                    let mut jobs = state_clone.jobs.write().await;
+                    jobs.insert(
+                        batch_id_clone.clone(),
+                        JobStatus::Failed {
+                            error: "Timeout".to_string(),
+                        },
+                    );
+                }
+                error!("Execution timed out");
+                // Refund Credit (only if we charged them)
+                if deducted {
+                    let _ = state_clone
+                        .db
+                        .record_transaction(
+                            &auth_key_str,
+                            1,
+                            "timeout_refund",
+                            Some(file_hash_clone),
+                        )
+                        .await;
+                }
+                // Log Failure
+                let _ = state_clone
+                    .db
+                    .log_job(
+                        &auth_key_str,
+                        &input_filename_clone,
+                        input_size,
+                        "unknown",
+                        &format_clone,
+                        0,
+                        start_time.elapsed().as_millis() as u64,
+                        ratio,
+                        "timeout",
+                    )
+                    .await;
+                return;
+            }
+        };
+
+        let processing_time = start_time.elapsed().as_millis() as u64;
+
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            error!("Worker Error: {}", stderr);
+            // Refund Credit (Process Failure)
+            if deducted {
+                let _ = state_clone
+                    .db
+                    .record_transaction(
+                        &auth_key_str,
+                        1,
+                        &format!("process_failure_refund: {}", input_filename_clone),
+                        Some(file_hash_clone),
+                    )
+                    .await;
+            }
+
+            // Log User Error (likely bad mesh)
+            state_clone
+                .db
+                .log_job(
+                    &user_identifier,
+                    &input_filename_clone,
+                    input_size,
+                    "unknown", // Could extract from filename extension
+                    &format_clone,
+                    0,
+                    processing_time,
+                    ratio,
+                    "worker_error",
+                )
+                .await;
+
+            {
+                let mut jobs = state_clone.jobs.write().await;
+                jobs.insert(
+                    batch_id_clone.clone(),
+                    JobStatus::Failed {
+                        error: "Worker Error".to_string(),
+                    },
+                );
+            }
+            return;
+        }
+
+        // Success - Calculate Output Size
+        let output_path = if format_clone == "usdz" {
+            batch_dir_clone.join(&usdz_filename_clone)
+        } else {
+            batch_dir_clone.join(&output_filename_clone)
+        };
+        let output_size = fs::metadata(&output_path).map(|m| m.len()).unwrap_or(0);
+
+        let input_ext = Path::new(&input_filename_clone)
+            .extension()
+            .and_then(|s| s.to_str())
+            .unwrap_or("unknown");
+
+        state_clone
             .db
             .log_job(
                 &user_identifier,
-                &input_filename,
+                &input_filename_clone,
                 input_size,
-                "unknown", // Could extract from filename extension
-                &format,
-                0,
+                input_ext,
+                &format_clone,
+                output_size,
                 processing_time,
                 ratio,
-                "worker_error",
+                "success",
             )
             .await;
 
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({ "error": "Optimization Failed", "details": stderr })),
-        )
-            .into_response();
-    }
+        let dl_base = format!("/download/{}", batch_id_clone);
+        let glb_url = format!("{}/{}", dl_base, output_filename_clone);
+        let usdz_url = format!("{}/{}", dl_base, usdz_filename_clone);
 
-    // Success - Calculate Output Size
-    // If JSON requested, we probably generated both GLB and USDZ.
-    // Ideally we sum them or pick the primary one. For simplicity let's pick GLB or USDZ size.
-    let output_path = if format == "usdz" {
-        batch_dir.join(&usdz_filename)
-    } else {
-        batch_dir.join(&output_filename)
-    };
-    let output_size = fs::metadata(&output_path).map(|m| m.len()).unwrap_or(0);
+        {
+            let mut jobs = state_clone.jobs.write().await;
+            jobs.insert(
+                batch_id_clone,
+                JobStatus::Completed {
+                    output_size,
+                    glb_url,
+                    usdz_url,
+                },
+            );
+        }
+    });
 
-    let input_ext = Path::new(&input_filename)
-        .extension()
-        .and_then(|s| s.to_str())
-        .unwrap_or("unknown");
-
-    state
-        .db
-        .log_job(
-            &user_identifier,
-            &input_filename,
-            input_size,
-            input_ext,
-            &format,
-            output_size,
-            processing_time,
-            ratio,
-            "success",
-        )
-        .await;
-
-    // Response
-    let dl_base = format!("/download/{}", batch_id);
-
-    let mut response = if format == "json" {
-        Json(json!({
-            "glb": format!("{}/{}", dl_base, output_filename),
-            "usdz": format!("{}/{}", dl_base, usdz_filename)
-        }))
-        .into_response()
-    } else if format == "usdz" {
-        // Redirect to download
-        axum::response::Redirect::temporary(&format!("{}/{}", dl_base, usdz_filename))
-            .into_response()
-    } else {
-        // Redirect to download GLB
-        axum::response::Redirect::temporary(&format!("{}/{}", dl_base, output_filename))
-            .into_response()
-    };
+    let mut response = Json(json!({
+        "jobId": batch_id,
+        "status": "processing"
+    }))
+    .into_response();
 
     response.headers_mut().insert(
         "X-Credits-Remaining",

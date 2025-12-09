@@ -892,7 +892,32 @@
                     }
 
                     // Handle JSON response
-                    const data = await res.json();
+                    const initData = await res.json();
+                    const jobId = initData.jobId;
+
+                    let data = {};
+
+                    // Poll for completion
+                    while (true) {
+                        await new Promise((r) => setTimeout(r, 1000));
+                        const pollRes = await fetch(`/job/${jobId}`);
+                        const pollData = await pollRes.json();
+                        const status = pollData.status;
+
+                        if (status === "Processing" || status === "Queued") {
+                            continue;
+                        } else if (status && status.Completed) {
+                            data = {
+                                glb: status.Completed.glb_url,
+                                usdz: status.Completed.usdz_url,
+                            };
+                            break;
+                        } else if (status && status.Failed) {
+                            throw new Error(
+                                status.Failed.error || "Optimization Failed",
+                            );
+                        }
+                    }
 
                     mv.src = data.glb; // Load into 3D viewer
 
