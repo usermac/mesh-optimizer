@@ -545,24 +545,55 @@
                         >
                     </div>
                 </div>
-                <button
-                    id="downloadHistoryBtn"
+                <div
                     style="
-                        padding: 8px 16px;
-                        background-color: #3b82f6;
-                        color: white;
-                        border: none;
-                        border-radius: 4px;
-                        cursor: pointer;
-                        font-size: 0.9em;
-                        font-weight: 500;
+                        display: flex;
+                        gap: 10px;
                         margin-bottom: 15px;
-                        width: auto;
-                        align-self: flex-start;
+                        align-items: center;
                     "
                 >
-                    Download CSV
-                </button>
+                    <button
+                        id="downloadHistoryBtn"
+                        style="
+                            padding: 8px 16px;
+                            background-color: #3b82f6;
+                            color: white;
+                            border: none;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-size: 0.9em;
+                            font-weight: 500;
+                            width: auto;
+                        "
+                    >
+                        Download CSV
+                    </button>
+                    <input
+                        id="historySearchInput"
+                        type="text"
+                        placeholder="Search by activity, date..."
+                        style="
+                            padding: 8px 12px;
+                            background-color: #374151;
+                            color: white;
+                            border: 1px solid #4b5563;
+                            border-radius: 4px;
+                            font-size: 0.9em;
+                            flex: 1;
+                        "
+                    />
+                    <span
+                        id="historySearchCount"
+                        style="
+                            font-size: 0.85em;
+                            color: #aaa;
+                            white-space: nowrap;
+                            min-width: 60px;
+                            text-align: right;
+                        "
+                    ></span>
+                </div>
                 <div style="overflow-y: auto; flex: 1">
                     <table style="width: 100%; border-collapse: collapse">
                         <thead
@@ -610,6 +641,64 @@
         <script>
             // Global variable to store current history data
             let currentHistoryData = [];
+            let filteredHistoryData = [];
+
+            function renderHistoryTable(dataToRender) {
+                const tbody = document.getElementById("historyTableBody");
+                const searchCount =
+                    document.getElementById("historySearchCount");
+
+                if (dataToRender.length === 0) {
+                    tbody.innerHTML =
+                        '<tr><td colspan="3">No transactions found</td></tr>';
+                    searchCount.textContent = "";
+                    return;
+                }
+
+                tbody.innerHTML = "";
+                dataToRender.forEach((tx) => {
+                    const date = new Date(tx.created_at).toLocaleString();
+                    const color = tx.amount > 0 ? "#10b981" : "#ef4444";
+                    const row = `
+                    <tr style="border-bottom: 1px solid #333;">
+                        <td style="padding: 10px; color: #888; font-size: 0.9em;">${date}</td>
+                        <td style="padding: 10px;">${tx.description}</td>
+                        <td style="padding: 10px; color: ${color}; font-weight: bold;">
+                            ${tx.amount > 0 ? "+" : ""}${tx.amount}
+                        </td>
+                    </tr>
+                `;
+                    tbody.innerHTML += row;
+                });
+
+                if (dataToRender.length < currentHistoryData.length) {
+                    searchCount.textContent = `${dataToRender.length} of ${currentHistoryData.length}`;
+                } else {
+                    searchCount.textContent = `${dataToRender.length} total`;
+                }
+            }
+
+            function filterHistory(searchTerm) {
+                if (!searchTerm.trim()) {
+                    filteredHistoryData = currentHistoryData;
+                } else {
+                    const term = searchTerm.toLowerCase();
+                    filteredHistoryData = currentHistoryData.filter((tx) => {
+                        const date = new Date(tx.created_at)
+                            .toLocaleString()
+                            .toLowerCase();
+                        const description = tx.description.toLowerCase();
+                        const amount = tx.amount.toString();
+
+                        return (
+                            description.includes(term) ||
+                            date.includes(term) ||
+                            amount.includes(term)
+                        );
+                    });
+                }
+                renderHistoryTable(filteredHistoryData);
+            }
 
             function downloadHistoryAsCSV() {
                 if (currentHistoryData.length === 0) {
@@ -922,29 +1011,12 @@
                         const creditsData = await creditsRes.json();
                         remainingCreditsSpan.textContent = creditsData.credits;
 
-                        tbody.innerHTML = "";
-                        if (data.length === 0) {
-                            tbody.innerHTML =
-                                '<tr><td colspan="3">No transactions found</td></tr>';
-                            return;
-                        }
+                        // Clear search input
+                        document.getElementById("historySearchInput").value =
+                            "";
 
-                        data.forEach((tx) => {
-                            const date = new Date(
-                                tx.created_at,
-                            ).toLocaleString();
-                            const color = tx.amount > 0 ? "#10b981" : "#ef4444";
-                            const row = `
-                            <tr style="border-bottom: 1px solid #333;">
-                                <td style="padding: 10px; color: #888; font-size: 0.9em;">${date}</td>
-                                <td style="padding: 10px;">${tx.description}</td>
-                                <td style="padding: 10px; color: ${color}; font-weight: bold;">
-                                    ${tx.amount > 0 ? "+" : ""}${tx.amount}
-                                </td>
-                            </tr>
-                        `;
-                            tbody.innerHTML += row;
-                        });
+                        // Render all data
+                        renderHistoryTable(data);
                     } catch (err) {
                         tbody.innerHTML =
                             '<tr><td colspan="3">Failed to load history</td></tr>';
@@ -970,6 +1042,13 @@
                     }
                 }
             });
+
+            // Add event listener for search input
+            document
+                .getElementById("historySearchInput")
+                .addEventListener("input", (e) => {
+                    filterHistory(e.target.value);
+                });
 
             // Add event listener for download button
             document

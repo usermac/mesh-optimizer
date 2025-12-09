@@ -545,7 +545,12 @@ async fn optimize_handler(
         if deducted {
             let _ = state
                 .db
-                .record_transaction(&auth_key.0, 1, "process_failure_refund", Some(file_hash))
+                .record_transaction(
+                    &auth_key.0,
+                    1,
+                    &format!("process_failure_refund: {}", input_filename),
+                    Some(file_hash),
+                )
                 .await;
         }
 
