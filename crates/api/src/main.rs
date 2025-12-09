@@ -45,7 +45,10 @@ struct AuthKey(String);
 #[tokio::main]
 async fn main() -> Result<()> {
     // 1. Initialize Logging
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt()
+        .with_writer(std::io::stdout)
+        .with_max_level(tracing::Level::INFO)
+        .init();
     dotenvy::dotenv().ok();
 
     let stripe_secret_key =
@@ -83,10 +86,18 @@ async fn main() -> Result<()> {
                 auth_middleware,
             )),
         )
+        .route(
+            "/credits",
+            get(credits_handler).layer(middleware::from_fn_with_state(
+                state.clone(),
+                auth_middleware,
+            )),
+        )
         .route("/create-checkout-session", post(create_checkout_session))
         .route("/webhook", post(stripe_webhook))
         .route("/success", get(success_page))
         .route("/admin/add-credits", post(admin_add_credits))
+        .route("/admin/create-key", post(admin_create_key))
         // Static Files
         .nest_service("/", ServeDir::new("server/public")) // Assuming public dir is here
         .nest_service("/download", ServeDir::new(UPLOAD_DIR))
@@ -434,6 +445,10 @@ async fn optimize_handler(
     let mut deducted = false;
 
     if should_charge {
+        info!(
+            "Attempting to charge key={} for file={}",
+            &auth_key.0, input_filename
+        );
         match state
             .db
             .record_transaction(
@@ -444,8 +459,15 @@ async fn optimize_handler(
             )
             .await
         {
-            Ok(_) => deducted = true,
-            Err(_) => {
+            Ok(new_balance) => {
+                info!(
+                    "Credit deducted successfully for key={}. New balance={}",
+                    &auth_key.0, new_balance
+                );
+                deducted = true;
+            }
+            Err(e) => {
+                error!("Failed to deduct credit for key={}: {:?}", &auth_key.0, e);
                 let _ = fs::remove_dir_all(&batch_dir);
                 return (
                     StatusCode::PAYMENT_REQUIRED,
@@ -615,6 +637,13 @@ struct AdminAddCredits {
     secret: String,
 }
 
+#[derive(Deserialize)]
+struct AdminCreateKey {
+    email: String,
+    initial_credits: i32,
+    secret: String,
+}
+
 async fn admin_add_credits(
     State(state): State<AppState>,
     Json(payload): Json<AdminAddCredits>,
@@ -633,13 +662,75 @@ async fn admin_add_credits(
     }
 }
 
+async fn admin_create_key(
+    State(state): State<AppState>,
+    Json(payload): Json<AdminCreateKey>,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    // In production, set ADMIN_SECRET in env
+    let admin_secret =
+        std::env::var("ADMIN_SECRET").unwrap_or_else(|_| "supersecret123".to_string());
+
+    if payload.secret != admin_secret {
+        return Err(StatusCode::UNAUTHORIZED);
+    }
+
+    match state
+        .db
+        .create_key(
+            payload.email.clone(),
+            format!("admin_created_{}", uuid::Uuid::new_v4().simple()),
+            payload.initial_credits,
+        )
+        .await
+    {
+        Ok(new_key) => Ok(Json(json!({
+            "success": true,
+            "key": new_key,
+            "email": payload.email,
+            "initial_credits": payload.initial_credits
+        }))),
+        Err(e) => {
+            error!("Failed to create key: {:?}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+async fn credits_handler(
+    State(state): State<AppState>,
+    Extension(auth_key): Extension<AuthKey>,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    info!("Credits request for key={}", &auth_key.0);
+    match state.db.get_credits(&auth_key.0).await {
+        Some(credits) => {
+            info!("Retrieved credits for key={}: {}", &auth_key.0, credits);
+            Ok(Json(json!({ "credits": credits })))
+        }
+        None => {
+            error!("Key not found: {}", &auth_key.0);
+            Err(StatusCode::NOT_FOUND)
+        }
+    }
+}
+
 async fn history_handler(
     State(state): State<AppState>,
     Extension(auth_key): Extension<AuthKey>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
+    info!("History request for key={}", &auth_key.0);
     match state.db.get_history(&auth_key.0, 50).await {
-        Ok(transactions) => Ok(Json(serde_json::to_value(transactions).unwrap())),
-        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+        Ok(transactions) => {
+            info!(
+                "Successfully retrieved {} transactions for key={}",
+                transactions.len(),
+                &auth_key.0
+            );
+            Ok(Json(serde_json::to_value(transactions).unwrap()))
+        }
+        Err(e) => {
+            error!("Failed to get history for key={}: {:?}", &auth_key.0, e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
     }
 }
 

@@ -255,14 +255,25 @@ impl Database {
             VALUES (?, ?, ?, ?, ?)
             "#;
 
-            let _ = sqlx::query(query)
+            match sqlx::query(query)
                 .bind(key)
                 .bind(amount)
                 .bind(description)
                 .bind(job_hash)
                 .bind(now)
                 .execute(pool)
-                .await;
+                .await
+            {
+                Ok(_) => {
+                    info!(
+                        "Transaction recorded: key={}, amount={}, description={}",
+                        key, amount, description
+                    );
+                }
+                Err(e) => {
+                    error!("Failed to record transaction to SQLite: {:?}. key={}, amount={}, description={}", e, key, amount, description);
+                }
+            }
         }
 
         Ok(new_balance)
@@ -316,14 +327,26 @@ impl Database {
             LIMIT ?
             "#;
 
-            let history: Vec<Transaction> = sqlx::query_as(query)
+            match sqlx::query_as(query)
                 .bind(key)
                 .bind(limit)
                 .fetch_all(pool)
-                .await?;
-
-            Ok(history)
+                .await
+            {
+                Ok(history) => {
+                    info!("Retrieved {} transactions for key={}", history.len(), key);
+                    Ok(history)
+                }
+                Err(e) => {
+                    error!("Failed to fetch history from SQLite: {:?}. key={}", e, key);
+                    Err(anyhow::anyhow!("SQLite query failed: {}", e))
+                }
+            }
         } else {
+            error!(
+                "SQLite pool is None when trying to get history for key={}",
+                key
+            );
             Ok(vec![])
         }
     }

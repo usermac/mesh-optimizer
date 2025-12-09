@@ -32,7 +32,6 @@
 
         <!-- 3. Open Graph / Social (Slack, Discord, LinkedIn Previews) -->
         <!-- CRITICAL: This determines how your link looks when shared in a dev Slack channel -->
-        <!--
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://webdeliveryengine.com/" />
         <meta
@@ -48,10 +47,8 @@
             content="https://webdeliveryengine.com/social-preview-v1.jpg"
         />
         <meta property="og:site_name" content="MeshOpt API" />
-        -->
 
         <!-- 4. Twitter Card (Large Image for maximum visibility) -->
-        <!--
         <meta name="twitter:card" content="summary_large_image" />
         <meta
             name="twitter:title"
@@ -65,7 +62,6 @@
             name="twitter:image"
             content="https://webdeliveryengine.com/social-preview-v1.jpg"
         />
-        -->
 
         <!-- 5. Favicons & UI -->
         <meta name="theme-color" content="#000000" />
@@ -323,12 +319,27 @@
                     <label style="font-size: 0.8rem; color: #aaa"
                         >API KEY</label
                     >
-                    <input
-                        type="text"
-                        id="apiKey"
-                        value="sk_test_123"
-                        placeholder="sk_..."
-                    />
+                    <div style="display: flex; gap: 10px; align-items: center">
+                        <input
+                            type="password"
+                            id="apiKey"
+                            value="sk_test_123"
+                            placeholder="sk_..."
+                            style="flex: 1"
+                        />
+                        <span
+                            id="apiKeyPreview"
+                            style="
+                                color: #888;
+                                font-size: 0.85rem;
+                                font-family: monospace;
+                                white-space: nowrap;
+                                min-width: 60px;
+                            "
+                        >
+                            sk...123
+                        </span>
+                    </div>
                 </div>
 
                 <!-- Upload -->
@@ -487,6 +498,9 @@
                     border: 1px solid #374151;
                     width: 80%;
                     max-width: 600px;
+                    max-height: 80vh;
+                    display: flex;
+                    flex-direction: column;
                     border-radius: 8px;
                     color: #fff;
                 "
@@ -499,7 +513,19 @@
                         margin-bottom: 20px;
                     "
                 >
-                    <h2 style="margin: 0">Transaction History</h2>
+                    <div>
+                        <h2 style="margin: 0; margin-bottom: 5px">
+                            Transaction History
+                        </h2>
+                        <p style="margin: 0; color: #aaa; font-size: 0.9em">
+                            Remaining Credits:
+                            <span
+                                id="remainingCredits"
+                                style="color: #3b82f6; font-weight: bold"
+                                >--</span
+                            >
+                        </p>
+                    </div>
                     <span
                         onclick="document.getElementById('historyModal').style.display='none'"
                         style="
@@ -510,23 +536,47 @@
                         >&times;</span
                     >
                 </div>
-                <table style="width: 100%; border-collapse: collapse">
-                    <thead>
-                        <tr
+                <div style="overflow-y: auto; flex: 1; min-height: 200px">
+                    <table style="width: 100%; border-collapse: collapse">
+                        <thead
                             style="
-                                text-align: left;
-                                border-bottom: 2px solid #444;
+                                position: sticky;
+                                top: 0;
+                                background-color: #1f2937;
+                                z-index: 10;
                             "
                         >
-                            <th style="padding: 10px">Date</th>
-                            <th style="padding: 10px">Activity</th>
-                            <th style="padding: 10px">Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody id="historyTableBody">
-                        <!-- Rows injected here -->
-                    </tbody>
-                </table>
+                            <tr
+                                style="
+                                    text-align: left;
+                                    border-bottom: 2px solid #444;
+                                "
+                            >
+                                <th style="padding: 10px">Date</th>
+                                <th style="padding: 10px">Activity</th>
+                                <th style="padding: 10px">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody">
+                            <!-- Rows injected here -->
+                        </tbody>
+                    </table>
+                </div>
+                <div
+                    style="
+                        border-top: 1px solid #444;
+                        margin-top: 15px;
+                        padding-top: 12px;
+                        font-size: 0.8rem;
+                        color: #888;
+                        line-height: 1.5;
+                    "
+                >
+                    <strong style="color: #aaa">Fair Use Policy:</strong>
+                    Unlimited re-optimizations of the same file within 24 hours
+                    cost only 1 credit total. Each unique file costs 1 credit
+                    per 24-hour period.
+                </div>
             </div>
         </div>
 
@@ -561,6 +611,19 @@
             document
                 .getElementById("texInput")
                 .addEventListener("change", resetToOptimize);
+
+            // API Key Preview
+            document.getElementById("apiKey").addEventListener("input", (e) => {
+                const key = e.target.value;
+                const preview = document.getElementById("apiKeyPreview");
+                if (key.length <= 4) {
+                    preview.textContent = key || "--";
+                } else {
+                    const first2 = key.substring(0, 2);
+                    const last2 = key.substring(key.length - 2);
+                    preview.textContent = first2 + "..." + last2;
+                }
+            });
 
             // Drag & Drop
             dropzone.addEventListener("click", () => fileInput.click());
@@ -760,15 +823,27 @@
 
                     const modal = document.getElementById("historyModal");
                     const tbody = document.getElementById("historyTableBody");
+                    const remainingCreditsSpan =
+                        document.getElementById("remainingCredits");
                     tbody.innerHTML =
                         '<tr><td colspan="3">Loading...</td></tr>';
+                    remainingCreditsSpan.textContent = "--";
                     modal.style.display = "block";
 
                     try {
+                        // Fetch history
                         const res = await fetch("/history", {
                             headers: { Authorization: "Bearer " + apiKey },
                         });
                         const data = await res.json();
+
+                        // Fetch current credit balance for this key
+                        const creditsRes = await fetch("/credits", {
+                            headers: { Authorization: "Bearer " + apiKey },
+                        });
+                        const creditsData = await creditsRes.json();
+                        remainingCreditsSpan.textContent = creditsData.credits;
+
                         tbody.innerHTML = "";
                         if (data.length === 0) {
                             tbody.innerHTML =
@@ -795,6 +870,7 @@
                     } catch (err) {
                         tbody.innerHTML =
                             '<tr><td colspan="3">Failed to load history</td></tr>';
+                        remainingCreditsSpan.textContent = "Error";
                     }
                 });
 

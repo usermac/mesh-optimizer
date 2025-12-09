@@ -58,4 +58,5 @@ RUN echo "{" > /etc/caddy/Caddyfile && \
 EXPOSE 80 443
 
 # Start Caddy in background, then run API
-CMD caddy start --config /etc/caddy/Caddyfile && mesh-api
+# Use exec to ensure mesh-api receives signals and logs go to stdout
+CMD caddy start --config /etc/caddy/Caddyfile && exec mesh-api
