@@ -486,19 +486,20 @@
                 top: 0;
                 width: 100%;
                 height: 100%;
-                overflow: auto;
+                overflow: hidden;
                 background-color: rgba(0, 0, 0, 0.8);
+                justify-content: center;
+                align-items: center;
             "
         >
             <div
                 style="
                     background-color: #1f2937;
-                    margin: 10% auto;
                     padding: 20px;
                     border: 1px solid #374151;
                     width: 80%;
                     max-width: 600px;
-                    max-height: 80vh;
+                    height: 80vh;
                     display: flex;
                     flex-direction: column;
                     border-radius: 8px;
@@ -509,7 +510,7 @@
                     style="
                         display: flex;
                         justify-content: space-between;
-                        align-items: center;
+                        align-items: flex-start;
                         margin-bottom: 20px;
                     "
                 >
@@ -526,17 +527,43 @@
                             >
                         </p>
                     </div>
-                    <span
-                        onclick="document.getElementById('historyModal').style.display='none'"
+                    <div
                         style="
-                            cursor: pointer;
-                            font-size: 28px;
-                            font-weight: bold;
+                            display: flex;
+                            gap: 10px;
+                            align-items: flex-start;
                         "
-                        >&times;</span
                     >
+                        <span
+                            onclick="document.getElementById('historyModal').style.display='none'"
+                            style="
+                                cursor: pointer;
+                                font-size: 28px;
+                                font-weight: bold;
+                            "
+                            >&times;</span
+                        >
+                    </div>
                 </div>
-                <div style="overflow-y: auto; flex: 1; min-height: 200px">
+                <button
+                    id="downloadHistoryBtn"
+                    style="
+                        padding: 8px 16px;
+                        background-color: #3b82f6;
+                        color: white;
+                        border: none;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        font-size: 0.9em;
+                        font-weight: 500;
+                        margin-bottom: 15px;
+                        width: auto;
+                        align-self: flex-start;
+                    "
+                >
+                    Download CSV
+                </button>
+                <div style="overflow-y: auto; flex: 1">
                     <table style="width: 100%; border-collapse: collapse">
                         <thead
                             style="
@@ -581,6 +608,53 @@
         </div>
 
         <script>
+            // Global variable to store current history data
+            let currentHistoryData = [];
+
+            function downloadHistoryAsCSV() {
+                if (currentHistoryData.length === 0) {
+                    alert("No history data to download");
+                    return;
+                }
+
+                // Create CSV header
+                const headers = ["Date", "Activity", "Amount"];
+                const csvRows = [headers.join(",")];
+
+                // Add data rows
+                currentHistoryData.forEach((tx) => {
+                    const date = new Date(tx.created_at).toLocaleString();
+                    // Escape quotes in description and wrap in quotes if contains comma
+                    const description = tx.description.includes(",")
+                        ? `"${tx.description.replace(/"/g, '""')}"`
+                        : tx.description;
+                    const amount = tx.amount;
+                    csvRows.push([date, description, amount].join(","));
+                });
+
+                // Create blob and download
+                const csv = csvRows.join("\n");
+                const blob = new Blob([csv], {
+                    type: "text/csv;charset=utf-8;",
+                });
+                const link = document.createElement("a");
+                const url = URL.createObjectURL(blob);
+
+                const now = new Date();
+                const filename = `transaction-history-${now.getFullYear()}-${String(
+                    now.getMonth() + 1,
+                ).padStart(
+                    2,
+                    "0",
+                )}-${String(now.getDate()).padStart(2, "0")}.csv`;
+
+                link.setAttribute("href", url);
+                link.setAttribute("download", filename);
+                link.style.visibility = "hidden";
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
             const dropzone = document.getElementById("dropzone");
             const fileInput = document.getElementById("fileInput");
             const ratioSlider = document.getElementById("ratio");
@@ -828,7 +902,8 @@
                     tbody.innerHTML =
                         '<tr><td colspan="3">Loading...</td></tr>';
                     remainingCreditsSpan.textContent = "--";
-                    modal.style.display = "block";
+                    modal.style.display = "flex";
+                    document.body.style.overflow = "hidden";
 
                     try {
                         // Fetch history
@@ -836,6 +911,9 @@
                             headers: { Authorization: "Bearer " + apiKey },
                         });
                         const data = await res.json();
+
+                        // Store data globally for CSV download
+                        currentHistoryData = data;
 
                         // Fetch current credit balance for this key
                         const creditsRes = await fetch("/credits", {
@@ -873,6 +951,30 @@
                         remainingCreditsSpan.textContent = "Error";
                     }
                 });
+
+            // Prevent body scroll when modal is open
+            const modalCloseSpan = document.querySelector(
+                '#historyModal span[onclick*="historyModal"]',
+            );
+            modalCloseSpan.addEventListener("click", function () {
+                document.body.style.overflow = "auto";
+            });
+
+            // Close modal on ESC key
+            document.addEventListener("keydown", function (e) {
+                if (e.key === "Escape") {
+                    const modal = document.getElementById("historyModal");
+                    if (modal.style.display === "flex") {
+                        modal.style.display = "none";
+                        document.body.style.overflow = "auto";
+                    }
+                }
+            });
+
+            // Add event listener for download button
+            document
+                .getElementById("downloadHistoryBtn")
+                .addEventListener("click", downloadHistoryAsCSV);
 
             // Add event listener for buy button
             document

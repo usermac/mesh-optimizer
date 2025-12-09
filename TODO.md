@@ -6,6 +6,18 @@
 - [x] **Admin Tools**: "God Mode" API endpoint created to manually add/refund credits.
 - [x] **Configurable Pricing**: `CREDIT_COST` and `CREDIT_INCREMENT` are now loaded from `.env`.
 
+## Security (Critical for Production)
+- [ ] **Remove Hardcoded Admin Secret**: `ADMIN_SECRET` must not default to `"supersecret123"`. Make it required and fail loudly if not set.
+- [ ] **Remove Hardcoded Metrics Salt**: `METRICS_SALT` must not default to `"default-insecure-salt"`. Make it required in production.
+- [ ] **Remove Email from Dockerfile**: Replace hardcoded `Brian@BrianGinn.com` in Caddyfile with an environment variable.
+- [ ] **Encrypt JSON Key Store**: The `server/db.json` contains unencrypted API keys. Either encrypt at rest or migrate entirely to SQLite.
+- [ ] **Fix CORS Configuration**: Replace `.permissive()` with specific domain whitelist to prevent CSRF attacks.
+- [ ] **Reduce Upload Limit**: Lower from 5GB to a reasonable limit (e.g., 500MB-1GB) to prevent DoS attacks.
+- [ ] **Add Rate Limiting**: Implement rate limiting on all endpoints (especially `/optimize`, `/admin/*`) to prevent abuse.
+- [ ] **Secure File Downloads**: Add authentication checks to `/download/{batch_id}/{filename}` to prevent unauthorized access.
+- [ ] **Rotate TEST_KEY Regularly**: Ensure `TEST_KEY` is not exposed and rotated periodically.
+- [ ] **Add Request Validation**: Validate all user inputs before processing (file types, sizes, query parameters).
+
 ## Post-Launch / DevOps
 - [ ] **Create Quick-Update Script**: Write a lightweight shell script (e.g., `update_config.sh`) that:
     1. Rsyncs *only* the `.env` file to the server.
