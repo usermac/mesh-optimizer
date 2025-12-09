@@ -151,8 +151,7 @@ impl Database {
     async fn persist(&self) -> Result<()> {
         let data = self.data.read().await;
         let json = serde_json::to_string_pretty(&*data)?;
-        // Use blocking IO for safety with critical JSON data or just std::fs since it's rarely written
-        fs::write(&self.file_path, json)?;
+        tokio::fs::write(&self.file_path, json).await?;
         Ok(())
     }
 

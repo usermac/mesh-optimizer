@@ -36,6 +36,27 @@ struct Vertex {
 unsafe impl bytemuck::Pod for Vertex {}
 unsafe impl bytemuck::Zeroable for Vertex {}
 
+fn compact_vertices(vertices: &[Vertex], indices: &[u32]) -> (Vec<Vertex>, Vec<u32>) {
+    let mut use_map = vec![None; vertices.len()];
+    let mut new_vertices = Vec::new();
+    let mut new_indices = Vec::with_capacity(indices.len());
+
+    for &idx in indices {
+        let i = idx as usize;
+        let new_idx = if let Some(mapped) = use_map[i] {
+            mapped
+        } else {
+            let mapped = new_vertices.len() as u32;
+            use_map[i] = Some(mapped);
+            new_vertices.push(vertices[i]);
+            mapped
+        };
+        new_indices.push(new_idx);
+    }
+
+    (new_vertices, new_indices)
+}
+
 fn main() -> Result<()> {
     let args = Args::parse();
     println!("RUST_START: Processing {:?}", args.input);
@@ -49,12 +70,14 @@ fn main() -> Result<()> {
         .ok_or(anyhow!("Unknown file extension"))?;
 
     // 2. Load Geometry based on format
+    println!("LOADING_GEOMETRY_START");
     let (vertices, indices, texture_data, base_color) = match extension.as_str() {
         "obj" => load_obj(&args.input)?,
         "glb" | "gltf" => load_gltf(&args.input)?,
         "fbx" => load_fbx(&args.input)?,
         _ => return Err(anyhow!("Unsupported format: .{}", extension)),
     };
+    println!("LOADING_GEOMETRY_END");
 
     println!("STATS: {} verts, {} indices", vertices.len(), indices.len());
     if let Some(ref tex) = texture_data {
@@ -68,6 +91,7 @@ fn main() -> Result<()> {
     }
 
     // 3. Optimize (Decimate)
+    println!("SIMPLIFICATION_START");
     let target_count = (indices.len() as f32 * args.ratio) as usize;
 
     let vertex_data_u8 = bytemuck::cast_slice(&vertices);
@@ -76,6 +100,7 @@ fn main() -> Result<()> {
         .map_err(|e| anyhow!("Adapter error: {:?}", e))?;
 
     let simplified_indices = meshopt::simplify(&indices, &adapter, target_count, 0.01);
+    println!("SIMPLIFICATION_END");
 
     println!(
         "OPTIMIZED: {} -> {} indices",
@@ -83,7 +108,14 @@ fn main() -> Result<()> {
         simplified_indices.len()
     );
 
+    // Compact vertices (remove unused)
+    println!("COMPACTING_START");
+    let (vertices, simplified_indices) = compact_vertices(&vertices, &simplified_indices);
+    println!("COMPACTING_END");
+    println!("COMPACTED: {} verts", vertices.len());
+
     // 4. Export to GLB
+    println!("EXPORT_GLB_START");
     save_glb(
         &args.output,
         &vertices,
@@ -91,12 +123,15 @@ fn main() -> Result<()> {
         texture_data.as_deref(),
         base_color,
     )?;
+    println!("EXPORT_GLB_END");
 
     // 5. Export to USDZ (Optional)
     if args.usdz {
+        println!("EXPORT_USDZ_START");
         let usdz_path = args.output.with_extension("usdz");
         save_usdz(&usdz_path, &vertices, &simplified_indices)?;
         println!("EXPORTED: {:?}", usdz_path);
+        println!("EXPORT_USDZ_END");
     }
 
     println!("RUST_DONE");
@@ -132,20 +167,27 @@ fn load_obj(path: &PathBuf) -> Result<(Vec<Vertex>, Vec<u32>, Option<Vec<u8>>, O
 
                     match image::open(&tex_path) {
                         Ok(img) => {
+                            println!("TEXTURE_OPENED: {}x{}", img.width(), img.height());
                             let (w, h) = img.dimensions();
                             let img = if w > 2048 || h > 2048 {
                                 println!("RESIZING: {}x{} -> 2048x2048", w, h);
-                                img.resize(2048, 2048, image::imageops::FilterType::Lanczos3)
+                                let start = std::time::Instant::now();
+                                let res =
+                                    img.resize(2048, 2048, image::imageops::FilterType::Triangle);
+                                println!("RESIZING_DONE: took {:?}", start.elapsed());
+                                res
                             } else {
                                 img
                             };
                             let mut bytes: Vec<u8> = Vec::new();
+                            println!("ENCODING_TEXTURE_START");
                             if let Err(e) =
                                 img.write_to(&mut Cursor::new(&mut bytes), image::ImageFormat::Png)
                             {
                                 println!("Warning: Failed to encode texture: {:?}", e);
                             } else {
                                 texture_data = Some(bytes);
+                                println!("ENCODING_TEXTURE_DONE");
                             }
                         }
                         Err(e) => {

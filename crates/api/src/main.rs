@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sha2::Digest;
 use std::collections::HashMap;
+use std::process::Stdio;
 use std::sync::Arc;
 use std::{
     fs,
@@ -25,7 +26,7 @@ use stripe::{
     CreateCheckoutSessionLineItemsPriceData, CreateCheckoutSessionLineItemsPriceDataProductData,
     CreateCheckoutSessionPaymentMethodTypes, Currency, EventObject, EventType, Expandable, Webhook,
 };
-use tokio::io::AsyncWriteExt;
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::sync::RwLock;
 use tower_http::{cors::CorsLayer, services::ServeDir};
 use tracing::{error, info};
@@ -49,6 +50,7 @@ pub enum JobStatus {
     },
 }
 
+#[derive(Clone)]
 struct AppState {
     db: db::Database,
     stripe_client: stripe::Client,
@@ -571,7 +573,9 @@ async fn optimize_handler(
             .arg(&output_filename_clone)
             .arg("--ratio")
             .arg(ratio.to_string())
-            .current_dir(&batch_dir_clone); // IMPORTANT: Run inside batch dir
+            .current_dir(&batch_dir_clone)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped()); // IMPORTANT: Run inside batch dir
 
         if format_clone == "json" || format_clone == "usdz" {
             cmd.arg("--usdz");
@@ -579,8 +583,45 @@ async fn optimize_handler(
 
         info!("Executing: {:?}", cmd);
 
-        let output = match tokio::time::timeout(Duration::from_secs(300), cmd.output()).await {
-            Ok(Ok(o)) => o,
+        let mut child = match cmd.spawn() {
+            Ok(c) => c,
+            Err(e) => {
+                error!("Failed to spawn worker: {:?}", e);
+                {
+                    let mut jobs = state_clone.jobs.write().await;
+                    jobs.insert(
+                        batch_id_clone,
+                        JobStatus::Failed {
+                            error: "Spawn Failed".to_string(),
+                        },
+                    );
+                }
+                return;
+            }
+        };
+
+        // Stream stdout
+        if let Some(stdout) = child.stdout.take() {
+            tokio::spawn(async move {
+                let mut reader = BufReader::new(stdout).lines();
+                while let Ok(Some(line)) = reader.next_line().await {
+                    info!("WORKER: {}", line);
+                }
+            });
+        }
+
+        // Stream stderr
+        if let Some(stderr) = child.stderr.take() {
+            tokio::spawn(async move {
+                let mut reader = BufReader::new(stderr).lines();
+                while let Ok(Some(line)) = reader.next_line().await {
+                    error!("WORKER_ERR: {}", line);
+                }
+            });
+        }
+
+        let status = match tokio::time::timeout(Duration::from_secs(600), child.wait()).await {
+            Ok(Ok(s)) => s,
             Ok(Err(e)) => {
                 {
                     let mut jobs = state_clone.jobs.write().await;
@@ -665,9 +706,8 @@ async fn optimize_handler(
 
         let processing_time = start_time.elapsed().as_millis() as u64;
 
-        if !output.status.success() {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            error!("Worker Error: {}", stderr);
+        if !status.success() {
+            error!("Worker exited with status: {}", status);
             // Refund Credit (Process Failure)
             if deducted {
                 let _ = state_clone

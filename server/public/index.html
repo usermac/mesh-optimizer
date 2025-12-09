@@ -900,8 +900,14 @@
                     // Poll for completion
                     while (true) {
                         await new Promise((r) => setTimeout(r, 1000));
-                        const pollRes = await fetch(`/job/${jobId}`);
+                        const pollRes = await fetch(
+                            `/job/${jobId}?t=${Date.now()}`,
+                        );
+                        if (!pollRes.ok)
+                            throw new Error("Failed to poll job status");
+
                         const pollData = await pollRes.json();
+                        if (pollData.error) throw new Error(pollData.error);
                         const status = pollData.status;
 
                         if (status === "Processing" || status === "Queued") {
@@ -915,6 +921,10 @@
                         } else if (status && status.Failed) {
                             throw new Error(
                                 status.Failed.error || "Optimization Failed",
+                            );
+                        } else {
+                            throw new Error(
+                                "Unknown job status: " + JSON.stringify(status),
                             );
                         }
                     }
