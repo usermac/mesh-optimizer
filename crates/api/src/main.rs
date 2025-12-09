@@ -484,7 +484,24 @@ async fn optimize_handler(
             }
         }
     } else {
-        info!("Free Re-roll for hash: {}", file_hash);
+        // Record free re-optimization for transparency in transaction history
+        if is_test_key {
+            info!("Test Key used. Skipping transaction record.");
+        } else {
+            info!(
+                "Free Re-roll for hash: {} (recording 0-credit transaction)",
+                file_hash
+            );
+            let _ = state
+                .db
+                .record_transaction(
+                    &auth_key.0,
+                    0,
+                    &format!("re-optimized: {} (free - within 24hr)", input_filename),
+                    Some(file_hash.clone()),
+                )
+                .await;
+        }
     }
 
     let credits_remaining = state.db.get_credits(&auth_key.0).await.unwrap_or(0);
