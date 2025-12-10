@@ -195,9 +195,20 @@ async fn get_config() -> Json<serde_json::Value> {
         .and_then(|v| v.parse::<i32>().ok())
         .unwrap_or(100);
 
+    let cost_decimate = std::env::var("COST_DECIMATE")
+        .ok()
+        .and_then(|v| v.parse::<i32>().ok())
+        .unwrap_or(1);
+    let cost_remesh = std::env::var("COST_REMESH")
+        .ok()
+        .and_then(|v| v.parse::<i32>().ok())
+        .unwrap_or(5);
+
     Json(json!({
         "cost": cost,
-        "credits": credits
+        "credits": credits,
+        "cost_decimate": cost_decimate,
+        "cost_remesh": cost_remesh
     }))
 }
 
@@ -607,17 +618,47 @@ async fn optimize_handler(
     };
     let mut deducted = false;
 
+    // Pricing Logic
+    let cost_decimate = std::env::var("COST_DECIMATE")
+        .ok()
+        .and_then(|v| v.parse::<i32>().ok())
+        .unwrap_or(1);
+    let cost_remesh = std::env::var("COST_REMESH")
+        .ok()
+        .and_then(|v| v.parse::<i32>().ok())
+        .unwrap_or(5);
+
+    let required_credits = if mode == "remesh" {
+        cost_remesh
+    } else {
+        cost_decimate
+    };
+
     if should_charge {
+        // Pre-flight check
+        let current_balance = state.db.get_credits(&auth_key.0).await.unwrap_or(0);
+        if current_balance < required_credits {
+            let _ = fs::remove_dir_all(&batch_dir);
+            return (
+                StatusCode::PAYMENT_REQUIRED,
+                format!(
+                    "Insufficient Credits. Need {}, Have {}",
+                    required_credits, current_balance
+                ),
+            )
+                .into_response();
+        }
+
         info!(
-            "Attempting to charge key={} for file={}",
-            &auth_key.0, input_filename
+            "Attempting to charge key={} for file={} (cost={})",
+            &auth_key.0, input_filename, required_credits
         );
         match state
             .db
             .record_transaction(
                 &auth_key.0,
-                -1,
-                &format!("optimized: {}", input_filename),
+                -required_credits,
+                &format!("optimized ({}): {}", mode, input_filename),
                 Some(file_hash.clone()),
             )
             .await
@@ -632,11 +673,7 @@ async fn optimize_handler(
             Err(e) => {
                 error!("Failed to deduct credit for key={}: {:?}", &auth_key.0, e);
                 let _ = fs::remove_dir_all(&batch_dir);
-                return (
-                    StatusCode::PAYMENT_REQUIRED,
-                    "Insufficient Credits. Please top up.",
-                )
-                    .into_response();
+                return (StatusCode::PAYMENT_REQUIRED, "Transaction Failed.").into_response();
             }
         }
     } else {
@@ -682,10 +719,24 @@ async fn optimize_handler(
     let format_clone = format.clone();
     let mode_clone = mode.clone();
 
+    // Slot Cost Logic
+    let slot_cost_decimate = std::env::var("SLOT_COST_DECIMATE")
+        .ok()
+        .and_then(|v| v.parse::<u32>().ok())
+        .unwrap_or(1);
+    let slot_cost_remesh = std::env::var("SLOT_COST_REMESH")
+        .ok()
+        .and_then(|v| v.parse::<u32>().ok())
+        .unwrap_or(5);
+
     tokio::spawn(async move {
         // Determine resource cost (Weighted Semaphore)
-        // Remesh is heavy (RAM/CPU), Decimate is light.
-        let required_permits: u32 = if mode_clone == "remesh" { 4 } else { 1 };
+        let required_permits: u32 = if mode_clone == "remesh" {
+            slot_cost_remesh
+        } else {
+            slot_cost_decimate
+        };
+
         let _permit = state_clone
             .worker_semaphore
             .acquire_many(required_permits)
@@ -791,7 +842,7 @@ async fn optimize_handler(
                         .db
                         .record_transaction(
                             &auth_key_str,
-                            1,
+                            required_credits,
                             "system_error_refund",
                             Some(file_hash_clone),
                         )
@@ -831,7 +882,7 @@ async fn optimize_handler(
                         .db
                         .record_transaction(
                             &auth_key_str,
-                            1,
+                            required_credits,
                             "timeout_refund",
                             Some(file_hash_clone),
                         )
@@ -866,7 +917,7 @@ async fn optimize_handler(
                     .db
                     .record_transaction(
                         &auth_key_str,
-                        1,
+                        required_credits,
                         &format!("process_failure_refund: {}", input_filename_clone),
                         Some(file_hash_clone),
                     )

@@ -847,12 +847,28 @@
 
             let selectedFile = null;
             let currentBlobUrl = null;
+            let pricingConfig = { cost_decimate: 1, cost_remesh: 5 };
+
+            function updateProcessButton() {
+                if (!selectedFile) {
+                    processBtn.textContent = "Select a file first";
+                    return;
+                }
+                const mode = modeSelect.value;
+                const cost =
+                    mode === "remesh"
+                        ? pricingConfig.cost_remesh
+                        : pricingConfig.cost_decimate;
+                const label = cost === 1 ? "Credit" : "Credits";
+                processBtn.textContent = `Start Optimization (${cost} ${label})`;
+            }
 
             function resetToOptimize() {
                 processBtn.style.display = "block";
                 const dlContainer = document.getElementById("dlContainer");
                 if (dlContainer) dlContainer.remove();
                 processBtn.disabled = false;
+                updateProcessButton();
             }
 
             ratioSlider.addEventListener("input", (e) => {
@@ -1120,6 +1136,8 @@
             fetch("/config")
                 .then((res) => res.json())
                 .then((data) => {
+                    pricingConfig = data;
+                    updateProcessButton();
                     document.getElementById("buyBtn").textContent =
                         "Buy License ($" +
                         data.cost +
