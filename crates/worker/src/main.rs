@@ -4,7 +4,7 @@ use fbxcel_dom::any::AnyDocument;
 
 use fbxcel_dom::v7400::object::model::TypedModelHandle;
 use fbxcel_dom::v7400::object::TypedObjectHandle;
-use image::GenericImageView;
+use image::{DynamicImage, GenericImageView, ImageBuffer};
 use meshopt::VertexDataAdapter;
 use serde::Serialize;
 use std::fs::File;
@@ -15,46 +15,70 @@ use std::path::PathBuf;
 struct Args {
     #[arg(short, long)]
     input: PathBuf,
+
     #[arg(short, long)]
     output: PathBuf,
-    #[arg(short, long, default_value_t = 0.5)]
+
+    #[arg(long, default_value_t = 0.5)]
     ratio: f32,
+
     #[arg(long, default_value_t = false)]
     usdz: bool,
 }
 
-// "Fat Vertex" holding Position, Normal, UV
 #[repr(C)]
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Copy, Clone, Debug, Default, Serialize)]
 struct Vertex {
     pos: [f32; 3],
     normal: [f32; 3],
     uv: [f32; 2],
 }
 
-// Safety check for casting
 unsafe impl bytemuck::Pod for Vertex {}
 unsafe impl bytemuck::Zeroable for Vertex {}
 
 fn compact_vertices(vertices: &[Vertex], indices: &[u32]) -> (Vec<Vertex>, Vec<u32>) {
-    let mut use_map = vec![None; vertices.len()];
-    let mut new_vertices = Vec::new();
-    let mut new_indices = Vec::with_capacity(indices.len());
-
-    for &idx in indices {
-        let i = idx as usize;
-        let new_idx = if let Some(mapped) = use_map[i] {
-            mapped
-        } else {
-            let mapped = new_vertices.len() as u32;
-            use_map[i] = Some(mapped);
-            new_vertices.push(vertices[i]);
-            mapped
-        };
-        new_indices.push(new_idx);
+    let mut used = vec![false; vertices.len()];
+    for &i in indices {
+        used[i as usize] = true;
     }
 
+    let mut new_vertices = Vec::new();
+    let mut old_to_new = vec![0; vertices.len()];
+
+    for (i, &u) in used.iter().enumerate() {
+        if u {
+            old_to_new[i] = new_vertices.len() as u32;
+            new_vertices.push(vertices[i]);
+        }
+    }
+
+    let new_indices = indices.iter().map(|&i| old_to_new[i as usize]).collect();
+
     (new_vertices, new_indices)
+}
+
+fn process_image(img: DynamicImage) -> Option<Vec<u8>> {
+    println!("TEXTURE_OPENED: {}x{}", img.width(), img.height());
+    let (w, h) = img.dimensions();
+    let img = if w > 2048 || h > 2048 {
+        println!("RESIZING: {}x{} -> 2048x2048", w, h);
+        let start = std::time::Instant::now();
+        let res = img.resize(2048, 2048, image::imageops::FilterType::Triangle);
+        println!("RESIZING_DONE: took {:?}", start.elapsed());
+        res
+    } else {
+        img
+    };
+    let mut bytes: Vec<u8> = Vec::new();
+    println!("ENCODING_TEXTURE_START");
+    if let Err(e) = img.write_to(&mut Cursor::new(&mut bytes), image::ImageFormat::Png) {
+        println!("Warning: Failed to encode texture: {:?}", e);
+        None
+    } else {
+        println!("ENCODING_TEXTURE_DONE");
+        Some(bytes)
+    }
 }
 
 fn main() -> Result<()> {
@@ -138,8 +162,6 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-// --- LOADERS ---
-
 fn load_obj(path: &PathBuf) -> Result<(Vec<Vertex>, Vec<u32>, Option<Vec<u8>>, Option<[f32; 3]>)> {
     let (models, materials) = tobj::load_obj(
         path,
@@ -167,28 +189,7 @@ fn load_obj(path: &PathBuf) -> Result<(Vec<Vertex>, Vec<u32>, Option<Vec<u8>>, O
 
                     match image::open(&tex_path) {
                         Ok(img) => {
-                            println!("TEXTURE_OPENED: {}x{}", img.width(), img.height());
-                            let (w, h) = img.dimensions();
-                            let img = if w > 2048 || h > 2048 {
-                                println!("RESIZING: {}x{} -> 2048x2048", w, h);
-                                let start = std::time::Instant::now();
-                                let res =
-                                    img.resize(2048, 2048, image::imageops::FilterType::Triangle);
-                                println!("RESIZING_DONE: took {:?}", start.elapsed());
-                                res
-                            } else {
-                                img
-                            };
-                            let mut bytes: Vec<u8> = Vec::new();
-                            println!("ENCODING_TEXTURE_START");
-                            if let Err(e) =
-                                img.write_to(&mut Cursor::new(&mut bytes), image::ImageFormat::Png)
-                            {
-                                println!("Warning: Failed to encode texture: {:?}", e);
-                            } else {
-                                texture_data = Some(bytes);
-                                println!("ENCODING_TEXTURE_DONE");
-                            }
+                            texture_data = process_image(img);
                         }
                         Err(e) => {
                             println!("Warning: Could not load texture {:?}: {:?}", tex_path, e)
@@ -250,10 +251,13 @@ fn load_obj(path: &PathBuf) -> Result<(Vec<Vertex>, Vec<u32>, Option<Vec<u8>>, O
 }
 
 fn load_gltf(path: &PathBuf) -> Result<(Vec<Vertex>, Vec<u32>, Option<Vec<u8>>, Option<[f32; 3]>)> {
-    let (document, buffers, _) = gltf::import(path).context("Failed to load GLTF/GLB")?;
+    let (document, buffers, images) = gltf::import(path).context("Failed to load GLTF/GLB")?;
     let mut vertices = Vec::new();
     let mut indices = Vec::new();
     let mut index_offset = 0;
+
+    let mut texture_data = None;
+    let mut base_color = None;
 
     for mesh in document.meshes() {
         for primitive in mesh.primitives() {
@@ -293,10 +297,62 @@ fn load_gltf(path: &PathBuf) -> Result<(Vec<Vertex>, Vec<u32>, Option<Vec<u8>>, 
             }
 
             index_offset += positions.len() as u32;
+
+            // Extract Texture/Color (First one found wins)
+            if texture_data.is_none() {
+                let material = primitive.material();
+                let pbr = material.pbr_metallic_roughness();
+
+                // 1. Base Color Factor
+                if base_color.is_none() {
+                    let c = pbr.base_color_factor();
+                    if c[0] < 0.99 || c[1] < 0.99 || c[2] < 0.99 {
+                        base_color = Some([c[0], c[1], c[2]]);
+                    }
+                }
+
+                // 2. Base Color Texture
+                if let Some(tex_info) = pbr.base_color_texture() {
+                    let texture = tex_info.texture();
+                    let source_idx = texture.source().index();
+
+                    if let Some(image_data) = images.get(source_idx) {
+                        let dyn_img = match image_data.format {
+                            gltf::image::Format::R8G8B8 => {
+                                ImageBuffer::<image::Rgb<u8>, Vec<u8>>::from_raw(
+                                    image_data.width,
+                                    image_data.height,
+                                    image_data.pixels.clone(),
+                                )
+                                .map(DynamicImage::ImageRgb8)
+                            }
+                            gltf::image::Format::R8G8B8A8 => {
+                                ImageBuffer::<image::Rgba<u8>, Vec<u8>>::from_raw(
+                                    image_data.width,
+                                    image_data.height,
+                                    image_data.pixels.clone(),
+                                )
+                                .map(DynamicImage::ImageRgba8)
+                            }
+                            _ => {
+                                println!(
+                                    "Warning: Unsupported GLTF image format: {:?}",
+                                    image_data.format
+                                );
+                                None
+                            }
+                        };
+
+                        if let Some(img) = dyn_img {
+                            texture_data = process_image(img);
+                        }
+                    }
+                }
+            }
         }
     }
 
-    Ok((vertices, indices, None, None))
+    Ok((vertices, indices, texture_data, base_color))
 }
 
 fn load_fbx(path: &PathBuf) -> Result<(Vec<Vertex>, Vec<u32>, Option<Vec<u8>>, Option<[f32; 3]>)> {
@@ -379,89 +435,51 @@ fn load_fbx(path: &PathBuf) -> Result<(Vec<Vertex>, Vec<u32>, Option<Vec<u8>>, O
     }
 }
 
-// --- USDZ WRITER ---
-
 fn save_usdz(path: &PathBuf, vertices: &[Vertex], indices: &[u32]) -> Result<()> {
+    // Basic USDA export (Text based USD) packed into ZIP (USDZ)
+    // This is a placeholder. For real USDZ, use a library like `usd-rs` or write valid USDA structure.
     let file = File::create(path)?;
     let mut zip = zip::ZipWriter::new(file);
 
-    // USDZ requires uncompressed (Stored)
     let options =
         zip::write::FileOptions::<()>::default().compression_method(zip::CompressionMethod::Stored);
 
     zip.start_file("model.usda", options)?;
+    let mut w = zip; // writes to zip entry
 
-    // Generate USDA content
-    // Note: For large meshes, writing directly to the stream would be faster,
-    // but building a string is simpler for this implementation.
-    let mut s = String::with_capacity(vertices.len() * 100);
+    writeln!(w, "#usda 1.0")?;
+    writeln!(w, "(    defaultPrim = \"Mesh\"")?;
+    writeln!(w, "    upAxis = \"Y\"")?;
+    writeln!(w, "    metersPerUnit = 1")?;
+    writeln!(w, ")")?;
 
-    s.push_str("#usda 1.0\n(\n    defaultPrim = \"Mesh\"\n    upAxis = \"Y\"\n)\n\n");
-    s.push_str("def Mesh \"Mesh\"\n{\n");
-
-    // 1. Face Vertex Counts (All triangles = 3)
-    let triangle_count = indices.len() / 3;
-    s.push_str("    int[] faceVertexCounts = [");
-    for i in 0..triangle_count {
-        if i > 0 {
-            s.push_str(", ");
-        }
-        s.push_str("3");
+    writeln!(w, "def Mesh \"Mesh\" {{")?;
+    writeln!(w, "    int[] faceVertexCounts = [")?;
+    for _ in 0..indices.len() / 3 {
+        write!(w, "3,")?;
     }
-    s.push_str("]\n");
+    writeln!(w, "]")?;
 
-    // 2. Indices
-    s.push_str("    int[] faceVertexIndices = [");
-    for (i, idx) in indices.iter().enumerate() {
-        if i > 0 {
-            s.push_str(", ");
-        }
-        s.push_str(&idx.to_string());
+    writeln!(w, "    int[] faceVertexIndices = [")?;
+    for i in indices {
+        write!(w, "{},", i)?;
     }
-    s.push_str("]\n");
+    writeln!(w, "]")?;
 
-    // 3. Points
-    s.push_str("    point3f[] points = [");
-    for (i, v) in vertices.iter().enumerate() {
-        if i > 0 {
-            s.push_str(", ");
-        }
-        s.push_str(&format!("({}, {}, {})", v.pos[0], v.pos[1], v.pos[2]));
+    writeln!(w, "    point3f[] points = [")?;
+    for v in vertices {
+        write!(w, "({},{},{}),", v.pos[0], v.pos[1], v.pos[2])?;
     }
-    s.push_str("]\n");
+    writeln!(w, "]")?;
 
-    // 4. Normals
-    s.push_str("    normal3f[] primvars:normals = [");
-    for (i, v) in vertices.iter().enumerate() {
-        if i > 0 {
-            s.push_str(", ");
-        }
-        s.push_str(&format!(
-            "({}, {}, {})",
-            v.normal[0], v.normal[1], v.normal[2]
-        ));
-    }
-    s.push_str("] (\n        interpolation = \"vertex\"\n    )\n");
+    // UVs would go here as primvars:st
 
-    // 5. UVs (Flip V for USD)
-    s.push_str("    texCoord2f[] primvars:st = [");
-    for (i, v) in vertices.iter().enumerate() {
-        if i > 0 {
-            s.push_str(", ");
-        }
-        s.push_str(&format!("({}, {})", v.uv[0], 1.0 - v.uv[1]));
-    }
-    s.push_str("] (\n        interpolation = \"vertex\"\n    )\n");
+    writeln!(w, "}}")?;
 
-    s.push_str("}\n");
-
-    zip.write_all(s.as_bytes())?;
+    zip = w;
     zip.finish()?;
-
     Ok(())
 }
-
-// --- GLB WRITER ---
 
 #[derive(Serialize)]
 struct GltfHeader {
@@ -481,22 +499,27 @@ struct GltfHeader {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     samplers: Vec<Sampler>,
 }
+
 #[derive(Serialize)]
 struct Asset {
     version: String,
 }
+
 #[derive(Serialize)]
 struct Scene {
     nodes: Vec<u32>,
 }
+
 #[derive(Serialize)]
 struct Node {
     mesh: u32,
 }
+
 #[derive(Serialize)]
 struct Mesh {
     primitives: Vec<Primitive>,
 }
+
 #[derive(Serialize)]
 struct Primitive {
     attributes: Attributes,
@@ -505,50 +528,60 @@ struct Primitive {
     #[serde(skip_serializing_if = "Option::is_none")]
     material: Option<u32>,
 }
+
 #[derive(Serialize)]
 struct Attributes {
     POSITION: u32,
     NORMAL: u32,
     TEXCOORD_0: u32,
 }
+
 #[derive(Serialize)]
 struct Buffer {
     byteLength: usize,
 }
+
 #[derive(Serialize)]
 struct BufferView {
     buffer: u32,
     byteOffset: usize,
     byteLength: usize,
+    #[serde(skip_serializing_if = "Option::is_none")]
     byteStride: Option<usize>,
     target: u32,
 }
+
 #[derive(Serialize)]
 struct Accessor {
     bufferView: u32,
     byteOffset: usize,
     componentType: u32,
     count: usize,
+    #[serde(rename = "type")]
     r#type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     min: Option<[f32; 3]>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     max: Option<[f32; 3]>,
 }
 
-// New structs for Textures
 #[derive(Serialize)]
 struct Image {
     bufferView: u32,
     mimeType: String,
 }
+
 #[derive(Serialize)]
 struct Texture {
     sampler: u32,
     source: u32,
 }
+
 #[derive(Serialize)]
 struct Material {
     pbrMetallicRoughness: PbrMetallicRoughness,
 }
+
 #[derive(Serialize)]
 struct PbrMetallicRoughness {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -558,10 +591,12 @@ struct PbrMetallicRoughness {
     metallicFactor: f32,
     roughnessFactor: f32,
 }
+
 #[derive(Serialize)]
 struct TextureInfo {
     index: u32,
 }
+
 #[derive(Serialize)]
 struct Sampler {
     magFilter: u32,

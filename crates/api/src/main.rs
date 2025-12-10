@@ -29,6 +29,7 @@ use stripe::{
 };
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::sync::RwLock;
+use tokio::sync::Semaphore;
 use tower_http::{cors::CorsLayer, services::ServeDir};
 use tracing::{error, info};
 
@@ -57,6 +58,7 @@ struct AppState {
     stripe_client: stripe::Client,
     stripe_webhook_secret: String,
     jobs: Arc<RwLock<HashMap<String, JobStatus>>>,
+    worker_semaphore: Arc<Semaphore>,
 }
 
 #[derive(Clone)]
@@ -86,12 +88,12 @@ async fn main() -> Result<()> {
     // 3. Initialize State
     let db = db::Database::new(PathBuf::from(DB_FILE), PathBuf::from(DB_SQLITE_FILE)).await;
     let stripe_client = stripe::Client::new(stripe_secret_key);
-    let jobs = Arc::new(RwLock::new(HashMap::new()));
     let state = AppState {
         db,
         stripe_client,
         stripe_webhook_secret,
-        jobs,
+        jobs: Arc::new(RwLock::new(HashMap::new())),
+        worker_semaphore: Arc::new(Semaphore::new(8)),
     };
 
     // 4. Start Cleanup Task
@@ -474,7 +476,63 @@ async fn optimize_handler(
                     .and_then(|e| e.to_str())
                     .unwrap_or("")
                     .to_lowercase();
-                if ["obj", "fbx", "glb", "gltf"].contains(&ext.as_str()) {
+
+                if ext == "zip" {
+                    let zip_path = filepath.clone();
+                    let target_dir = batch_dir.clone();
+
+                    let found_model = tokio::task::spawn_blocking(move || {
+                        let file = std::fs::File::open(&zip_path).ok()?;
+                        let mut archive = zip::ZipArchive::new(file).ok()?;
+                        let mut candidate = None;
+
+                        for i in 0..archive.len() {
+                            let mut file = archive.by_index(i).ok()?;
+                            let outpath = match file.enclosed_name() {
+                                Some(path) => target_dir.join(path),
+                                None => continue,
+                            };
+
+                            if file.name().ends_with('/') {
+                                std::fs::create_dir_all(&outpath).ok()?;
+                            } else {
+                                if let Some(p) = outpath.parent() {
+                                    if !p.exists() {
+                                        std::fs::create_dir_all(&p).ok()?;
+                                    }
+                                }
+                                let mut outfile = std::fs::File::create(&outpath).ok()?;
+                                std::io::copy(&mut file, &mut outfile).ok()?;
+
+                                if candidate.is_none() {
+                                    let fname = outpath.file_name()?.to_string_lossy().to_string();
+                                    let fext = Path::new(&fname)
+                                        .extension()
+                                        .and_then(|s| s.to_str())
+                                        .unwrap_or("")
+                                        .to_lowercase();
+                                    // Ignore hidden files/mac metadata
+                                    if !fname.starts_with('.')
+                                        && !outpath.to_string_lossy().contains("__MACOSX")
+                                    {
+                                        if ["obj", "fbx", "glb", "gltf"].contains(&fext.as_str()) {
+                                            candidate = file
+                                                .enclosed_name()
+                                                .map(|p| p.to_string_lossy().to_string());
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        candidate
+                    })
+                    .await
+                    .unwrap_or(None);
+
+                    if let Some(name) = found_model {
+                        input_filename = Some(name);
+                    }
+                } else if ["obj", "fbx", "glb", "gltf"].contains(&ext.as_str()) {
                     input_filename = Some(filename);
                 }
             }
@@ -601,6 +659,7 @@ async fn optimize_handler(
 
     tokio::spawn(async move {
         // Run Command
+        let _permit = state_clone.worker_semaphore.acquire().await.unwrap();
         let mut cmd = tokio::process::Command::new("mesh-optimizer");
         cmd.arg("--input")
             .arg(&input_filename_clone)
