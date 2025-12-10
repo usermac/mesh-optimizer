@@ -23,11 +23,28 @@ RUN apt-get update && apt-get install -y -q --no-install-recommends \
     debian-keyring \
     debian-archive-keyring \
     apt-transport-https \
+    wget \
+    xz-utils \
+    libxi6 \
+    libxrender1 \
+    libgl1 \
+    libxkbcommon0 \
+    libsm6 \
+    libx11-6 \
     && curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg \
     && curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list \
     && apt-get update \
     && apt-get install -y caddy \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Blender 4.1
+RUN mkdir -p /opt/blender && \
+    wget -qO /tmp/blender.tar.xz https://download.blender.org/release/Blender4.1/blender-4.1.0-linux-x64.tar.xz && \
+    tar -xf /tmp/blender.tar.xz -C /opt/blender --strip-components=1 && \
+    rm /tmp/blender.tar.xz
+
+ENV PATH="/opt/blender:$PATH"
+ENV BLENDER_PATH="/opt/blender/blender"
 
 WORKDIR /app
 
@@ -39,6 +56,7 @@ COPY --from=builder /usr/src/app/target/release/mesh-api /usr/local/bin/mesh-api
 
 # Copy static assets (Code expects them at ./server/public)
 COPY server/public ./server/public
+COPY scripts ./scripts
 
 # Ensure directory for DB mount exists
 RUN mkdir -p server

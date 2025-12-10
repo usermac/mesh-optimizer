@@ -88,12 +88,17 @@ async fn main() -> Result<()> {
     // 3. Initialize State
     let db = db::Database::new(PathBuf::from(DB_FILE), PathBuf::from(DB_SQLITE_FILE)).await;
     let stripe_client = stripe::Client::new(stripe_secret_key);
+    let worker_slots: usize = std::env::var("WORKER_SLOTS")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(10); // Default 10 slots (Remesh=4, Decimate=1)
+
     let state = AppState {
         db,
         stripe_client,
         stripe_webhook_secret,
         jobs: Arc::new(RwLock::new(HashMap::new())),
-        worker_semaphore: Arc::new(Semaphore::new(8)),
+        worker_semaphore: Arc::new(Semaphore::new(worker_slots)),
     };
 
     // 4. Start Cleanup Task
@@ -449,6 +454,9 @@ async fn optimize_handler(
     let mut input_filename: Option<String> = None;
     let mut ratio = 0.5;
     let mut format = "glb".to_string();
+    let mut mode = "decimate".to_string();
+    let mut faces = 5000;
+    let mut texture_size = 2048;
     let mut input_filepath: Option<PathBuf> = None;
     let mut file_hash = String::new();
 
@@ -545,6 +553,22 @@ async fn optimize_handler(
         } else if name == "format" {
             if let Ok(val) = field.text().await {
                 format = val;
+            }
+        } else if name == "mode" {
+            if let Ok(val) = field.text().await {
+                mode = val;
+            }
+        } else if name == "faces" {
+            if let Ok(val) = field.text().await {
+                if let Ok(parsed) = val.parse::<i32>() {
+                    faces = parsed;
+                }
+            }
+        } else if name == "texture_size" {
+            if let Ok(val) = field.text().await {
+                if let Ok(parsed) = val.parse::<i32>() {
+                    texture_size = parsed;
+                }
             }
         }
     }
@@ -656,24 +680,58 @@ async fn optimize_handler(
     let usdz_filename_clone = usdz_filename.clone();
     let file_hash_clone = file_hash.clone();
     let format_clone = format.clone();
+    let mode_clone = mode.clone();
 
     tokio::spawn(async move {
+        // Determine resource cost (Weighted Semaphore)
+        // Remesh is heavy (RAM/CPU), Decimate is light.
+        let required_permits: u32 = if mode_clone == "remesh" { 4 } else { 1 };
+        let _permit = state_clone
+            .worker_semaphore
+            .acquire_many(required_permits)
+            .await
+            .unwrap();
+
         // Run Command
-        let _permit = state_clone.worker_semaphore.acquire().await.unwrap();
-        let mut cmd = tokio::process::Command::new("mesh-optimizer");
-        cmd.arg("--input")
-            .arg(&input_filename_clone)
-            .arg("--output")
-            .arg(&output_filename_clone)
-            .arg("--ratio")
-            .arg(ratio.to_string())
-            .current_dir(&batch_dir_clone)
+        let mut cmd = if mode_clone == "remesh" {
+            let script_path = std::env::current_dir()
+                .unwrap_or_else(|_| PathBuf::from("."))
+                .join("scripts/remesh.py");
+
+            let blender_exe =
+                std::env::var("BLENDER_PATH").unwrap_or_else(|_| "blender".to_string());
+            let mut c = tokio::process::Command::new(blender_exe);
+            c.arg("-b")
+                .arg("-P")
+                .arg(script_path)
+                .arg("--")
+                .arg("--input")
+                .arg(&input_filename_clone)
+                .arg("--output")
+                .arg(&output_filename_clone)
+                .arg("--faces")
+                .arg(faces.to_string())
+                .arg("--texture_size")
+                .arg(texture_size.to_string());
+            c
+        } else {
+            let mut c = tokio::process::Command::new("mesh-optimizer");
+            c.arg("--input")
+                .arg(&input_filename_clone)
+                .arg("--output")
+                .arg(&output_filename_clone)
+                .arg("--ratio")
+                .arg(ratio.to_string());
+
+            if format_clone == "json" || format_clone == "usdz" {
+                c.arg("--usdz");
+            }
+            c
+        };
+
+        cmd.current_dir(&batch_dir_clone)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped()); // IMPORTANT: Run inside batch dir
-
-        if format_clone == "json" || format_clone == "usdz" {
-            cmd.arg("--usdz");
-        }
 
         info!("Executing: {:?}", cmd);
 

@@ -429,7 +429,38 @@
                 </div>
 
                 <!-- Controls -->
-                <div class="slider-group">
+                <div style="margin-bottom: 15px">
+                    <label
+                        style="
+                            font-size: 0.8rem;
+                            color: #aaa;
+                            display: block;
+                            margin-bottom: 5px;
+                        "
+                        >Mode</label
+                    >
+                    <select
+                        id="modeSelect"
+                        style="
+                            width: 100%;
+                            padding: 8px;
+                            background: #222;
+                            color: #fff;
+                            border: 1px solid #444;
+                            border-radius: 4px;
+                        "
+                    >
+                        <option value="decimate">
+                            Decimate (Reduce Poly Count)
+                        </option>
+                        <option value="remesh">
+                            Remesh + Bake (Retopology)
+                        </option>
+                    </select>
+                </div>
+
+                <!-- Decimate Controls -->
+                <div id="decimateControls" class="slider-group">
                     <div class="slider-header">
                         <span>Target Quality</span>
                         <span id="ratioVal">50%</span>
@@ -444,6 +475,63 @@
                     <p style="font-size: 0.75rem; color: #666; margin: 0">
                         Lower = Smaller File. Higher = More Detail.
                     </p>
+                </div>
+
+                <!-- Remesh Controls -->
+                <div
+                    id="remeshControls"
+                    style="display: none; flex-direction: column; gap: 10px"
+                >
+                    <div>
+                        <label
+                            style="
+                                font-size: 0.8rem;
+                                color: #aaa;
+                                display: block;
+                                margin-bottom: 5px;
+                            "
+                            >Target Faces</label
+                        >
+                        <input
+                            type="number"
+                            id="targetFaces"
+                            value="5000"
+                            style="
+                                width: 100%;
+                                padding: 8px;
+                                background: #222;
+                                color: #fff;
+                                border: 1px solid #444;
+                                border-radius: 4px;
+                            "
+                        />
+                    </div>
+                    <div>
+                        <label
+                            style="
+                                font-size: 0.8rem;
+                                color: #aaa;
+                                display: block;
+                                margin-bottom: 5px;
+                            "
+                            >Texture Size (px)</label
+                        >
+                        <select
+                            id="textureSize"
+                            style="
+                                width: 100%;
+                                padding: 8px;
+                                background: #222;
+                                color: #fff;
+                                border: 1px solid #444;
+                                border-radius: 4px;
+                            "
+                        >
+                            <option value="1024">1024</option>
+                            <option value="2048" selected>2048</option>
+                            <option value="4096">4096</option>
+                        </select>
+                    </div>
                 </div>
 
                 <button id="processBtn" disabled>OPTIMIZE MESH</button>
@@ -748,6 +836,10 @@
             const fileInput = document.getElementById("fileInput");
             const ratioSlider = document.getElementById("ratio");
             const ratioVal = document.getElementById("ratioVal");
+            const modeSelect = document.getElementById("modeSelect");
+            const decimateControls =
+                document.getElementById("decimateControls");
+            const remeshControls = document.getElementById("remeshControls");
             const processBtn = document.getElementById("processBtn");
             // const downloadBtn = document.getElementById("downloadBtn");
             const mv = document.getElementById("mv");
@@ -765,6 +857,17 @@
 
             ratioSlider.addEventListener("input", (e) => {
                 ratioVal.textContent = e.target.value + "%";
+                resetToOptimize();
+            });
+
+            modeSelect.addEventListener("change", (e) => {
+                if (e.target.value === "remesh") {
+                    decimateControls.style.display = "none";
+                    remeshControls.style.display = "flex";
+                } else {
+                    decimateControls.style.display = "flex";
+                    remeshControls.style.display = "none";
+                }
                 resetToOptimize();
             });
 
@@ -869,6 +972,20 @@
                 const ratioFloat = parseInt(ratioSlider.value) / 100;
                 formData.append("ratio", ratioFloat);
                 formData.append("format", "json");
+
+                // Remesh params
+                const mode = modeSelect.value;
+                formData.append("mode", mode);
+                if (mode === "remesh") {
+                    formData.append(
+                        "faces",
+                        document.getElementById("targetFaces").value,
+                    );
+                    formData.append(
+                        "texture_size",
+                        document.getElementById("textureSize").value,
+                    );
+                }
 
                 try {
                     const res = await fetch("/optimize", {

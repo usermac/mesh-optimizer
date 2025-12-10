@@ -7,6 +7,9 @@
 - [x] **Configurable Pricing**: `CREDIT_COST` and `CREDIT_INCREMENT` are now loaded from `.env`.
 - [x] **Transaction History UI**: Realtime search/filter by activity, date, and amount with CSV export.
 - [x] **Process Failure Refunds**: Include filename in transaction description for better debugging.
+- [x] **Blender Remeshing Workflow**: Implemented `remesh.py` for high-quality retopology and baking.
+- [x] **API Remesh Support**: Updated backend to handle `mode`, `faces`, and `texture_size` parameters.
+- [x] **Web UI Enhancements**: Added Remeshing controls (Face count, Texture size) to the frontend.
 
 ## Testing Required
 - [ ] **Test Payment Success Page**: Verify the enhanced success page displays the API key prominently with the "SAVE YOUR KEY NOW" warning. Confirm users can copy the key easily.
@@ -31,6 +34,9 @@
     1. Rsyncs *only* the `.env` file to the server.
     2. Restarts the Docker container (using the existing image) to load new variables.
     *Goal: Allow changing `CREDIT_COST` or `CREDIT_INCREMENT` in seconds without waiting for a full `ship.sh` Docker rebuild.*
+    2. Remove robots.txt to allow indexing
+- [ ] **Enable GPU Support**: Configure Docker to pass through NVIDIA/AMD GPUs (using `--gpus all`) to accelerate Blender cycles baking.
+- [ ] **Tiered Pricing Logic**: Update transaction logic to deduct higher credit amounts (e.g., 5) for computational heavy "remesh" operations compared to standard decimation.
 
 ## Future Features / UX
 - [ ] **Web UI**: Persist the API Key in browser `localStorage` so users don't have to paste it on every refresh.
