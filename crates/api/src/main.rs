@@ -24,7 +24,8 @@ use std::{
 use stripe::{
     CheckoutSessionMode, CreateCheckoutSession, CreateCheckoutSessionLineItems,
     CreateCheckoutSessionLineItemsPriceData, CreateCheckoutSessionLineItemsPriceDataProductData,
-    CreateCheckoutSessionPaymentMethodTypes, Currency, EventObject, EventType, Expandable, Webhook,
+    CreateCheckoutSessionPaymentMethodTypes, Currency, CustomerId, EventObject, EventType,
+    Expandable, Webhook,
 };
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::sync::RwLock;
@@ -193,10 +194,29 @@ async fn get_config() -> Json<serde_json::Value> {
     }))
 }
 
+#[derive(Deserialize)]
+struct CreateCheckoutPayload {
+    api_key: Option<String>,
+}
+
 async fn create_checkout_session(
     State(state): State<AppState>,
+    payload: Option<Json<CreateCheckoutPayload>>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
     info!("Starting Checkout Session...");
+
+    // 1. Resolve Customer ID if API Key is present
+    let mut customer_id_opt = None;
+    if let Some(Json(payload)) = payload {
+        if let Some(key) = payload.api_key {
+            if let Some(info) = state.db.get_key_info(&key).await {
+                info!("Existing user detected: {}", info.email);
+                if let Ok(cid) = CustomerId::from_str(&info.stripe_customer_id) {
+                    customer_id_opt = Some(cid);
+                }
+            }
+        }
+    }
 
     let credit_cost = std::env::var("CREDIT_COST")
         .ok()
@@ -208,6 +228,7 @@ async fn create_checkout_session(
         .unwrap_or(100);
 
     let params = CreateCheckoutSession {
+        customer: customer_id_opt,
         payment_method_types: Some(vec![CreateCheckoutSessionPaymentMethodTypes::Card]),
         line_items: Some(vec![CreateCheckoutSessionLineItems {
             price_data: Some(CreateCheckoutSessionLineItemsPriceData {
@@ -272,7 +293,13 @@ async fn stripe_webhook(
                         .unwrap_or(100);
 
                     // Check if user exists
-                    if let Some(existing_key) = state.db.get_key_by_email(&email).await {
+                    let mut key_found = state.db.get_key_by_customer_id(&customer_id).await;
+
+                    if key_found.is_none() {
+                        key_found = state.db.get_key_by_email(&email).await;
+                    }
+
+                    if let Some(existing_key) = key_found {
                         info!("Top Up: Adding credits to existing user {}", email);
                         let _ = state
                             .db
@@ -339,11 +366,19 @@ async fn success_page(
         None => return (StatusCode::BAD_REQUEST, "No email found in session").into_response(),
     };
 
-    let key = state
-        .db
-        .get_key_by_email(&email)
-        .await
-        .unwrap_or_else(|| "Key processing... check email later".to_string());
+    let customer_id = match session.customer {
+        Some(Expandable::Id(id)) => id.to_string(),
+        Some(Expandable::Object(c)) => c.id.to_string(),
+        None => String::new(),
+    };
+
+    let mut key_found = state.db.get_key_by_customer_id(&customer_id).await;
+
+    if key_found.is_none() {
+        key_found = state.db.get_key_by_email(&email).await;
+    }
+
+    let key = key_found.unwrap_or_else(|| "Key processing... check email later".to_string());
 
     let html = format!(
         r#"

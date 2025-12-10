@@ -164,6 +164,11 @@ impl Database {
         }
     }
 
+    pub async fn get_key_info(&self, key: &str) -> Option<KeyInfo> {
+        let data = self.data.read().await;
+        data.keys.get(key).cloned()
+    }
+
     pub async fn create_key(
         &self,
         email: String,
@@ -187,7 +192,7 @@ impl Database {
                     stripe_customer_id: stripe_customer_id.clone(),
                     created: now,
                     active: true,
-                    credits: initial_credits,
+                    credits: 0,
                 },
             );
 
@@ -202,6 +207,9 @@ impl Database {
 
         self.persist().await?;
 
+        self.record_transaction(&new_key, initial_credits, "Initial Purchase", None)
+            .await?;
+
         Ok(new_key)
     }
 
@@ -211,6 +219,11 @@ impl Database {
             .iter()
             .find(|(_, info)| info.email == email)
             .map(|(k, _)| k.clone())
+    }
+
+    pub async fn get_key_by_customer_id(&self, customer_id: &str) -> Option<String> {
+        let data = self.data.read().await;
+        data.customers.get(customer_id).map(|info| info.key.clone())
     }
 
     pub async fn add_credits(&self, key: &str, amount: i32) -> Result<i32> {
