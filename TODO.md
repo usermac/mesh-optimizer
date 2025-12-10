@@ -34,9 +34,11 @@
     1. Rsyncs *only* the `.env` file to the server.
     2. Restarts the Docker container (using the existing image) to load new variables.
     *Goal: Allow changing `CREDIT_COST` or `CREDIT_INCREMENT` in seconds without waiting for a full `ship.sh` Docker rebuild.*
-    2. Remove robots.txt to allow indexing
+    3. Remove robots.txt to allow indexing
+    4. remove test key
 - [ ] **Enable GPU Support**: Configure Docker to pass through NVIDIA/AMD GPUs (using `--gpus all`) to accelerate Blender cycles baking.
 - [ ] **Tiered Pricing Logic**: Update transaction logic to deduct higher credit amounts (e.g., 5) for computational heavy "remesh" operations compared to standard decimation.
+
 
 ## Future Features / UX
 - [ ] **Web UI**: Persist the API Key in browser `localStorage` so users don't have to paste it on every refresh.
