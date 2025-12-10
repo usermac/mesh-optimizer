@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
@@ -15,8 +15,9 @@
             }
 
             body {
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
-                    Roboto, Helvetica, Arial, sans-serif;
+                font-family:
+                    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                    Helvetica, Arial, sans-serif;
                 background-color: var(--bg);
                 color: var(--text);
                 margin: 0;
@@ -173,7 +174,11 @@
                 <div class="grid">
                     <div class="mode-card">
                         <h3>Standard Decimation</h3>
-                        <p><strong>Cost:</strong> 1 Credit</p>
+                        <p>
+                            <strong>Cost:</strong>
+                            <span id="cost-decimate">1</span>
+                            <span id="label-decimate">Credit</span>
+                        </p>
                         <p>
                             <strong>Best for:</strong> Reducing file size while
                             keeping the exact same geometry structure. Good for
@@ -186,7 +191,11 @@
                     </div>
                     <div class="mode-card">
                         <h3>Premium Remesh (Bake)</h3>
-                        <p><strong>Cost:</strong> 5 Credits</p>
+                        <p>
+                            <strong>Cost:</strong>
+                            <span id="cost-remesh">5</span>
+                            <span id="label-remesh">Credits</span>
+                        </p>
                         <p>
                             <strong>Best for:</strong> 3D Scans, Photogrammetry,
                             and Organic shapes.
@@ -194,9 +203,9 @@
                         <p>
                             <strong>How it works:</strong> It builds a brand new
                             "clean" mesh (Retopology) and "bakes" the details
-                            from the high-quality original onto the new one using
-                            Normal Maps. This is the professional workflow for
-                            games and AR.
+                            from the high-quality original onto the new one
+                            using Normal Maps. This is the professional workflow
+                            for games and AR.
                         </p>
                     </div>
                 </div>
@@ -245,5 +254,24 @@
                 </ul>
             </section>
         </div>
+        <script>
+            fetch("/config")
+                .then((res) => res.json())
+                .then((data) => {
+                    if (data.cost_decimate !== undefined) {
+                        document.getElementById("cost-decimate").innerText =
+                            data.cost_decimate;
+                        document.getElementById("label-decimate").innerText =
+                            data.cost_decimate === 1 ? "Credit" : "Credits";
+                    }
+                    if (data.cost_remesh !== undefined) {
+                        document.getElementById("cost-remesh").innerText =
+                            data.cost_remesh;
+                        document.getElementById("label-remesh").innerText =
+                            data.cost_remesh === 1 ? "Credit" : "Credits";
+                    }
+                })
+                .catch((e) => console.error("Failed to fetch config", e));
+        </script>
     </body>
 </html>
