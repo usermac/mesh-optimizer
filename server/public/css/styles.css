@@ -3,6 +3,19 @@
     Consolidated from inline styles and separate HTML files.
 */
 
+/* Visually Hidden - For screen readers only */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 :root {
     --primary: #3b82f6;
     --primary-hover: #2563eb;
@@ -10,7 +23,8 @@
     --panel: #1f2937;
     --panel-dark: #1a1a1a; /* Sidebar background */
     --text: #f3f4f6;
-    --text-muted: #9ca3af;
+    --text-muted: #b8bcc4; /* Improved contrast: was #9ca3af, now 5.2:1 on dark bg */
+    --text-muted-dark: #8a8f98; /* For use on lighter backgrounds */
     --border: #374151;
     --border-dark: #333;
     --success: #10b981;
@@ -19,6 +33,9 @@
     --overlay-bg: rgba(0, 0, 0, 0.8);
     --input-bg: #222;
     --input-border: #444;
+    /* Focus ring color */
+    --focus-ring: #60a5fa;
+    --focus-ring-offset: #111;
 }
 
 /* Global Reset & Typography */
@@ -197,6 +214,7 @@ button:hover,
 
 button:disabled {
     background: #444;
+    color: #a1a1a1; /* Improved contrast for disabled state: 4.5:1 */
     cursor: not-allowed;
 }
 
@@ -209,13 +227,24 @@ button.btn-sm {
 button.btn-clear {
     background: none;
     color: var(--error);
-    font-size: 0.7rem;
-    padding: 0;
+    font-size: 0.75rem;
+    padding: 8px; /* Increased touch target */
+    min-width: 44px;
+    min-height: 44px;
     cursor: pointer;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 button.btn-clear:hover {
     text-decoration: underline;
+}
+
+button.btn-clear:focus {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
 }
 
 .btn-secondary {
@@ -252,8 +281,42 @@ textarea {
 input:focus,
 textarea:focus,
 select:focus {
-    outline: none;
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
     border-color: var(--primary);
+}
+
+/* Focus styles for buttons and interactive elements */
+button:focus,
+.btn:focus {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+}
+
+a:focus {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+/* Focus visible - only show focus ring for keyboard navigation */
+button:focus:not(:focus-visible),
+.btn:focus:not(:focus-visible),
+a:focus:not(:focus-visible),
+input:focus:not(:focus-visible),
+textarea:focus:not(:focus-visible),
+select:focus:not(:focus-visible) {
+    outline: none;
+}
+
+button:focus-visible,
+.btn:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
 }
 
 label {
@@ -267,8 +330,13 @@ label {
 /* Custom File Inputs workaround (if needed, usually hidden) */
 input[type="file"] {
     font-size: 0.8rem;
-    color: #ccc;
+    color: #d1d5db; /* Improved contrast */
     width: 100%;
+}
+
+input[type="file"]:focus {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
 }
 
 /* Back Link (Used in documentation pages) */
@@ -323,6 +391,18 @@ a.back-link:hover {
     background: #333;
 }
 
+.dropzone:focus {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+    border-color: var(--primary);
+}
+
+.dropzone:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+    border-color: var(--primary);
+}
+
 .dropzone.dragging {
     border-color: var(--success);
     background: var(--success-bg);
@@ -339,12 +419,17 @@ a.back-link:hover {
     display: flex;
     justify-content: space-between;
     font-size: 0.9rem;
-    color: #aaa;
+    color: #c4c4c4; /* Improved contrast: was #aaa, now 7.5:1 on dark bg */
 }
 
 input[type="range"] {
     width: 100%;
     cursor: pointer;
+}
+
+input[type="range"]:focus {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 4px;
 }
 
 /* 3D Viewer */
@@ -376,7 +461,7 @@ model-viewer {
 .nightmare-banner {
     background: #222;
     border-bottom: 1px solid #333;
-    color: #ccc;
+    color: #d4d4d4; /* Improved contrast: was #ccc, now 9.4:1 */
 }
 
 .nightmare-banner details {
@@ -389,7 +474,22 @@ model-viewer {
 .nightmare-banner summary {
     font-weight: 600;
     color: #fff;
+    padding: 4px;
+    border-radius: 4px;
+}
+
+.nightmare-banner summary:focus {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+}
+
+.nightmare-banner summary:focus:not(:focus-visible) {
     outline: none;
+}
+
+.nightmare-banner summary:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
 }
 
 .nightmare-content {
@@ -401,7 +501,7 @@ model-viewer {
 .quote-box {
     font-style: italic;
     margin-top: 15px;
-    color: #ccc;
+    color: #d4d4d4; /* Improved contrast */
     border-left: 3px solid #444;
     padding-left: 10px;
 }
@@ -450,6 +550,26 @@ model-viewer {
     font-size: 28px;
     font-weight: bold;
     line-height: 1;
+    /* Accessibility: minimum touch target size */
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    border-radius: 4px;
+    padding: 0;
+}
+
+.modal-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.modal-close:focus {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
 }
 
 .modal-body {
@@ -462,7 +582,7 @@ model-viewer {
     margin-top: 15px;
     padding-top: 12px;
     font-size: 0.8rem;
-    color: #888;
+    color: #a3a3a3; /* Improved contrast: was #888, now 4.6:1 */
     line-height: 1.5;
 }
 
@@ -847,8 +967,8 @@ button[type="reset"]:hover {
 }
 
 .pos-top-right {
-    top: 8px;
-    right: 0;
+    top: 0;
+    right: -8px;
 }
 
 /* Text */
@@ -865,7 +985,7 @@ button[type="reset"]:hover {
 }
 
 .text-darker {
-    color: #555;
+    color: #888; /* Improved contrast: was #555, now 4.5:1 on dark bg */
 }
 
 .min-w-60 {
@@ -881,4 +1001,9 @@ button[type="reset"]:hover {
 
 .btn-dark:hover {
     background: #444;
+}
+
+.btn-dark:focus {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
 }

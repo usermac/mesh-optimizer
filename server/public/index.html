@@ -68,7 +68,7 @@
         <link rel="stylesheet" href="/css/styles.css" />
     </head>
     <body class="app-layout">
-        <aside class="sidebar">
+        <aside class="sidebar" aria-label="Optimization Controls">
             <!-- Buy License -->
             <div class="sidebar-section">
                 <button id="buyBtn" class="btn-dark w-100">Buy License</button>
@@ -81,7 +81,7 @@
             </div>
             <!-- Auth -->
             <div>
-                <label>API KEY</label>
+                <label for="apiKey">API KEY</label>
                 <div class="d-flex gap-10 align-center">
                     <input
                         type="password"
@@ -89,6 +89,7 @@
                         value=""
                         placeholder="sk_..."
                         class="flex-1"
+                        aria-describedby="apiKeyPreview"
                     />
                     <span
                         id="apiKeyPreview"
@@ -100,7 +101,7 @@
             </div>
 
             <!-- Upload -->
-            <div class="dropzone" id="dropzone">
+            <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Upload 3D file. Drag and drop or click to select. Supported formats: OBJ, FBX, GLB, GLTF">
                 <div id="dropText">
                     Drag 3D file here<br /><span class="text-small text-muted"
                         >(.obj, .fbx, .glb, .gltf)</span
@@ -111,9 +112,10 @@
                     id="fileInput"
                     class="d-none"
                     accept=".obj,.fbx,.glb,.gltf"
+                    aria-label="Select 3D file to upload"
                 />
             </div>
-            <div id="fileName" class="text-success text-small"></div>
+            <div id="fileName" class="text-success text-small" aria-live="polite" aria-atomic="true"></div>
 
             <div
                 id="objInputs"
@@ -122,19 +124,20 @@
                 <button
                     id="clearOptionalBtn"
                     class="btn-clear absolute pos-top-right"
-                    title="Clear optional files"
+                    type="button"
+                    aria-label="Clear optional material and texture files"
                 >
                     Clear
                 </button>
                 <div class="mb-10">
-                    <label
+                    <label for="mtlInput"
                         >Material (.mtl)
                         <span class="text-darker">(Optional)</span></label
                     >
-                    <input type="file" id="mtlInput" accept=".mtl" />
+                    <input type="file" id="mtlInput" accept=".mtl" aria-label="Material file, optional" />
                 </div>
                 <div>
-                    <label
+                    <label for="texInput"
                         >Textures (Max 50)
                         <span class="text-darker">(Optional)</span></label
                     >
@@ -143,14 +146,15 @@
                         id="texInput"
                         accept=".png,.jpg,.jpeg"
                         multiple
+                        aria-label="Texture files, optional, maximum 50 files"
                     />
                 </div>
             </div>
 
             <!-- Controls -->
             <div class="mb-15">
-                <label>Mode</label>
-                <select id="modeSelect">
+                <label for="modeSelect">Mode</label>
+                <select id="modeSelect" aria-describedby="modeDescription">
                     <option value="decimate">
                         Decimate (Reduce Poly Count)
                     </option>
@@ -159,25 +163,25 @@
             </div>
 
             <!-- Decimate Controls -->
-            <div id="decimateControls" class="slider-group">
+            <div id="decimateControls" class="slider-group" role="group" aria-labelledby="ratioLabel">
                 <div class="slider-header">
-                    <span>Target Quality</span>
-                    <span id="ratioVal">50%</span>
+                    <label for="ratio" id="ratioLabel">Target Quality</label>
+                    <span id="ratioVal" aria-live="polite">50%</span>
                 </div>
-                <input type="range" id="ratio" min="1" max="100" value="50" />
-                <p class="text-xs text-muted m-0">
+                <input type="range" id="ratio" min="1" max="100" value="50" aria-valuemin="1" aria-valuemax="100" aria-valuenow="50" aria-describedby="ratioHelp" />
+                <p id="ratioHelp" class="text-xs text-muted m-0">
                     Lower = Less Detail. Higher = More Detail.
                 </p>
             </div>
 
             <!-- Remesh Controls -->
-            <div id="remeshControls" class="flex-column gap-10 d-none">
+            <div id="remeshControls" class="flex-column gap-10 d-none" role="group" aria-label="Remesh settings">
                 <div>
-                    <label>Target Faces</label>
-                    <input type="number" id="targetFaces" value="5000" />
+                    <label for="targetFaces">Target Faces</label>
+                    <input type="number" id="targetFaces" value="5000" aria-describedby="targetFacesDesc" />
                 </div>
                 <div>
-                    <label>Texture Size (px)</label>
+                    <label for="textureSize">Texture Size (px)</label>
                     <select id="textureSize">
                         <option value="1024">1024</option>
                         <option value="2048" selected>2048</option>
@@ -186,7 +190,8 @@
                 </div>
             </div>
 
-            <button id="processBtn" disabled>OPTIMIZE MESH</button>
+            <button id="processBtn" disabled aria-describedby="processStatus">OPTIMIZE MESH</button>
+            <span id="processStatus" class="visually-hidden" aria-live="polite"></span>
         </aside>
 
         <div class="d-flex flex-column flex-1">
@@ -274,7 +279,7 @@
                 </details>
             </div>
 
-            <main class="viewer-container">
+            <main id="main-content" class="viewer-container">
                 <model-viewer
                     id="mv"
                     camera-controls
@@ -283,18 +288,19 @@
                     environment-image="neutral"
                     shadow-softness="1"
                     background-color="#000"
+                    aria-label="3D model preview. Upload a file to view optimized result."
                 ></model-viewer>
-                <div class="loading-overlay" id="loader">
+                <div class="loading-overlay" id="loader" role="status" aria-live="polite">
                     Processing... <br /><small>(This may take a minute)</small>
                 </div>
             </main>
 
             <!-- History Modal -->
-            <div id="historyModal" class="modal-overlay">
+            <div id="historyModal" class="modal-overlay" role="dialog" aria-labelledby="historyModalTitle" aria-modal="true">
                 <div class="modal-window">
                     <div class="modal-header">
                         <div>
-                            <h2 class="m-0 mb-5">Transaction History</h2>
+                            <h2 class="m-0 mb-5" id="historyModalTitle">Transaction History</h2>
                             <p class="m-0 text-muted text-small">
                                 Remaining Credits:
                                 <span
@@ -305,10 +311,12 @@
                             </p>
                         </div>
                         <div class="d-flex gap-10">
-                            <span
-                                onclick="document.getElementById('historyModal').style.display='none'"
+                            <button
+                                type="button"
+                                onclick="closeModal('historyModal');"
                                 class="modal-close"
-                                >&times;</span
+                                aria-label="Close transaction history"
+                                >&times;</button
                             >
                         </div>
                     </div>
@@ -321,6 +329,7 @@
                             type="text"
                             placeholder="Search by activity, date..."
                             class="flex-1 text-small"
+                            aria-label="Search transaction history"
                         />
                         <span
                             id="historySearchCount"
@@ -328,12 +337,12 @@
                         ></span>
                     </div>
                     <div class="modal-body">
-                        <table class="table-container">
+                        <table class="table-container" aria-label="Transaction history">
                             <thead>
                                 <tr>
-                                    <th>Date</th>
-                                    <th>Activity</th>
-                                    <th>Amount</th>
+                                    <th scope="col">Date</th>
+                                    <th scope="col">Activity</th>
+                                    <th scope="col">Amount</th>
                                 </tr>
                             </thead>
                             <tbody id="historyTableBody">
@@ -357,11 +366,11 @@
             </footer>
 
             <!-- Help Modal -->
-            <div id="helpModal" class="modal-overlay">
+            <div id="helpModal" class="modal-overlay" role="dialog" aria-labelledby="helpModalTitle" aria-modal="true">
                 <div class="modal-window">
                     <div class="modal-header">
-                        <h2 class="m-0">Help & Guide</h2>
-                        <span class="modal-close" onclick="closeModal('helpModal')">&times;</span>
+                        <h2 class="m-0" id="helpModalTitle">Help & Guide</h2>
+                        <button type="button" class="modal-close" onclick="closeModal('helpModal')" aria-label="Close help guide">&times;</button>
                     </div>
                     <div class="modal-body">
                         <section class="content-section">
@@ -475,11 +484,11 @@
             </div>
 
             <!-- Contact Modal -->
-            <div id="contactModal" class="modal-overlay">
+            <div id="contactModal" class="modal-overlay" role="dialog" aria-labelledby="contactModalTitle" aria-modal="true">
                 <div class="modal-window">
                     <div class="modal-header">
-                        <h2 class="m-0">Contact Us</h2>
-                        <span class="modal-close" onclick="closeModal('contactModal')">&times;</span>
+                        <h2 class="m-0" id="contactModalTitle">Contact Us</h2>
+                        <button type="button" class="modal-close" onclick="closeModal('contactModal')" aria-label="Close contact form">&times;</button>
                     </div>
                     <div class="modal-body">
                         <div class="intro">
@@ -494,12 +503,12 @@
                             </p>
                         </div>
 
-                        <div id="contact-success-alert" class="alert success">
+                        <div id="contact-success-alert" class="alert success" role="alert">
                             <strong>✓ Message sent successfully!</strong> We'll get back to
                             you within 24-48 hours.
                         </div>
 
-                        <div id="contact-error-alert" class="alert error">
+                        <div id="contact-error-alert" class="alert error" role="alert">
                             <strong>✗ Error:</strong> <span id="contact-error-message"></span>
                         </div>
 
@@ -579,14 +588,14 @@
             </div>
 
             <!-- Privacy Policy Modal -->
-            <div id="privacyModal" class="modal-overlay">
+            <div id="privacyModal" class="modal-overlay" role="dialog" aria-labelledby="privacyModalTitle" aria-modal="true">
                 <div class="modal-window modal-window-large">
                     <div class="modal-header">
                         <div>
-                            <h2 class="m-0">Privacy Policy</h2>
+                            <h2 class="m-0" id="privacyModalTitle">Privacy Policy</h2>
                             <p class="text-muted text-small m-0">Last Updated: December 2024</p>
                         </div>
-                        <span class="modal-close" onclick="closeModal('privacyModal')">&times;</span>
+                        <button type="button" class="modal-close" onclick="closeModal('privacyModal')" aria-label="Close privacy policy">&times;</button>
                     </div>
                     <div class="modal-body">
                         <div class="highlight-box mb-20">
@@ -673,7 +682,7 @@
 
                         <section class="content-section">
                             <h3>11. Contact Us</h3>
-                            <p>If you have questions, concerns, or requests regarding this Privacy Policy or your personal data, please use our <a href="#" onclick="closeModal('privacyModal'); openModal('contactModal'); return false;" class="text-primary">Contact Form</a>.</p>
+                            <p>If you have questions, concerns, or requests regarding this Privacy Policy or your personal data, please use our <a href="#" id="privacyToContactLink" class="text-primary">Contact Form</a>.</p>
                             <p>We will respond to privacy inquiries within 30 days.</p>
                         </section>
                     </div>
@@ -828,6 +837,7 @@
 
             ratioSlider.addEventListener("input", (e) => {
                 ratioVal.textContent = e.target.value + "%";
+                ratioSlider.setAttribute("aria-valuenow", e.target.value);
                 resetToOptimize();
             });
 
@@ -898,6 +908,13 @@
 
             // Drag & Drop
             dropzone.addEventListener("click", () => fileInput.click());
+            // Keyboard support for dropzone
+            dropzone.addEventListener("keydown", (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    fileInput.click();
+                }
+            });
             dropzone.addEventListener("dragover", (e) => {
                 e.preventDefault();
                 dropzone.classList.add("dragging");
@@ -921,6 +938,14 @@
                     document.getElementById("texInput").value = "";
                 });
 
+            // Helper function to announce status to screen readers
+            function announceStatus(message) {
+                const statusEl = document.getElementById("processStatus");
+                if (statusEl) {
+                    statusEl.textContent = message;
+                }
+            }
+
             function handleFile(file) {
                 if (!file) return;
                 selectedFile = file;
@@ -938,14 +963,18 @@
                     document.getElementById("texInput").value = "";
                 }
 
+                const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
                 document.getElementById("fileName").textContent =
                     file.name +
                     " (" +
-                    (file.size / 1024 / 1024).toFixed(2) +
+                    fileSizeMB +
                     " MB)";
                 document.getElementById("dropText").style.display = "none";
                 resetToOptimize();
                 processBtn.style.background = "#10b981";
+
+                // Announce file selection to screen readers
+                announceStatus("File selected: " + file.name + ", " + fileSizeMB + " megabytes. Ready to optimize.");
             }
 
             processBtn.addEventListener("click", async () => {
@@ -954,6 +983,7 @@
 
                 loader.style.display = "block";
                 processBtn.disabled = true;
+                announceStatus("Processing started. Please wait.");
 
                 const formData = new FormData();
                 formData.append("file", selectedFile);
@@ -1033,6 +1063,7 @@
                         const status = pollData.status;
 
                         if (status === "Processing" || status === "Queued") {
+                            announceStatus("Still processing. Please wait.");
                             continue;
                         } else if (status && status.Completed) {
                             data = {
@@ -1052,6 +1083,7 @@
                     }
 
                     mv.src = data.glb; // Load into 3D viewer
+                    announceStatus("Optimization complete. Download buttons are now available.");
 
                     // Create or Update Dual Buttons
                     let dlContainer = document.getElementById("dlContainer");
@@ -1085,6 +1117,7 @@
                         dlContainer.children[1].href = data.usdz;
                     }
                 } catch (e) {
+                    announceStatus("Error: " + e.message);
                     alert("Error: " + e.message);
                 } finally {
                     loader.style.display = "none";
@@ -1111,10 +1144,13 @@
             // History Logic
             document
                 .getElementById("historyLink")
-                .addEventListener("click", async (e) => {
+                .addEventListener("click", async function(e) {
                     e.preventDefault();
                     const apiKey = document.getElementById("apiKey").value;
                     if (!apiKey) return alert("Enter API Key first");
+
+                    // Store trigger for focus return
+                    const triggerElement = this;
 
                     const modal = document.getElementById("historyModal");
                     const tbody = document.getElementById("historyTableBody");
@@ -1125,6 +1161,13 @@
                     remainingCreditsSpan.textContent = "--";
                     modal.style.display = "flex";
                     document.body.style.overflow = "hidden";
+
+                    // Store trigger and set initial focus
+                    modalTriggerElement = triggerElement;
+                    requestAnimationFrame(() => {
+                        const closeBtn = modal.querySelector('.modal-close');
+                        if (closeBtn) closeBtn.focus();
+                    });
 
                     try {
                         // Fetch history
@@ -1157,16 +1200,55 @@
                 });
 
             // Prevent body scroll when modal is open
-            const modalCloseSpan = document.querySelector(
-                '#historyModal span[onclick*="historyModal"]',
-            );
-            modalCloseSpan.addEventListener("click", function () {
-                document.body.style.overflow = "auto";
-            });
+            // Note: History modal close button now handles overflow in its onclick attribute
+
+            // Track which element triggered the modal for focus return
+            let modalTriggerElement = null;
+
+            // Get all focusable elements within a container
+            function getFocusableElements(container) {
+                return container.querySelectorAll(
+                    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+                );
+            }
+
+            // Trap focus within modal
+            function trapFocus(modal, e) {
+                const focusableElements = getFocusableElements(modal);
+                if (focusableElements.length === 0) return;
+
+                const firstElement = focusableElements[0];
+                const lastElement = focusableElements[focusableElements.length - 1];
+
+                if (e.shiftKey && document.activeElement === firstElement) {
+                    e.preventDefault();
+                    lastElement.focus();
+                } else if (!e.shiftKey && document.activeElement === lastElement) {
+                    e.preventDefault();
+                    firstElement.focus();
+                }
+            }
+
+            // Modal focus trap handler
+            function handleModalKeydown(e) {
+                if (e.key !== "Tab") return;
+
+                const openModal = document.querySelector('.modal-overlay[style*="display: flex"]');
+                if (openModal) {
+                    trapFocus(openModal, e);
+                }
+            }
+
+            // Add global keydown listener for focus trapping
+            document.addEventListener("keydown", handleModalKeydown);
 
             // Modal helper functions
-            function openModal(modalId) {
+            function openModal(modalId, triggerElement) {
                 const modal = document.getElementById(modalId);
+
+                // Store the trigger element for focus return
+                modalTriggerElement = triggerElement || document.activeElement;
+
                 modal.style.display = "flex";
                 document.body.style.overflow = "hidden";
 
@@ -1189,12 +1271,31 @@
                         document.getElementById("help-label-remesh").innerText = pricingConfig.cost_remesh === 1 ? "Credit" : "Credits";
                     }
                 }
+
+                // Set focus to the first focusable element in the modal (usually close button)
+                requestAnimationFrame(() => {
+                    const closeBtn = modal.querySelector('.modal-close');
+                    if (closeBtn) {
+                        closeBtn.focus();
+                    } else {
+                        const focusableElements = getFocusableElements(modal);
+                        if (focusableElements.length > 0) {
+                            focusableElements[0].focus();
+                        }
+                    }
+                });
             }
 
             function closeModal(modalId) {
                 const modal = document.getElementById(modalId);
                 modal.style.display = "none";
                 document.body.style.overflow = "auto";
+
+                // Return focus to the element that triggered the modal
+                if (modalTriggerElement && typeof modalTriggerElement.focus === 'function') {
+                    modalTriggerElement.focus();
+                    modalTriggerElement = null;
+                }
             }
 
             // Close any open modal on ESC key
@@ -1213,21 +1314,31 @@
             // Modal link handlers
             document.getElementById("helpLink").addEventListener("click", function(e) {
                 e.preventDefault();
-                openModal("helpModal");
+                openModal("helpModal", this);
             });
 
             document.getElementById("contactLink").addEventListener("click", function(e) {
                 e.preventDefault();
-                openModal("contactModal");
+                openModal("contactModal", this);
             });
 
             document.getElementById("privacyLink").addEventListener("click", function(e) {
                 e.preventDefault();
-                openModal("privacyModal");
+                openModal("privacyModal", this);
+            });
+
+            // Link from privacy modal to contact modal
+            document.getElementById("privacyToContactLink").addEventListener("click", function(e) {
+                e.preventDefault();
+                // Store the original privacy link trigger so we return there after contact closes
+                const originalTrigger = modalTriggerElement;
+                closeModal("privacyModal");
+                modalTriggerElement = originalTrigger; // Restore so contact modal returns to privacy link trigger
+                openModal("contactModal", originalTrigger);
             });
 
             // Close modal when clicking outside the modal window
-            ["helpModal", "contactModal", "privacyModal"].forEach(function(modalId) {
+            ["helpModal", "contactModal", "privacyModal", "historyModal"].forEach(function(modalId) {
                 document.getElementById(modalId).addEventListener("click", function(e) {
                     if (e.target === this) {
                         closeModal(modalId);
