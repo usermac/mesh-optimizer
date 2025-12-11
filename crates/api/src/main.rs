@@ -175,7 +175,7 @@ async fn auth_middleware(
         });
 
     match token {
-        Some(t) if t == "sk_test_123" || state.db.is_valid_key(&t).await => {
+        Some(t) if state.db.is_valid_key(&t).await => {
             req.extensions_mut().insert(AuthKey(t));
             Ok(next.run(req).await)
         }

@@ -94,7 +94,7 @@
                         id="apiKeyPreview"
                         class="text-muted text-small font-mono text-nowrap min-w-60"
                     >
-                        sk...123
+                        --
                     </span>
                 </div>
             </div>
@@ -527,17 +527,9 @@
 
             // Load API Key from localStorage
             const apiKeyEl = document.getElementById("apiKey");
-            const storedKey = localStorage.getItem("apiKey");
-            if (storedKey) {
-                apiKeyEl.value = storedKey;
-                apiKeyEl.dispatchEvent(new Event("input")); // To update the preview
-            }
 
-            // API Key Preview
-            document.getElementById("apiKey").addEventListener("input", (e) => {
-                const key = e.target.value;
-                // Save key to localStorage on change
-                localStorage.setItem("apiKey", key);
+            function updateApiKeyPreview() {
+                const key = apiKeyEl.value;
                 const preview = document.getElementById("apiKeyPreview");
                 if (key.length <= 4) {
                     preview.textContent = key || "--";
@@ -546,6 +538,38 @@
                     const last2 = key.substring(key.length - 2);
                     preview.textContent = first2 + "..." + last2;
                 }
+            }
+
+            // Clean up any old test keys from localStorage
+            const storedKey = localStorage.getItem("apiKey");
+            if (storedKey === "sk_test_123") {
+                localStorage.removeItem("apiKey");
+                apiKeyEl.value = "";
+                updateApiKeyPreview();
+            } else if (storedKey) {
+                apiKeyEl.value = storedKey;
+                updateApiKeyPreview();
+            } else {
+                // Ensure preview shows default when no key is stored
+                updateApiKeyPreview();
+            }
+
+            // API Key Preview - update on input
+            apiKeyEl.addEventListener("input", (e) => {
+                const key = e.target.value;
+                // Save key to localStorage on change
+                localStorage.setItem("apiKey", key);
+                updateApiKeyPreview();
+            });
+
+            // Handle browser back/forward navigation
+            window.addEventListener("pageshow", (event) => {
+                // Update preview when page is restored from bfcache
+                const currentKey = localStorage.getItem("apiKey");
+                if (currentKey && apiKeyEl.value !== currentKey) {
+                    apiKeyEl.value = currentKey;
+                }
+                updateApiKeyPreview();
             });
 
             // Drag & Drop
