@@ -68,213 +68,210 @@
         <link rel="stylesheet" href="/css/styles.css" />
     </head>
     <body class="app-layout">
-        <header class="main-header">
-            <h1>MeshOpt <span class="text-primary">Console</span></h1>
-            <div class="d-flex gap-20 align-center">
+        <aside class="sidebar">
+            <!-- Buy License -->
+            <div class="sidebar-section">
+                <button id="buyBtn" class="btn-dark w-100">Buy License</button>
                 <a
-                    href="/help.html"
-                    target="_blank"
-                    class="font-bold text-small"
-                    >Help & Guide</a
+                    href="#"
+                    id="historyLink"
+                    class="text-center text-muted text-small d-block mt-10"
+                    >View History</a
                 >
-                <div class="text-small text-muted">v1.0.0</div>
             </div>
-        </header>
-
-        <div class="nightmare-banner">
-            <details>
-                <summary>The "Nightmare" I'm currently...</summary>
-                <div class="nightmare-content">
-                    <p>
-                        living starts with the handover. A product designer
-                        sends me a Dropbox link containing a
-                        <strong>300MB High-Res `.OBJ` file</strong>. Then comes
-                        the "Oh Sh*t" moment when I try to load this file into
-                        Three.js or Shopify. The browser crashes, or the frame
-                        rate drops to 1 FPS.
-                    </p>
-
-                    <p>
-                        Now I'm forced into the context switch. I have to stop
-                        coding, download <strong>Blender</strong>, and open a UI
-                        that looks like the cockpit of a 747. What follows is
-                        the manual labor; I spend 45 minutes watching YouTube
-                        tutorials on <em>"How to bake normals"</em> and
-                        <em>"Retopology."</em> I manually delete vertices, break
-                        the UV maps, and ruin the textures. Finally, the export.
-                        I export a `.glb`. It looks terrible. I try again. I'll
-                        eventually get it right but hey, time.
-                    </p>
-
-                    <p>
-                        That's when the scale issue hits me. I realize I have
-                        <strong>500 more products</strong> in the catalog to do.
-                    </p>
-
-                    <p>
-                        <strong>Your Solution:</strong> I delete Blender, run
-                        one `curl` command, and go back to work, my regular work
-                        that is.
-                    </p>
-
-                    <h3>This tool was built by an engineer, not a marketer.</h3>
-                    <p>
-                        <strong
-                            >This is the "JPEG of 3D" and what Shopify/iPhone
-                            requires.*</strong
-                        >
-                    </p>
-
-                    <ol>
-                        <li>Runs natively (no heavy Blender overhead).</li>
-                        <li>
-                            Uses advanced math (QEM) to reduce polygon counts by
-                            up to 90%+.
-                        </li>
-                        <li>Outputs web-standard .glb binary & USDZ files.</li>
-                    </ol>
-
-                    <p class="quote-box">
-                        The expected workflow is to spend some credits on the
-                        Web UI. Once you've got your dials right, use the API to
-                        zip through your files.
-                    </p>
+            <!-- Auth -->
+            <div>
+                <label>API KEY</label>
+                <div class="d-flex gap-10 align-center">
+                    <input
+                        type="password"
+                        id="apiKey"
+                        value="sk_test_123"
+                        placeholder="sk_..."
+                        class="flex-1"
+                    />
+                    <span
+                        id="apiKeyPreview"
+                        class="text-muted text-small font-mono text-nowrap min-w-60"
+                    >
+                        sk...123
+                    </span>
                 </div>
-            </details>
-        </div>
+            </div>
 
-        <div class="d-flex flex-1 overflow-hidden">
-            <aside class="sidebar">
-                <!-- Buy License -->
-                <div class="sidebar-section">
-                    <button id="buyBtn" class="btn-dark w-100">
-                        Buy License
-                    </button>
-                    <a
-                        href="#"
-                        id="historyLink"
-                        class="text-center text-muted text-small d-block mt-10"
-                        >View History</a
+            <!-- Upload -->
+            <div class="dropzone" id="dropzone">
+                <div id="dropText">
+                    Drag 3D file here<br /><span class="text-small text-muted"
+                        >(.obj, .fbx, .glb, .gltf)</span
                     >
                 </div>
-                <!-- Auth -->
-                <div>
-                    <label>API KEY</label>
-                    <div class="d-flex gap-10 align-center">
-                        <input
-                            type="password"
-                            id="apiKey"
-                            value="sk_test_123"
-                            placeholder="sk_..."
-                            class="flex-1"
-                        />
-                        <span
-                            id="apiKeyPreview"
-                            class="text-muted text-small font-mono text-nowrap min-w-60"
-                        >
-                            sk...123
-                        </span>
-                    </div>
-                </div>
+                <input
+                    type="file"
+                    id="fileInput"
+                    class="d-none"
+                    accept=".obj,.fbx,.glb,.gltf"
+                />
+            </div>
+            <div id="fileName" class="text-success text-small"></div>
 
-                <!-- Upload -->
-                <div class="dropzone" id="dropzone">
-                    <div id="dropText">
-                        Drag 3D file here<br /><span
-                            class="text-small text-muted"
-                            >(.obj, .fbx, .glb, .gltf)</span
-                        >
-                    </div>
+            <div
+                id="objInputs"
+                class="sidebar-section d-block text-left relative"
+            >
+                <button
+                    id="clearOptionalBtn"
+                    class="btn-clear absolute pos-top-right"
+                    title="Clear optional files"
+                >
+                    Clear
+                </button>
+                <div class="mb-10">
+                    <label
+                        >Material (.mtl)
+                        <span class="text-darker">(Optional)</span></label
+                    >
+                    <input type="file" id="mtlInput" accept=".mtl" />
+                </div>
+                <div>
+                    <label
+                        >Textures (Max 50)
+                        <span class="text-darker">(Optional)</span></label
+                    >
                     <input
                         type="file"
-                        id="fileInput"
-                        class="d-none"
-                        accept=".obj,.fbx,.glb,.gltf"
+                        id="texInput"
+                        accept=".png,.jpg,.jpeg"
+                        multiple
                     />
                 </div>
-                <div id="fileName" class="text-success text-small"></div>
+            </div>
 
-                <div
-                    id="objInputs"
-                    class="sidebar-section d-block text-left relative"
-                >
-                    <button
-                        id="clearOptionalBtn"
-                        class="btn-clear absolute pos-top-right"
-                        title="Clear optional files"
-                    >
-                        Clear
-                    </button>
-                    <div class="mb-10">
-                        <label
-                            >Material (.mtl)
-                            <span class="text-darker">(Optional)</span></label
-                        >
-                        <input type="file" id="mtlInput" accept=".mtl" />
-                    </div>
-                    <div>
-                        <label
-                            >Textures (Max 50)
-                            <span class="text-darker">(Optional)</span></label
-                        >
-                        <input
-                            type="file"
-                            id="texInput"
-                            accept=".png,.jpg,.jpeg"
-                            multiple
-                        />
-                    </div>
+            <!-- Controls -->
+            <div class="mb-15">
+                <label>Mode</label>
+                <select id="modeSelect">
+                    <option value="decimate">
+                        Decimate (Reduce Poly Count)
+                    </option>
+                    <option value="remesh">Remesh + Bake (Retopology)</option>
+                </select>
+            </div>
+
+            <!-- Decimate Controls -->
+            <div id="decimateControls" class="slider-group">
+                <div class="slider-header">
+                    <span>Target Quality</span>
+                    <span id="ratioVal">50%</span>
                 </div>
+                <input type="range" id="ratio" min="1" max="100" value="50" />
+                <p class="text-xs text-muted m-0">
+                    Lower = Smaller File. Higher = More Detail.
+                </p>
+            </div>
 
-                <!-- Controls -->
-                <div class="mb-15">
-                    <label>Mode</label>
-                    <select id="modeSelect">
-                        <option value="decimate">
-                            Decimate (Reduce Poly Count)
-                        </option>
-                        <option value="remesh">
-                            Remesh + Bake (Retopology)
-                        </option>
+            <!-- Remesh Controls -->
+            <div id="remeshControls" class="flex-column gap-10 d-none">
+                <div>
+                    <label>Target Faces</label>
+                    <input type="number" id="targetFaces" value="5000" />
+                </div>
+                <div>
+                    <label>Texture Size (px)</label>
+                    <select id="textureSize">
+                        <option value="1024">1024</option>
+                        <option value="2048" selected>2048</option>
+                        <option value="4096">4096</option>
                     </select>
                 </div>
+            </div>
 
-                <!-- Decimate Controls -->
-                <div id="decimateControls" class="slider-group">
-                    <div class="slider-header">
-                        <span>Target Quality</span>
-                        <span id="ratioVal">50%</span>
-                    </div>
-                    <input
-                        type="range"
-                        id="ratio"
-                        min="1"
-                        max="100"
-                        value="50"
-                    />
-                    <p class="text-xs text-muted m-0">
-                        Lower = Smaller File. Higher = More Detail.
-                    </p>
+            <button id="processBtn" disabled>OPTIMIZE MESH</button>
+        </aside>
+
+        <div class="d-flex flex-column flex-1">
+            <header class="main-header">
+                <h1>MeshOpt <span class="text-primary">Console</span></h1>
+                <div class="d-flex gap-20 align-center">
+                    <a
+                        href="/help.html"
+                        target="_blank"
+                        class="font-bold text-small"
+                        >Help & Guide</a
+                    >
+                    <div class="text-small text-muted">v1.0.0</div>
                 </div>
+            </header>
 
-                <!-- Remesh Controls -->
-                <div id="remeshControls" class="flex-column gap-10 d-none">
-                    <div>
-                        <label>Target Faces</label>
-                        <input type="number" id="targetFaces" value="5000" />
-                    </div>
-                    <div>
-                        <label>Texture Size (px)</label>
-                        <select id="textureSize">
-                            <option value="1024">1024</option>
-                            <option value="2048" selected>2048</option>
-                            <option value="4096">4096</option>
-                        </select>
-                    </div>
-                </div>
+            <div class="nightmare-banner">
+                <details>
+                    <summary>The "Nightmare" I'm currently...</summary>
+                    <div class="nightmare-content">
+                        <p>
+                            living starts with the handover. A product designer
+                            sends me a Dropbox link containing a
+                            <strong>300MB High-Res `.OBJ` file</strong>. Then
+                            comes the "Oh Sh*t" moment when I try to load this
+                            file into Three.js or Shopify. The browser crashes,
+                            or the frame rate drops to 1 FPS.
+                        </p>
 
-                <button id="processBtn" disabled>OPTIMIZE MESH</button>
-            </aside>
+                        <p>
+                            Now I'm forced into the context switch. I have to
+                            stop coding, download <strong>Blender</strong>, and
+                            open a UI that looks like the cockpit of a 747. What
+                            follows is the manual labor; I spend 45 minutes
+                            watching YouTube tutorials on
+                            <em>"How to bake normals"</em> and
+                            <em>"Retopology."</em> I manually delete vertices,
+                            break the UV maps, and ruin the textures. Finally,
+                            the export. I export a `.glb`. It looks terrible. I
+                            try again. I'll eventually get it right but hey,
+                            time.
+                        </p>
+
+                        <p>
+                            That's when the scale issue hits me. I realize I
+                            have
+                            <strong>500 more products</strong> in the catalog to
+                            do.
+                        </p>
+
+                        <p>
+                            <strong>Your Solution:</strong> I delete Blender,
+                            run one `curl` command, and go back to work, my
+                            regular work that is.
+                        </p>
+
+                        <h3>
+                            This tool was built by an engineer, not a marketer.
+                        </h3>
+                        <p>
+                            <strong
+                                >This is the "JPEG of 3D" and what
+                                Shopify/iPhone requires.*</strong
+                            >
+                        </p>
+
+                        <ol>
+                            <li>Runs natively (no heavy Blender overhead).</li>
+                            <li>
+                                Uses advanced math (QEM) to reduce polygon
+                                counts by up to 90%+.
+                            </li>
+                            <li>
+                                Outputs web-standard .glb binary & USDZ files.
+                            </li>
+                        </ol>
+
+                        <p class="quote-box">
+                            The expected workflow is to spend some credits on
+                            the Web UI. Once you've got your dials right, use
+                            the API to zip through your files.
+                        </p>
+                    </div>
+                </details>
+            </div>
 
             <main class="viewer-container">
                 <model-viewer
@@ -290,67 +287,73 @@
                     Processing... <br /><small>(This may take a minute)</small>
                 </div>
             </main>
-        </div>
 
-        <!-- History Modal -->
-        <div id="historyModal" class="modal-overlay">
-            <div class="modal-window">
-                <div class="modal-header">
-                    <div>
-                        <h2 class="m-0 mb-5">Transaction History</h2>
-                        <p class="m-0 text-muted text-small">
-                            Remaining Credits:
+            <!-- History Modal -->
+            <div id="historyModal" class="modal-overlay">
+                <div class="modal-window">
+                    <div class="modal-header">
+                        <div>
+                            <h2 class="m-0 mb-5">Transaction History</h2>
+                            <p class="m-0 text-muted text-small">
+                                Remaining Credits:
+                                <span
+                                    id="remainingCredits"
+                                    class="text-primary font-bold"
+                                    >--</span
+                                >
+                            </p>
+                        </div>
+                        <div class="d-flex gap-10">
                             <span
-                                id="remainingCredits"
-                                class="text-primary font-bold"
-                                >--</span
+                                onclick="document.getElementById('historyModal').style.display='none'"
+                                class="modal-close"
+                                >&times;</span
                             >
-                        </p>
+                        </div>
                     </div>
-                    <div class="d-flex gap-10">
+                    <div class="d-flex gap-10 mb-15 align-center">
+                        <button id="downloadHistoryBtn" class="btn-sm">
+                            Download CSV
+                        </button>
+                        <input
+                            id="historySearchInput"
+                            type="text"
+                            placeholder="Search by activity, date..."
+                            class="flex-1 text-small"
+                        />
                         <span
-                            onclick="document.getElementById('historyModal').style.display='none'"
-                            class="modal-close"
-                            >&times;</span
-                        >
+                            id="historySearchCount"
+                            class="text-small text-muted text-nowrap min-w-60 text-right"
+                        ></span>
                     </div>
-                </div>
-                <div class="d-flex gap-10 mb-15 align-center">
-                    <button id="downloadHistoryBtn" class="btn-sm">
-                        Download CSV
-                    </button>
-                    <input
-                        id="historySearchInput"
-                        type="text"
-                        placeholder="Search by activity, date..."
-                        class="flex-1 text-small"
-                    />
-                    <span
-                        id="historySearchCount"
-                        class="text-small text-muted text-nowrap min-w-60 text-right"
-                    ></span>
-                </div>
-                <div class="modal-body">
-                    <table class="table-container">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Activity</th>
-                                <th>Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody id="historyTableBody">
-                            <!-- Rows injected here -->
-                        </tbody>
-                    </table>
-                </div>
-                <div class="modal-footer">
-                    <strong class="text-muted">Fair Use Policy:</strong>
-                    Unlimited re-optimizations of the same file within 24 hours
-                    cost only 1 credit total. Each unique file costs 1 credit
-                    per 24-hour period.
+                    <div class="modal-body">
+                        <table class="table-container">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Activity</th>
+                                    <th>Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody">
+                                <!-- Rows injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="modal-footer">
+                        <strong class="text-muted">Fair Use Policy:</strong>
+                        Unlimited re-optimizations of the same file within 24
+                        hours cost only 1 credit total. Each unique file costs 1
+                        credit per 24-hour period.
+                    </div>
                 </div>
             </div>
+            <!-- Footer -->
+            <footer class="main-footer">
+                <p>&copy; 2025 Brian Ginn. All rights reserved.</p>
+                <a href="/privacy-policy.html">Privacy Policy</a>
+                <a href="/contact.html">Contact</a>
+            </footer>
         </div>
 
         <script>
@@ -841,14 +844,5 @@
                     window.location.href = data.url; // Go to Stripe
                 });
         </script>
-
-        <!-- Footer -->
-        <footer class="main-footer sticky">
-            <p>
-                <a href="/privacy-policy.html">Privacy Policy</a> |
-                <a href="/contact.html">Contact</a>
-            </p>
-            <p>&copy; 2025 Brian Ginn. All rights reserved.</p>
-        </footer>
     </body>
 </html>

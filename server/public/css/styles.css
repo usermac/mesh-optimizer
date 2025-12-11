@@ -37,6 +37,8 @@ body.app-layout {
     height: 100vh;
     display: flex;
     flex-direction: column;
+    padding-left: 320px;
+    box-sizing: border-box;
 }
 
 h1,
@@ -286,26 +288,31 @@ a.back-link:hover {
 
 /* Application Sidebar */
 .sidebar {
-    width: 300px;
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    width: 320px;
     background: var(--panel-dark);
     padding: 20px;
     border-right: 1px solid var(--border-dark);
+    box-sizing: border-box;
+    z-index: 10;
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    overflow-y: auto;
+    gap: 12px; /* Reduced gap to make content more compact */
 }
 
 .sidebar-section {
     border-top: 1px solid var(--border-dark);
-    padding-top: 20px;
+    padding-top: 12px;
 }
 
 /* Dropzone */
 .dropzone {
     border: 2px dashed #444;
     border-radius: 8px;
-    padding: 40px 20px;
+    padding: 25px 20px; /* Reduced vertical padding */
     text-align: center;
     cursor: pointer;
     transition: 0.2s;
@@ -593,12 +600,15 @@ code {
 
 /* Footer */
 footer.main-footer {
-    padding: 20px;
+    padding: 15px 20px;
     font-size: 0.85rem;
     color: var(--text-muted);
     border-top: 1px solid var(--border);
     margin-top: 40px;
-    text-align: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 20px;
+    align-items: center;
     width: 100%;
     box-sizing: border-box;
     background-color: var(--bg);
@@ -615,14 +625,11 @@ footer.main-footer a:hover {
 }
 
 footer.main-footer p {
-    margin: 5px 0;
+    margin: 0;
 }
 
 /* Sticky footer variant for app layout */
 footer.main-footer.sticky {
-    position: fixed;
-    bottom: 0;
-    left: 0;
     z-index: 100;
     margin-top: 0;
     border-top: 1px solid var(--border-dark);
