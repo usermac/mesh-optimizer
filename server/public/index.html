@@ -219,9 +219,10 @@
                         <p>
                             Now I'm forced into the context switch. I have to
                             stop coding, download <strong>Blender</strong>, and
-                            open a UI that looks like the cockpit of a 747. What
-                            follows is the manual labor; I spend 45 minutes
-                            watching YouTube tutorials on
+                            open a UI that looks like the cockpit of a
+                            <span id="airplane-model">747</span>. What follows
+                            is the manual labor; I spend 45 minutes watching
+                            YouTube tutorials on
                             <em>"How to bake normals"</em> and
                             <em>"Retopology."</em> I manually delete vertices,
                             break the UV maps, and ruin the textures. Finally,
@@ -853,6 +854,71 @@
                     const data = await res.json();
                     window.location.href = data.url; // Go to Stripe
                 });
+        </script>
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                // List of EU member country codes.
+                const EU_COUNTRIES = [
+                    "AT",
+                    "BE",
+                    "BG",
+                    "HR",
+                    "CY",
+                    "CZ",
+                    "DK",
+                    "EE",
+                    "FI",
+                    "FR",
+                    "DE",
+                    "GR",
+                    "HU",
+                    "IE",
+                    "IT",
+                    "LV",
+                    "LT",
+                    "LU",
+                    "MT",
+                    "NL",
+                    "PL",
+                    "PT",
+                    "RO",
+                    "SK",
+                    "SI",
+                    "ES",
+                    "SE",
+                ];
+
+                // Use a free geolocation API to determine the user's country.
+                fetch("https://ipapi.co/json/")
+                    .then((response) => {
+                        if (!response.ok) {
+                            throw new Error("Network response was not ok");
+                        }
+                        return response.json();
+                    })
+                    .then((data) => {
+                        const userCountry = data.country_code;
+                        const airplaneModelSpan =
+                            document.getElementById("airplane-model");
+
+                        // If the element exists and the user is in an EU country, swap the text.
+                        if (
+                            airplaneModelSpan &&
+                            userCountry &&
+                            EU_COUNTRIES.includes(userCountry.toUpperCase())
+                        ) {
+                            airplaneModelSpan.innerText = "Airbus A320";
+                        }
+                    })
+                    .catch((error) => {
+                        // This is a non-critical feature, so we'll just log the error
+                        // to the console and let the page render with the default text.
+                        console.error(
+                            "Could not determine user location for localization:",
+                            error,
+                        );
+                    });
+            });
         </script>
     </body>
 </html>
