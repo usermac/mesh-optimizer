@@ -592,31 +592,40 @@ code {
 }
 
 /* Footer */
-footer.sticky-footer {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    padding: 12px 20px;
+footer.main-footer {
+    padding: 20px;
     font-size: 0.85rem;
-    color: #666;
-    z-index: 100;
+    color: var(--text-muted);
+    border-top: 1px solid var(--border);
+    margin-top: 40px;
+    text-align: center;
+    width: 100%;
+    box-sizing: border-box;
+    background-color: var(--bg);
 }
 
-footer.sticky-footer a {
-    color: #888;
+footer.main-footer a {
+    color: var(--text-muted);
     text-decoration: none;
-    margin-right: 15px;
+    margin: 0 10px;
 }
 
-footer.sticky-footer a:hover {
+footer.main-footer a:hover {
     color: var(--primary);
 }
 
-.footer-note {
-    text-align: center;
-    color: var(--text-muted);
-    font-size: 0.85rem;
-    margin-top: 30px;
+footer.main-footer p {
+    margin: 5px 0;
+}
+
+/* Sticky footer variant for app layout */
+footer.main-footer.sticky {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    z-index: 100;
+    margin-top: 0;
+    border-top: 1px solid var(--border-dark);
 }
 
 /* Contact Page Styles */
