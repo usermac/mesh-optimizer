@@ -434,6 +434,10 @@ model-viewer {
     color: #fff;
 }
 
+.modal-window-large {
+    max-width: 800px;
+}
+
 .modal-header {
     display: flex;
     justify-content: space-between;

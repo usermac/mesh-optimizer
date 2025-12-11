@@ -194,8 +194,8 @@
                 <h1>MeshOpt <span class="text-primary">Console</span></h1>
                 <div class="d-flex gap-20 align-center">
                     <a
-                        href="/help.html"
-                        target="_blank"
+                        href="#"
+                        id="helpLink"
                         class="font-bold text-small"
                         >Help & Guide</a
                     >
@@ -352,9 +352,333 @@
             <!-- Footer -->
             <footer class="main-footer">
                 <p>&copy; 2025 Brian Ginn. All rights reserved.</p>
-                <a href="/privacy-policy.html">Privacy Policy</a>
-                <a href="/contact.html">Contact</a>
+                <a href="#" id="privacyLink">Privacy Policy</a>
+                <a href="#" id="contactLink">Contact</a>
             </footer>
+
+            <!-- Help Modal -->
+            <div id="helpModal" class="modal-overlay">
+                <div class="modal-window">
+                    <div class="modal-header">
+                        <h2 class="m-0">Help & Guide</h2>
+                        <span class="modal-close" onclick="closeModal('helpModal')">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <section class="content-section">
+                            <h3>Quick Start: Missing Textures?</h3>
+                            <div class="alert-box">
+                                <h4>Why is my model white/grey?</h4>
+                                <p>
+                                    If you uploaded an <code>.obj</code> file and the result
+                                    has no color, you likely forgot the texture files!
+                                </p>
+                            </div>
+                            <p>
+                                <strong>The Rule:</strong> If you upload an OBJ file, you
+                                MUST also select the texture images (JPG/PNG) and the
+                                material file (MTL) at the same time.
+                            </p>
+                            <p>
+                                <strong>How to fix it:</strong> In the upload window, select
+                                ALL files (<code>model.obj</code>, <code>model.mtl</code>,
+                                <code>texture.jpg</code>) and drag them in together. Or, use
+                                a <code>.glb</code> file which has textures built-in.
+                            </p>
+                        </section>
+
+                        <section class="content-section">
+                            <h3>Which Mode Should I Use?</h3>
+                            <div class="grid">
+                                <div class="mode-card">
+                                    <h4>Standard Decimation</h4>
+                                    <p>
+                                        <strong>Cost:</strong>
+                                        <span id="help-cost-decimate">1</span>
+                                        <span id="help-label-decimate">Credit</span>
+                                    </p>
+                                    <p>
+                                        <strong>Best for:</strong> Reducing file size while
+                                        keeping the exact same geometry structure. Good for
+                                        CAD models or models that are already clean.
+                                    </p>
+                                    <p>
+                                        <strong>How it works:</strong> It simply removes
+                                        polygons. It does not create new textures.
+                                    </p>
+                                </div>
+                                <div class="mode-card">
+                                    <h4>Premium Remesh (Bake)</h4>
+                                    <p>
+                                        <strong>Cost:</strong>
+                                        <span id="help-cost-remesh">5</span>
+                                        <span id="help-label-remesh">Credits</span>
+                                    </p>
+                                    <p>
+                                        <strong>Best for:</strong> 3D Scans, Photogrammetry,
+                                        and Organic shapes.
+                                    </p>
+                                    <p>
+                                        <strong>How it works:</strong> It builds a brand new
+                                        "clean" mesh (Retopology) and "bakes" the details
+                                        from the high-quality original onto the new one
+                                        using Normal Maps. This is the professional workflow
+                                        for games and AR.
+                                    </p>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="content-section">
+                            <h3>Supported File Formats</h3>
+                            <ul>
+                                <li>
+                                    <strong>GLB / GLTF:</strong> The best format. Textures
+                                    are embedded.
+                                </li>
+                                <li>
+                                    <strong>OBJ:</strong> Good, but requires you to upload
+                                    <code>.mtl</code> and <code>.jpg/.png</code> textures
+                                    alongside it.
+                                </li>
+                                <li>
+                                    <strong>FBX:</strong> Supported, but textures can
+                                    sometimes be tricky if they aren't embedded in the FBX.
+                                </li>
+                                <li>
+                                    <strong>ZIP:</strong> You can zip your OBJ+MTL+Textures
+                                    into a single file and upload that.
+                                </li>
+                            </ul>
+                        </section>
+
+                        <section class="content-section">
+                            <h3>Pricing & Credits</h3>
+                            <p>
+                                We use a simple credit system. You purchase a pack of
+                                credits, and they are deducted when you run a job.
+                            </p>
+                            <ul>
+                                <li>
+                                    <strong>Failed Jobs:</strong> If the server fails to
+                                    process your file, your credits are automatically
+                                    refunded.
+                                </li>
+                                <li>
+                                    <strong>Re-runs:</strong> Optimizing the exact same file
+                                    again within 24 hours (e.g., to try a different ratio)
+                                    is <strong>FREE</strong>.
+                                </li>
+                            </ul>
+                        </section>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Modal -->
+            <div id="contactModal" class="modal-overlay">
+                <div class="modal-window">
+                    <div class="modal-header">
+                        <h2 class="m-0">Contact Us</h2>
+                        <span class="modal-close" onclick="closeModal('contactModal')">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <div class="intro">
+                            <p>
+                                <strong>We're here to help!</strong> Whether you have a
+                                question about privacy, need technical support, or want to
+                                provide feedback, we'd love to hear from you.
+                            </p>
+                            <p>
+                                Fill out the form below and we'll respond within 24-48
+                                hours.
+                            </p>
+                        </div>
+
+                        <div id="contact-success-alert" class="alert success">
+                            <strong>✓ Message sent successfully!</strong> We'll get back to
+                            you within 24-48 hours.
+                        </div>
+
+                        <div id="contact-error-alert" class="alert error">
+                            <strong>✗ Error:</strong> <span id="contact-error-message"></span>
+                        </div>
+
+                        <form id="contact-form">
+                            <div class="form-group">
+                                <label for="contact-name">Name <span class="required">*</span></label>
+                                <input
+                                    type="text"
+                                    id="contact-name"
+                                    name="name"
+                                    required
+                                    placeholder="Your name"
+                                />
+                            </div>
+
+                            <div class="form-group">
+                                <label for="contact-email">Email <span class="required">*</span></label>
+                                <input
+                                    type="email"
+                                    id="contact-email"
+                                    name="email"
+                                    required
+                                    placeholder="your.email@example.com"
+                                />
+                                <div class="helper-text">
+                                    We'll use this to respond to your inquiry
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="contact-subject">Subject <span class="required">*</span></label>
+                                <select id="contact-subject" name="subject" required>
+                                    <option value="">Select a topic...</option>
+                                    <option value="privacy">Privacy & Data Inquiry</option>
+                                    <option value="technical">Technical Support</option>
+                                    <option value="billing">Billing & Credits</option>
+                                    <option value="account">Account Management</option>
+                                    <option value="feature">Feature Request</option>
+                                    <option value="bug">Bug Report</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="contact-message">Message <span class="required">*</span></label>
+                                <textarea
+                                    id="contact-message"
+                                    name="message"
+                                    required
+                                    placeholder="Please describe your question or concern in detail..."
+                                ></textarea>
+                                <div class="helper-text">
+                                    Be as specific as possible to help us assist you better
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="contact-api-key">API Key (Optional)</label>
+                                <input
+                                    type="text"
+                                    id="contact-api-key"
+                                    name="api_key"
+                                    placeholder="Your API key (if relevant to your inquiry)"
+                                />
+                                <div class="helper-text">
+                                    Include this if your inquiry is about your account or credits
+                                </div>
+                            </div>
+
+                            <div class="button-group">
+                                <button type="submit" id="contact-submit-btn">Send Message</button>
+                                <button type="reset">Clear Form</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Privacy Policy Modal -->
+            <div id="privacyModal" class="modal-overlay">
+                <div class="modal-window modal-window-large">
+                    <div class="modal-header">
+                        <div>
+                            <h2 class="m-0">Privacy Policy</h2>
+                            <p class="text-muted text-small m-0">Last Updated: December 2024</p>
+                        </div>
+                        <span class="modal-close" onclick="closeModal('privacyModal')">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <div class="highlight-box mb-20">
+                            <p class="m-0">
+                                <strong>Key Promise:</strong> We never sell your data or
+                                your 3D models. Your files are yours.
+                            </p>
+                        </div>
+
+                        <section class="content-section">
+                            <h3>1. Introduction</h3>
+                            <p>
+                                Welcome to MeshOpt ("we," "our," or "us"). We are committed
+                                to protecting your privacy and ensuring the security of your
+                                3D assets. This Privacy Policy explains how we collect, use,
+                                and safeguard your information when you use our website and
+                                API services.
+                            </p>
+                            <p>
+                                By using our service, you agree to the collection and use of
+                                information in accordance with this policy.
+                            </p>
+                        </section>
+
+                        <section class="content-section">
+                            <h3>2. Information We Collect</h3>
+                            <p></p><strong>Personal Information:</strong> Email address (during payment/checkout), payment information (processed securely by Stripe - we do not store full credit card numbers).</p>
+                            <p><strong>Usage Data:</strong> API requests, timestamps, file sizes (for credit usage and abuse prevention), IP addresses (for security and rate-limiting).</p>
+                            <p><strong>User Content:</strong> We temporarily process your 3D files (OBJ, FBX, GLB, etc.) and textures, and generate optimized versions (GLB, USDZ).</p>
+                        </section>
+
+                        <section class="content-section">
+                            <h3>3. How We Use Your Information</h3>
+                            <p><strong>Service Provision:</strong> To provide the 3D optimization service, manage your credit balance, and authenticate your API requests.</p>
+                            <p><strong>Communications:</strong> To send transaction receipts, notify you of critical service updates, and respond to your support requests.</p>
+                        </section>
+
+                        <section class="content-section">
+                            <h3>4. 3D File Handling & Security</h3>
+                            <div class="highlight-box mb-15">
+                                <p class="m-0">
+                                    <strong>Your Intellectual Property:</strong> You retain
+                                    full ownership of all files you upload and the optimized
+                                    files we generate. We claim no ownership rights.
+                                </p>
+                            </div>
+                            <p></p><strong>Processing:</strong> Files are transferred via secure SSL/TLS encryption, processed on isolated workers, and stored temporarily in a private S3 bucket.</p>
+                            <p><strong>Access Control:</strong> Your files are not accessible to the public. Download links are signed and expire automatically.</p>
+                        </section>
+
+                        <section class="content-section">
+                            <h3>5. Data Retention</h3>
+                            <p><strong>3D Files:</strong> All uploaded files and generated results are automatically deleted from our servers after <strong>24 hours</strong>.</p>
+                            <p><strong>Account Data:</strong> We retain billing emails and transaction history indefinitely for tax and accounting purposes.</p>
+                        </section>
+
+                        <section class="content-section">
+                            <h3>6. Third-Party Services</h3>
+                            <p><strong>Stripe:</strong> We use Stripe to process payments. We receive confirmation that payment succeeded and your email address. See <a href="https://stripe.com/privacy" target="_blank" class="text-primary">Stripe's Privacy Policy</a>.</p>
+                            <p><strong>No Analytics or Tracking:</strong> We do <strong>NOT</strong> use Google Analytics, Facebook Pixel, or any third-party tracking or analytics services.</p>
+                        </section>
+
+                        <section class="content-section">
+                            <h3>7. Your Rights</h3>
+                            <p>You have the right to: <strong>Access</strong> your personal data, <strong>Correct</strong> inaccurate data, <strong>Delete</strong> your account and data, <strong>Export</strong> your transaction history (available in the app), and <strong>Object</strong> to processing for specific purposes.</p>
+                            <p>To exercise any of these rights, please contact us using the Contact form.</p>
+                        </section>
+
+                        <section class="content-section">
+                            <h3>8. Security Measures</h3>
+                            <p>We implement industry-standard measures: SSL/TLS encryption, secure database with access controls, file isolation during processing, automatic deletion after processing, no permanent file storage, and API key authentication.</p>
+                        </section>
+
+                        <section class="content-section">
+                            <h3>9. Cookies & Tracking</h3>
+                            <p>We use minimal session storage for authentication state. We do <strong>NOT</strong> use analytics cookies, advertising cookies, social media tracking pixels, cross-site tracking, or third-party cookies of any kind.</p>
+                            <p>We use browser localStorage to store your API key and application state. This data never leaves your browser.</p>
+                        </section>
+
+                        <section class="content-section">
+                            <h3>10. Changes to This Policy</h3>
+                            <p>We may update this Privacy Policy from time to time. The "Last Updated" date will reflect when changes were made. For material changes, we will notify users via email.</p>
+                        </section>
+
+                        <section class="content-section">
+                            <h3>11. Contact Us</h3>
+                            <p>If you have questions, concerns, or requests regarding this Privacy Policy or your personal data, please use our <a href="#" onclick="closeModal('privacyModal'); openModal('contactModal'); return false;" class="text-primary">Contact Form</a>.</p>
+                            <p>We will respond to privacy inquiries within 30 days.</p>
+                        </section>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <script>
@@ -840,15 +1164,130 @@
                 document.body.style.overflow = "auto";
             });
 
-            // Close modal on ESC key
-            document.addEventListener("keydown", function (e) {
-                if (e.key === "Escape") {
-                    const modal = document.getElementById("historyModal");
-                    if (modal.style.display === "flex") {
-                        modal.style.display = "none";
-                        document.body.style.overflow = "auto";
+            // Modal helper functions
+            function openModal(modalId) {
+                const modal = document.getElementById(modalId);
+                modal.style.display = "flex";
+                document.body.style.overflow = "hidden";
+
+                // Pre-fill API key in contact form if opening contact modal
+                if (modalId === "contactModal") {
+                    const savedApiKey = localStorage.getItem("apiKey");
+                    if (savedApiKey) {
+                        document.getElementById("contact-api-key").value = savedApiKey;
                     }
                 }
+
+                // Update help modal pricing if opening help modal
+                if (modalId === "helpModal") {
+                    if (pricingConfig.cost_decimate !== undefined) {
+                        document.getElementById("help-cost-decimate").innerText = pricingConfig.cost_decimate;
+                        document.getElementById("help-label-decimate").innerText = pricingConfig.cost_decimate === 1 ? "Credit" : "Credits";
+                    }
+                    if (pricingConfig.cost_remesh !== undefined) {
+                        document.getElementById("help-cost-remesh").innerText = pricingConfig.cost_remesh;
+                        document.getElementById("help-label-remesh").innerText = pricingConfig.cost_remesh === 1 ? "Credit" : "Credits";
+                    }
+                }
+            }
+
+            function closeModal(modalId) {
+                const modal = document.getElementById(modalId);
+                modal.style.display = "none";
+                document.body.style.overflow = "auto";
+            }
+
+            // Close any open modal on ESC key
+            document.addEventListener("keydown", function (e) {
+                if (e.key === "Escape") {
+                    const modals = ["historyModal", "helpModal", "contactModal", "privacyModal"];
+                    modals.forEach(function(modalId) {
+                        const modal = document.getElementById(modalId);
+                        if (modal && modal.style.display === "flex") {
+                            closeModal(modalId);
+                        }
+                    });
+                }
+            });
+
+            // Modal link handlers
+            document.getElementById("helpLink").addEventListener("click", function(e) {
+                e.preventDefault();
+                openModal("helpModal");
+            });
+
+            document.getElementById("contactLink").addEventListener("click", function(e) {
+                e.preventDefault();
+                openModal("contactModal");
+            });
+
+            document.getElementById("privacyLink").addEventListener("click", function(e) {
+                e.preventDefault();
+                openModal("privacyModal");
+            });
+
+            // Close modal when clicking outside the modal window
+            ["helpModal", "contactModal", "privacyModal"].forEach(function(modalId) {
+                document.getElementById(modalId).addEventListener("click", function(e) {
+                    if (e.target === this) {
+                        closeModal(modalId);
+                    }
+                });
+            });
+
+            // Contact form submission handler
+            document.getElementById("contact-form").addEventListener("submit", async function(e) {
+                e.preventDefault();
+
+                const submitBtn = document.getElementById("contact-submit-btn");
+                const successAlert = document.getElementById("contact-success-alert");
+                const errorAlert = document.getElementById("contact-error-alert");
+                const errorMessage = document.getElementById("contact-error-message");
+
+                // Disable button and show loading
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = "Sending...";
+
+                // Hide previous alerts
+                successAlert.classList.remove("show");
+                errorAlert.classList.remove("show");
+
+                // Get form data
+                const formData = {
+                    name: document.getElementById("contact-name").value,
+                    email: document.getElementById("contact-email").value,
+                    subject: document.getElementById("contact-subject").value,
+                    message: document.getElementById("contact-message").value,
+                    api_key: document.getElementById("contact-api-key").value || null,
+                };
+
+                try {
+                    const response = await fetch("/contact", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify(formData),
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        successAlert.classList.add("show");
+                        document.getElementById("contact-form").reset();
+                        successAlert.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                    } else {
+                        errorMessage.textContent = data.error || "Unable to send message";
+                        errorAlert.classList.add("show");
+                    }
+                } catch (err) {
+                    errorMessage.textContent = "Network error. Please try again later.";
+                    errorAlert.classList.add("show");
+                    console.error("Contact form error:", err);
+                }
+
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = "Send Message";
             });
 
             // Add event listener for search input
