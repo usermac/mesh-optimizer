@@ -26,7 +26,7 @@
 - [ ] **Reduce Upload Limit**: Lower from 5GB to a reasonable limit (e.g., 500MB-1GB) to prevent DoS attacks.
 - [ ] **Add Rate Limiting**: Implement rate limiting on all endpoints (especially `/optimize`, `/admin/*`) to prevent abuse.
 - [ ] **Secure File Downloads**: Add authentication checks to `/download/{batch_id}/{filename}` to prevent unauthorized access.
-- [ ] **Rotate TEST_KEY Regularly**: Ensure `TEST_KEY` is not exposed and rotated periodically.
+
 - [ ] **Add Request Validation**: Validate all user inputs before processing (file types, sizes, query parameters).
 
 ## Post-Launch / DevOps

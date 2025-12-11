@@ -604,18 +604,10 @@ async fn optimize_handler(
     let usdz_filename = format!("{}_opt.usdz", output_base);
 
     // Fair Billing Logic
-    let test_key = std::env::var("TEST_KEY").unwrap_or_default();
-    let is_test_key = !test_key.is_empty() && auth_key.0 == test_key;
-
-    let should_charge = if is_test_key {
-        info!("Test Key used. Skipping billing.");
-        false
-    } else {
-        state
-            .db
-            .should_charge_for_file(&auth_key.0, &file_hash)
-            .await
-    };
+    let should_charge = state
+        .db
+        .should_charge_for_file(&auth_key.0, &file_hash)
+        .await;
     let mut deducted = false;
 
     // Pricing Logic
@@ -678,23 +670,19 @@ async fn optimize_handler(
         }
     } else {
         // Record free re-optimization for transparency in transaction history
-        if is_test_key {
-            info!("Test Key used. Skipping transaction record.");
-        } else {
-            info!(
-                "Free Re-roll for hash: {} (recording 0-credit transaction)",
-                file_hash
-            );
-            let _ = state
-                .db
-                .record_transaction(
-                    &auth_key.0,
-                    0,
-                    &format!("re-optimized: {} (free - within 24hr)", input_filename),
-                    Some(file_hash.clone()),
-                )
-                .await;
-        }
+        info!(
+            "Free Re-roll for hash: {} (recording 0-credit transaction)",
+            file_hash
+        );
+        let _ = state
+            .db
+            .record_transaction(
+                &auth_key.0,
+                0,
+                &format!("re-optimized: {} (free - within 24hr)", input_filename),
+                Some(file_hash.clone()),
+            )
+            .await;
     }
 
     let credits_remaining = state.db.get_credits(&auth_key.0).await.unwrap_or(0);
