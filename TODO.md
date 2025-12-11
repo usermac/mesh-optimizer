@@ -45,3 +45,4 @@
 - [ ] **Web UI**: Change API Key input type to `password` to prevent shoulder-surfing.
 - [ ] **Dashboard**: Simple page for users to check their credit balance.
 - [ ] **Subscriptions**: Support for recurring billing (monthly unlimited or refill) for "whale" clients.
+- [ ] **DAILY Usage for Hardware**: I need to know when my hardware is being used and not living up to the work ask.
