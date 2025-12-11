@@ -1,0 +1,39 @@
+# ============================================================================
+# Mesh Optimizer - Backup System Environment Variables
+# ============================================================================
+# Add these to your /root/mesh-optimizer/.env file
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# Storage Box Configuration (Hetzner)
+# ----------------------------------------------------------------------------
+# Your Hetzner Storage Box credentials for automated off-site backups
+STORAGE_BOX_USER=u518013
+STORAGE_BOX_HOST=u518013.your-storagebox.de
+STORAGE_BOX_PATH=/backups
+
+# ----------------------------------------------------------------------------
+# Email Configuration (Resend - you already have this)
+# ----------------------------------------------------------------------------
+# Used for backup success/failure notifications
+RESEND_API_KEY=re_your_key_here
+BACKUP_EMAIL=your-email@example.com
+
+# ----------------------------------------------------------------------------
+# Optional: Worker Configuration
+# ----------------------------------------------------------------------------
+# Number of concurrent optimization jobs (default: 10)
+# Adjust based on your hardware capacity
+# WORKER_SLOTS=10
+
+# ============================================================================
+# INSTRUCTIONS:
+# ============================================================================
+# 1. Copy these lines to /root/mesh-optimizer/.env
+# 2. Replace the placeholder values:
+#    - STORAGE_BOX_USER: Your actual Storage Box username (e.g., u518013)
+#    - STORAGE_BOX_HOST: Your actual Storage Box hostname
+#    - RESEND_API_KEY: Your actual Resend API key (starts with re_)
+#    - BACKUP_EMAIL: The email address where you want notifications
+# 3. Run the setup script: bash scripts/backup/setup.sh
+# ============================================================================
