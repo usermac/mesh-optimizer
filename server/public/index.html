@@ -524,9 +524,19 @@
                 .getElementById("texInput")
                 .addEventListener("change", resetToOptimize);
 
+            // Load API Key from localStorage
+            const apiKeyEl = document.getElementById("apiKey");
+            const storedKey = localStorage.getItem("apiKey");
+            if (storedKey) {
+                apiKeyEl.value = storedKey;
+                apiKeyEl.dispatchEvent(new Event("input")); // To update the preview
+            }
+
             // API Key Preview
             document.getElementById("apiKey").addEventListener("input", (e) => {
                 const key = e.target.value;
+                // Save key to localStorage on change
+                localStorage.setItem("apiKey", key);
                 const preview = document.getElementById("apiKeyPreview");
                 if (key.length <= 4) {
                     preview.textContent = key || "--";

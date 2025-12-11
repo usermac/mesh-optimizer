@@ -126,6 +126,13 @@
         </div>
 
         <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const savedApiKey = localStorage.getItem("apiKey");
+                if (savedApiKey) {
+                    document.getElementById("api-key").value = savedApiKey;
+                }
+            });
+
             const form = document.getElementById("contact-form");
             const submitBtn = document.getElementById("submit-btn");
             const successAlert = document.getElementById("success-alert");
