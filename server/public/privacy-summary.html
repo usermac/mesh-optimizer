@@ -4,173 +4,18 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Privacy Summary - MeshOpt</title>
-        <style>
-            :root {
-                --primary: #3b82f6;
-                --bg: #111;
-                --panel: #1f2937;
-                --text: #f3f4f6;
-                --text-muted: #9ca3af;
-                --border: #374151;
-                --success: #10b981;
-            }
-
-            body {
-                font-family:
-                    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-                    Helvetica, Arial, sans-serif;
-                background-color: var(--bg);
-                color: var(--text);
-                margin: 0;
-                padding: 0;
-                line-height: 1.6;
-            }
-
-            .container {
-                max-width: 600px;
-                margin: 0 auto;
-                padding: 40px 20px;
-            }
-
-            header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 40px;
-                border-bottom: 1px solid var(--border);
-                padding-bottom: 20px;
-            }
-
-            h1 {
-                margin: 0;
-                font-size: 1.8rem;
-                background: linear-gradient(45deg, #3b82f6, #10b981);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-            }
-
-            a.back-link {
-                color: var(--primary);
-                text-decoration: none;
-                font-weight: bold;
-                border: 1px solid var(--border);
-                padding: 8px 16px;
-                border-radius: 6px;
-                transition: 0.2s;
-            }
-
-            a.back-link:hover {
-                background: var(--panel);
-            }
-
-            .subtitle {
-                color: var(--text-muted);
-                font-size: 0.9rem;
-                text-align: center;
-                margin-bottom: 30px;
-            }
-
-            .summary-box {
-                background: var(--panel);
-                padding: 24px;
-                border-radius: 12px;
-                margin-bottom: 24px;
-                border: 1px solid var(--border);
-            }
-
-            h2 {
-                color: var(--primary);
-                margin-top: 0;
-                margin-bottom: 16px;
-                font-size: 1.2rem;
-            }
-
-            ul {
-                color: var(--text-muted);
-                padding-left: 20px;
-                margin: 0 0 20px 0;
-            }
-
-            li {
-                margin-bottom: 10px;
-            }
-
-            strong {
-                color: var(--text);
-            }
-
-            .highlight-box {
-                background: rgba(16, 185, 129, 0.1);
-                border-left: 4px solid var(--success);
-                padding: 16px;
-                border-radius: 4px;
-                margin: 20px 0;
-            }
-
-            .highlight-box p {
-                margin: 0;
-                color: var(--text);
-            }
-
-            .button-group {
-                display: flex;
-                gap: 12px;
-                margin-top: 30px;
-            }
-
-            .btn {
-                flex: 1;
-                padding: 12px 24px;
-                border-radius: 6px;
-                text-decoration: none;
-                text-align: center;
-                font-weight: bold;
-                transition: 0.2s;
-                cursor: pointer;
-            }
-
-            .btn-primary {
-                background: var(--primary);
-                color: white;
-                border: none;
-            }
-
-            .btn-primary:hover {
-                opacity: 0.9;
-            }
-
-            .btn-secondary {
-                background: transparent;
-                color: var(--primary);
-                border: 1px solid var(--border);
-            }
-
-            .btn-secondary:hover {
-                background: var(--panel);
-            }
-
-            .footer-note {
-                text-align: center;
-                color: var(--text-muted);
-                font-size: 0.85rem;
-                margin-top: 30px;
-            }
-
-            @media (max-width: 600px) {
-                .button-group {
-                    flex-direction: column;
-                }
-            }
-        </style>
+        <link rel="stylesheet" href="/css/styles.css" />
     </head>
     <body>
         <div class="container">
-            <header>
-                <h1>Your Privacy Matters</h1>
+            <header
+                class="d-flex justify-between align-center border-bottom pb-20 mb-40"
+            >
+                <h1 class="gradient-text m-0">Your Privacy Matters</h1>
                 <a href="/" class="back-link">&larr; Back to App</a>
             </header>
 
-            <div class="subtitle">
+            <div class="text-center text-muted mb-20 text-small">
                 🔒 Quick summary of what we collect and how we use it
             </div>
 
@@ -199,10 +44,10 @@
                     <li>❌ No rights to your 3D models</li>
                 </ul>
 
-                <div class="highlight-box">
-                    <p></p>
-                        <strong>🛡️ Your Files Are Safe:</strong> All uploaded
-                        3D models are automatically deleted within 1 hour after
+                <div class="highlight-box success">
+                    <p>
+                        <strong>🛡️ Your Files Are Safe:</strong> All uploaded 3D
+                        models are automatically deleted within 1 hour after
                         processing. We don't use, share, or keep your files for
                         any other purpose. They're yours from start to finish.
                     </p>
@@ -234,11 +79,7 @@
 
             <p class="footer-note">
                 Questions about privacy?
-                <a
-                    href="/contact.html"
-                    style="color: var(--primary); text-decoration: none"
-                    >Contact us</a
-                >
+                <a href="/contact.html" class="text-primary">Contact us</a>
             </p>
         </div>
     </body>

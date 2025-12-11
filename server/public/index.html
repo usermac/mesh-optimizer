@@ -9,29 +9,21 @@
         />
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 
-        <!-- 2. Core SEO (The "Google" Tags) -->
-        <!-- Title: Formula = Product Name | Main Benefit | Key Tech -->
+        <!-- 2. Core SEO -->
         <title>
             MeshOpt API | Automate 3D Compression & Conversion to GLB/USDZ
         </title>
-
-        <!-- Description: The Sales Pitch. 150-160 chars max. -->
         <meta
             name="description"
-            content="High-performance API for 3D mesh decimation. Convert heavy OBJ, FBX, GLB, and glTF files into web-ready GLB & USDZ assets instantly. Uses advanced math (QEM) to reduce polygon counts by up to 90%+ for E-commerce & AR."
+            content="High-performance API for 3D mesh decimation. Convert heavy OBJ, FBX, GLB, and glTF files into web-ready GLB & USDZ assets instantly."
         />
-
-        <!-- Keywords: Still useful for niche dev tools -->
         <meta
             name="keywords"
             content="3d optimization api, glb converter, mesh decimation, reduce obj size, shopify 3d, three.js optimization, rust 3d tools, usdz converter api"
         />
-
-        <!-- Author/Copyright -->
         <meta name="author" content="Brian Ginn" />
 
-        <!-- 3. Open Graph / Social (Slack, Discord, LinkedIn Previews) -->
-        <!-- CRITICAL: This determines how your link looks when shared in a dev Slack channel -->
+        <!-- 3. Open Graph / Social -->
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://webdeliveryengine.com/" />
         <meta
@@ -40,7 +32,7 @@
         />
         <meta
             property="og:description"
-            content="Don't use Blender manually. Use our API to shrink 200MB CAD files to 3MB GLB/USDZ automatically. Built for developers. This tool was built by an engineer, not a marketer."
+            content="Don't use Blender manually. Use our API to shrink 200MB CAD files to 3MB GLB/USDZ automatically."
         />
         <meta
             property="og:image"
@@ -48,7 +40,7 @@
         />
         <meta property="og:site_name" content="MeshOpt API" />
 
-        <!-- 4. Twitter Card (Large Image for maximum visibility) -->
+        <!-- 4. Twitter Card -->
         <meta name="twitter:card" content="summary_large_image" />
         <meta
             name="twitter:title"
@@ -65,190 +57,34 @@
 
         <!-- 5. Favicons & UI -->
         <meta name="theme-color" content="#000000" />
-        <!-- Matches your dark mode aesthetic -->
         <link rel="icon" type="image/png" href="/favicon.png" />
         <link rel="canonical" href="https://webdeliveryengine.com/" />
 
         <!-- 6. Scripts & Styles -->
-        <!-- 3D Viewer Component -->
         <script
             type="module"
             src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"
         ></script>
-        <style>
-            :root {
-                --bg: #111;
-                --panel: #1a1a1a;
-                --primary: #3b82f6;
-                --text: #eee;
-            }
-            body {
-                margin: 0;
-                font-family:
-                    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-                    sans-serif;
-                background: var(--bg);
-                color: var(--text);
-                height: 100vh;
-                display: flex;
-                flex-direction: column;
-            }
-
-            header {
-                padding: 20px;
-                border-bottom: 1px solid #333;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }
-            h1 {
-                margin: 0;
-                font-size: 1.2rem;
-                font-weight: 600;
-                letter-spacing: -0.5px;
-            }
-
-            .container {
-                display: flex;
-                flex: 1;
-                height: 100%;
-            }
-
-            /* Controls Sidebar */
-            .sidebar {
-                width: 300px;
-                background: var(--panel);
-                padding: 20px;
-                border-right: 1px solid #333;
-                display: flex;
-                flex-direction: column;
-                gap: 20px;
-            }
-
-            input[type="text"] {
-                background: #333;
-                border: 1px solid #444;
-                color: white;
-                padding: 10px;
-                border-radius: 4px;
-                width: 100%;
-                box-sizing: border-box;
-            }
-
-            .dropzone {
-                border: 2px dashed #444;
-                border-radius: 8px;
-                padding: 40px 20px;
-                text-align: center;
-                cursor: pointer;
-                transition: 0.2s;
-            }
-            .dropzone:hover {
-                border-color: var(--primary);
-                background: #333;
-            }
-            .dropzone.dragging {
-                border-color: #10b981;
-                background: #064e3b;
-            }
-
-            .slider-group {
-                display: flex;
-                flex-direction: column;
-                gap: 10px;
-            }
-            .slider-header {
-                display: flex;
-                justify-content: space-between;
-                font-size: 0.9rem;
-                color: #aaa;
-            }
-            input[type="range"] {
-                width: 100%;
-            }
-
-            button {
-                background: var(--primary);
-                color: white;
-                border: none;
-                padding: 12px;
-                border-radius: 6px;
-                cursor: pointer;
-                font-weight: bold;
-                transition: 0.2s;
-            }
-            button:hover {
-                opacity: 0.9;
-            }
-            button:disabled {
-                background: #444;
-                cursor: not-allowed;
-            }
-
-            /* Viewer Area */
-            .viewer {
-                flex: 1;
-                position: relative;
-                background: #000;
-            }
-            model-viewer {
-                width: 100%;
-                height: 100%;
-            }
-
-            .loading {
-                display: none;
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: rgba(0, 0, 0, 0.8);
-                padding: 20px;
-                border-radius: 8px;
-                z-index: 10;
-            }
-        </style>
+        <link rel="stylesheet" href="/css/styles.css" />
     </head>
-    <body>
-        <header>
-            <h1>MeshOpt <span style="color: var(--primary)">Console</span></h1>
-            <div style="display: flex; gap: 20px; align-items: center">
+    <body class="app-layout">
+        <header class="main-header">
+            <h1>MeshOpt <span class="text-primary">Console</span></h1>
+            <div class="d-flex gap-20 align-center">
                 <a
                     href="/help.html"
                     target="_blank"
-                    style="
-                        color: var(--primary);
-                        text-decoration: none;
-                        font-weight: bold;
-                        font-size: 0.9rem;
-                    "
+                    class="font-bold text-small"
                     >Help & Guide</a
                 >
-                <div style="font-size: 0.8rem; color: #666">v1.0.0</div>
+                <div class="text-small text-muted">v1.0.0</div>
             </div>
         </header>
 
-        <div
-            style="background: #222; border-bottom: 1px solid #333; color: #ccc"
-        >
-            <details
-                style="
-                    padding: 15px;
-                    max-width: 900px;
-                    margin: 0 auto;
-                    cursor: pointer;
-                "
-            >
-                <summary style="font-weight: 600; color: #fff; outline: none">
-                    The "Nightmare" I'm currently...
-                </summary>
-                <div
-                    style="
-                        margin-top: 15px;
-                        line-height: 1.6;
-                        font-size: 0.95rem;
-                    "
-                >
+        <div class="nightmare-banner">
+            <details>
+                <summary>The "Nightmare" I'm currently...</summary>
+                <div class="nightmare-content">
                     <p>
                         living starts with the handover. A product designer
                         sends me a Dropbox link containing a
@@ -298,15 +134,7 @@
                         <li>Outputs web-standard .glb binary & USDZ files.</li>
                     </ol>
 
-                    <p
-                        style="
-                            font-style: italic;
-                            margin-top: 15px;
-                            color: #ccc;
-                            border-left: 3px solid #444;
-                            padding-left: 10px;
-                        "
-                    >
+                    <p class="quote-box">
                         The expected workflow is to spend some credits on the
                         Web UI. Once you've got your dials right, use the API to
                         zip through your files.
@@ -315,55 +143,34 @@
             </details>
         </div>
 
-        <div class="container">
-            <div class="sidebar">
+        <div class="d-flex flex-1 overflow-hidden">
+            <aside class="sidebar">
                 <!-- Buy License -->
-                <div style="border-top: 1px solid #333; padding-top: 20px">
-                    <button
-                        id="buyBtn"
-                        style="
-                            background: #333;
-                            border: 1px solid #555;
-                            width: 100%;
-                        "
-                    >
+                <div class="sidebar-section">
+                    <button id="buyBtn" class="btn-dark w-100">
                         Buy License
                     </button>
                     <a
                         href="#"
                         id="historyLink"
-                        style="
-                            display: block;
-                            text-align: center;
-                            margin-top: 10px;
-                            color: #aaa;
-                            font-size: 0.9em;
-                        "
+                        class="text-center text-muted text-small d-block mt-10"
                         >View History</a
                     >
                 </div>
                 <!-- Auth -->
                 <div>
-                    <label style="font-size: 0.8rem; color: #aaa"
-                        >API KEY</label
-                    >
-                    <div style="display: flex; gap: 10px; align-items: center">
+                    <label>API KEY</label>
+                    <div class="d-flex gap-10 align-center">
                         <input
                             type="password"
                             id="apiKey"
                             value="sk_test_123"
                             placeholder="sk_..."
-                            style="flex: 1"
+                            class="flex-1"
                         />
                         <span
                             id="apiKeyPreview"
-                            style="
-                                color: #888;
-                                font-size: 0.85rem;
-                                font-family: monospace;
-                                white-space: nowrap;
-                                min-width: 60px;
-                            "
+                            class="text-muted text-small font-mono text-nowrap min-w-60"
                         >
                             sk...123
                         </span>
@@ -374,110 +181,55 @@
                 <div class="dropzone" id="dropzone">
                     <div id="dropText">
                         Drag 3D file here<br /><span
-                            style="font-size: 0.8rem; color: #666"
+                            class="text-small text-muted"
                             >(.obj, .fbx, .glb, .gltf)</span
                         >
                     </div>
                     <input
                         type="file"
                         id="fileInput"
-                        style="display: none"
+                        class="d-none"
                         accept=".obj,.fbx,.glb,.gltf"
                     />
                 </div>
-                <div
-                    id="fileName"
-                    style="font-size: 0.9rem; color: #10b981"
-                ></div>
+                <div id="fileName" class="text-success text-small"></div>
 
                 <div
                     id="objInputs"
-                    style="
-                        display: block;
-                        margin-top: 10px;
-                        border-top: 1px solid #333;
-                        padding-top: 10px;
-                        text-align: left;
-                        position: relative;
-                    "
+                    class="sidebar-section d-block text-left relative"
                 >
                     <button
                         id="clearOptionalBtn"
-                        style="
-                            position: absolute;
-                            top: 8px;
-                            right: 0;
-                            background: none;
-                            border: none;
-                            color: #ef4444;
-                            font-size: 0.7rem;
-                            cursor: pointer;
-                        "
+                        class="btn-clear absolute pos-top-right"
                         title="Clear optional files"
                     >
                         Clear
                     </button>
-                    <div style="margin-bottom: 8px">
+                    <div class="mb-10">
                         <label
-                            style="
-                                font-size: 0.8rem;
-                                color: #aaa;
-                                display: block;
-                                margin-bottom: 4px;
-                            "
                             >Material (.mtl)
-                            <span style="color: #555">(Optional)</span></label
+                            <span class="text-darker">(Optional)</span></label
                         >
-                        <input
-                            type="file"
-                            id="mtlInput"
-                            accept=".mtl"
-                            style="font-size: 0.8rem; color: #ccc; width: 100%"
-                        />
+                        <input type="file" id="mtlInput" accept=".mtl" />
                     </div>
                     <div>
                         <label
-                            style="
-                                font-size: 0.8rem;
-                                color: #aaa;
-                                display: block;
-                                margin-bottom: 4px;
-                            "
                             >Textures (Max 50)
-                            <span style="color: #555">(Optional)</span></label
+                            <span class="text-darker">(Optional)</span></label
                         >
                         <input
                             type="file"
                             id="texInput"
                             accept=".png,.jpg,.jpeg"
                             multiple
-                            style="font-size: 0.8rem; color: #ccc; width: 100%"
                         />
                     </div>
                 </div>
 
                 <!-- Controls -->
-                <div style="margin-bottom: 15px">
-                    <label
-                        style="
-                            font-size: 0.8rem;
-                            color: #aaa;
-                            display: block;
-                            margin-bottom: 5px;
-                        "
-                        >Mode</label
-                    >
-                    <select
-                        id="modeSelect"
-                        style="
-                            width: 100%;
-                            padding: 8px;
-                            background: #222;
-                            color: #fff;
-                            border: 1px solid #444;
-                            border-radius: 4px;
-                        "
-                    >
+                <div class="mb-15">
+                    <label>Mode</label>
+                    <select id="modeSelect">
                         <option value="decimate">
                             Decimate (Reduce Poly Count)
                         </option>
@@ -500,61 +252,20 @@
                         max="100"
                         value="50"
                     />
-                    <p style="font-size: 0.75rem; color: #666; margin: 0">
+                    <p class="text-xs text-muted m-0">
                         Lower = Smaller File. Higher = More Detail.
                     </p>
                 </div>
 
                 <!-- Remesh Controls -->
-                <div
-                    id="remeshControls"
-                    style="display: none; flex-direction: column; gap: 10px"
-                >
+                <div id="remeshControls" class="flex-column gap-10 d-none">
                     <div>
-                        <label
-                            style="
-                                font-size: 0.8rem;
-                                color: #aaa;
-                                display: block;
-                                margin-bottom: 5px;
-                            "
-                            >Target Faces</label
-                        >
-                        <input
-                            type="number"
-                            id="targetFaces"
-                            value="5000"
-                            style="
-                                width: 100%;
-                                padding: 8px;
-                                background: #222;
-                                color: #fff;
-                                border: 1px solid #444;
-                                border-radius: 4px;
-                            "
-                        />
+                        <label>Target Faces</label>
+                        <input type="number" id="targetFaces" value="5000" />
                     </div>
                     <div>
-                        <label
-                            style="
-                                font-size: 0.8rem;
-                                color: #aaa;
-                                display: block;
-                                margin-bottom: 5px;
-                            "
-                            >Texture Size (px)</label
-                        >
-                        <select
-                            id="textureSize"
-                            style="
-                                width: 100%;
-                                padding: 8px;
-                                background: #222;
-                                color: #fff;
-                                border: 1px solid #444;
-                                border-radius: 4px;
-                            "
-                        >
+                        <label>Texture Size (px)</label>
+                        <select id="textureSize">
                             <option value="1024">1024</option>
                             <option value="2048" selected>2048</option>
                             <option value="4096">4096</option>
@@ -563,19 +274,9 @@
                 </div>
 
                 <button id="processBtn" disabled>OPTIMIZE MESH</button>
-                <!-- <button
-                    id="downloadBtn"
-                    style="
-                        display: none;
-                        background: #333;
-                        border: 1px solid #555;
-                    "
-                >
-                    DOWNLOAD RESULT
-                </button> -->
-            </div>
+            </aside>
 
-            <div class="viewer">
+            <main class="viewer-container">
                 <model-viewer
                     id="mv"
                     camera-controls
@@ -585,150 +286,57 @@
                     shadow-softness="1"
                     background-color="#000"
                 ></model-viewer>
-                <div class="loading" id="loader">
+                <div class="loading-overlay" id="loader">
                     Processing... <br /><small>(This may take a minute)</small>
                 </div>
-            </div>
+            </main>
         </div>
 
         <!-- History Modal -->
-        <div
-            id="historyModal"
-            style="
-                display: none;
-                position: fixed;
-                z-index: 1000;
-                left: 0;
-                top: 0;
-                width: 100%;
-                height: 100%;
-                overflow: hidden;
-                background-color: rgba(0, 0, 0, 0.8);
-                justify-content: center;
-                align-items: center;
-            "
-        >
-            <div
-                style="
-                    background-color: #1f2937;
-                    padding: 20px;
-                    border: 1px solid #374151;
-                    width: 80%;
-                    max-width: 600px;
-                    height: 80vh;
-                    display: flex;
-                    flex-direction: column;
-                    border-radius: 8px;
-                    color: #fff;
-                "
-            >
-                <div
-                    style="
-                        display: flex;
-                        justify-content: space-between;
-                        align-items: flex-start;
-                        margin-bottom: 20px;
-                    "
-                >
+        <div id="historyModal" class="modal-overlay">
+            <div class="modal-window">
+                <div class="modal-header">
                     <div>
-                        <h2 style="margin: 0; margin-bottom: 5px">
-                            Transaction History
-                        </h2>
-                        <p style="margin: 0; color: #aaa; font-size: 0.9em">
+                        <h2 class="m-0 mb-5">Transaction History</h2>
+                        <p class="m-0 text-muted text-small">
                             Remaining Credits:
                             <span
                                 id="remainingCredits"
-                                style="color: #3b82f6; font-weight: bold"
+                                class="text-primary font-bold"
                                 >--</span
                             >
                         </p>
                     </div>
-                    <div
-                        style="
-                            display: flex;
-                            gap: 10px;
-                            align-items: flex-start;
-                        "
-                    >
+                    <div class="d-flex gap-10">
                         <span
                             onclick="document.getElementById('historyModal').style.display='none'"
-                            style="
-                                cursor: pointer;
-                                font-size: 28px;
-                                font-weight: bold;
-                            "
+                            class="modal-close"
                             >&times;</span
                         >
                     </div>
                 </div>
-                <div
-                    style="
-                        display: flex;
-                        gap: 10px;
-                        margin-bottom: 15px;
-                        align-items: center;
-                    "
-                >
-                    <button
-                        id="downloadHistoryBtn"
-                        style="
-                            padding: 8px 16px;
-                            background-color: #3b82f6;
-                            color: white;
-                            border: none;
-                            border-radius: 4px;
-                            cursor: pointer;
-                            font-size: 0.9em;
-                            font-weight: 500;
-                            width: auto;
-                        "
-                    >
+                <div class="d-flex gap-10 mb-15 align-center">
+                    <button id="downloadHistoryBtn" class="btn-sm">
                         Download CSV
                     </button>
                     <input
                         id="historySearchInput"
                         type="text"
                         placeholder="Search by activity, date..."
-                        style="
-                            padding: 8px 12px;
-                            background-color: #374151;
-                            color: white;
-                            border: 1px solid #4b5563;
-                            border-radius: 4px;
-                            font-size: 0.9em;
-                            flex: 1;
-                        "
+                        class="flex-1 text-small"
                     />
                     <span
                         id="historySearchCount"
-                        style="
-                            font-size: 0.85em;
-                            color: #aaa;
-                            white-space: nowrap;
-                            min-width: 60px;
-                            text-align: right;
-                        "
+                        class="text-small text-muted text-nowrap min-w-60 text-right"
                     ></span>
                 </div>
-                <div style="overflow-y: auto; flex: 1">
-                    <table style="width: 100%; border-collapse: collapse">
-                        <thead
-                            style="
-                                position: sticky;
-                                top: 0;
-                                background-color: #1f2937;
-                                z-index: 10;
-                            "
-                        >
-                            <tr
-                                style="
-                                    text-align: left;
-                                    border-bottom: 2px solid #444;
-                                "
-                            >
-                                <th style="padding: 10px">Date</th>
-                                <th style="padding: 10px">Activity</th>
-                                <th style="padding: 10px">Amount</th>
+                <div class="modal-body">
+                    <table class="table-container">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Activity</th>
+                                <th>Amount</th>
                             </tr>
                         </thead>
                         <tbody id="historyTableBody">
@@ -736,17 +344,8 @@
                         </tbody>
                     </table>
                 </div>
-                <div
-                    style="
-                        border-top: 1px solid #444;
-                        margin-top: 15px;
-                        padding-top: 12px;
-                        font-size: 0.8rem;
-                        color: #888;
-                        line-height: 1.5;
-                    "
-                >
-                    <strong style="color: #aaa">Fair Use Policy:</strong>
+                <div class="modal-footer">
+                    <strong class="text-muted">Fair Use Policy:</strong>
                     Unlimited re-optimizations of the same file within 24 hours
                     cost only 1 credit total. Each unique file costs 1 credit
                     per 24-hour period.
@@ -774,12 +373,13 @@
                 tbody.innerHTML = "";
                 dataToRender.forEach((tx) => {
                     const date = new Date(tx.created_at).toLocaleString();
-                    const color = tx.amount > 0 ? "#10b981" : "#ef4444";
+                    const colorClass =
+                        tx.amount > 0 ? "text-success" : "text-error";
                     const row = `
-                    <tr style="border-bottom: 1px solid #333;">
-                        <td style="padding: 10px; color: #888; font-size: 0.9em;">${date}</td>
-                        <td style="padding: 10px;">${tx.description}</td>
-                        <td style="padding: 10px; color: ${color}; font-weight: bold;">
+                    <tr>
+                        <td class="text-muted text-small">${date}</td>
+                        <td>${tx.description}</td>
+                        <td class="${colorClass} font-bold">
                             ${tx.amount > 0 ? "+" : ""}${tx.amount}
                         </td>
                     </tr>
@@ -869,7 +469,6 @@
                 document.getElementById("decimateControls");
             const remeshControls = document.getElementById("remeshControls");
             const processBtn = document.getElementById("processBtn");
-            // const downloadBtn = document.getElementById("downloadBtn");
             const mv = document.getElementById("mv");
             const loader = document.getElementById("loader");
 
@@ -1097,43 +696,19 @@
                     if (!dlContainer) {
                         dlContainer = document.createElement("div");
                         dlContainer.id = "dlContainer";
-                        dlContainer.style.display = "flex";
-                        dlContainer.style.gap = "10px";
-                        dlContainer.style.marginBottom = "1rem";
+                        dlContainer.className = "d-flex gap-10 mb-15";
 
-                        // Base styling from processBtn
-                        const baseClass = processBtn.className
-                            .replace("bg-emerald-500", "bg-blue-500")
-                            .replace(
-                                "hover:bg-emerald-600",
-                                "hover:bg-blue-600",
-                            )
-                            .replace("mb-4", "");
-
-                        const mkBtn = (text, href, bg) => {
+                        const mkBtn = (text, href) => {
                             const a = document.createElement("a");
-                            a.className = baseClass;
-                            a.style.flex = "1";
-                            a.style.textAlign = "center";
-                            a.style.textDecoration = "none";
-                            a.style.color = "white";
-                            a.style.backgroundColor = bg;
+                            a.className = "btn btn-primary flex-1 text-center";
                             a.textContent = text;
                             a.href = href;
                             a.download = "";
                             return a;
                         };
 
-                        const btnGlb = mkBtn(
-                            "Download GLB",
-                            data.glb,
-                            "#3b82f6",
-                        );
-                        const btnUsdz = mkBtn(
-                            "Download USDZ",
-                            data.usdz,
-                            "#3b82f6",
-                        );
+                        const btnGlb = mkBtn("Download GLB", data.glb);
+                        const btnUsdz = mkBtn("Download USDZ", data.usdz);
 
                         dlContainer.appendChild(btnGlb);
                         dlContainer.appendChild(btnUsdz);
@@ -1156,9 +731,6 @@
                     }
                 }
             });
-
-            // Legacy download button handler removed.
-            // Downloads are now handled by direct links in the generated buttons.
 
             // Fetch pricing config
             fetch("/config")
@@ -1271,31 +843,9 @@
         </script>
 
         <!-- Footer -->
-        <footer
-            style="
-                position: fixed;
-                bottom: 0;
-                left: 0;
-                padding: 12px 20px;
-                font-size: 0.85rem;
-                color: #666;
-                z-index: 100;
-            "
-        >
-            <a
-                href="/privacy-policy.html"
-                style="color: #888; text-decoration: none; margin-right: 15px"
-                onmouseover="this.style.color='var(--primary)'"
-                onmouseout="this.style.color='#888'"
-                >Privacy Policy</a
-            >
-            <a
-                href="/contact.html"
-                style="color: #888; text-decoration: none"
-                onmouseover="this.style.color='var(--primary)'"
-                onmouseout="this.style.color='#888'"
-                >Contact</a
-            >
+        <footer class="sticky-footer">
+            <a href="/privacy-policy.html">Privacy Policy</a>
+            <a href="/contact.html">Contact</a>
         </footer>
     </body>
 </html>

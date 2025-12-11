@@ -4,259 +4,14 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Contact Us - MeshOpt</title>
-        <style>
-            :root {
-                --primary: #3b82f6;
-                --bg: #111;
-                --panel: #1f2937;
-                --text: #f3f4f6;
-                --text-muted: #9ca3af;
-                --border: #374151;
-                --success: #10b981;
-                --error: #ef4444;
-            }
-
-            body {
-                font-family:
-                    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-                    Helvetica, Arial, sans-serif;
-                background-color: var(--bg);
-                color: var(--text);
-                margin: 0;
-                padding: 0;
-                line-height: 1.6;
-            }
-
-            .container {
-                max-width: 700px;
-                margin: 0 auto;
-                padding: 40px 20px;
-            }
-
-            header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 40px;
-                border-bottom: 1px solid var(--border);
-                padding-bottom: 20px;
-            }
-
-            h1 {
-                margin: 0;
-                font-size: 1.8rem;
-                background: linear-gradient(45deg, #3b82f6, #10b981);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-            }
-
-            a.back-link {
-                color: var(--primary);
-                text-decoration: none;
-                font-weight: bold;
-                border: 1px solid var(--border);
-                padding: 8px 16px;
-                border-radius: 6px;
-                transition: 0.2s;
-            }
-
-            a.back-link:hover {
-                background: var(--panel);
-            }
-
-            .intro {
-                background: var(--panel);
-                padding: 24px;
-                border-radius: 12px;
-                margin-bottom: 30px;
-                border: 1px solid var(--border);
-            }
-
-            .intro p {
-                margin: 0 0 12px 0;
-                color: var(--text-muted);
-            }
-
-            .intro p:last-child {
-                margin-bottom: 0;
-            }
-
-            .form-section {
-                background: var(--panel);
-                padding: 30px;
-                border-radius: 12px;
-                border: 1px solid var(--border);
-            }
-
-            .form-group {
-                margin-bottom: 24px;
-            }
-
-            label {
-                display: block;
-                margin-bottom: 8px;
-                color: var(--text);
-                font-weight: 500;
-            }
-
-            label .required {
-                color: var(--error);
-            }
-
-            input[type="text"],
-            input[type="email"],
-            textarea,
-            select {
-                width: 100%;
-                padding: 12px;
-                background: #000;
-                border: 1px solid var(--border);
-                border-radius: 6px;
-                color: var(--text);
-                font-family: inherit;
-                font-size: 0.95rem;
-                box-sizing: border-box;
-                transition: border-color 0.2s;
-            }
-
-            input:focus,
-            textarea:focus,
-            select:focus {
-                outline: none;
-                border-color: var(--primary);
-            }
-
-            textarea {
-                min-height: 150px;
-                resize: vertical;
-            }
-
-            select {
-                cursor: pointer;
-            }
-
-            .helper-text {
-                font-size: 0.85rem;
-                color: var(--text-muted);
-                margin-top: 6px;
-            }
-
-            .button-group {
-                display: flex;
-                gap: 12px;
-                margin-top: 30px;
-            }
-
-            button {
-                flex: 1;
-                padding: 14px 24px;
-                border: none;
-                border-radius: 6px;
-                font-weight: bold;
-                font-size: 0.95rem;
-                cursor: pointer;
-                transition: 0.2s;
-            }
-
-            button[type="submit"] {
-                background: var(--primary);
-                color: white;
-            }
-
-            button[type="submit"]:hover:not(:disabled) {
-                opacity: 0.9;
-            }
-
-            button[type="submit"]:disabled {
-                background: #444;
-                cursor: not-allowed;
-            }
-
-            button[type="reset"] {
-                background: transparent;
-                color: var(--text-muted);
-                border: 1px solid var(--border);
-            }
-
-            button[type="reset"]:hover {
-                background: rgba(255, 255, 255, 0.05);
-            }
-
-            .alert {
-                padding: 16px 20px;
-                border-radius: 8px;
-                margin-bottom: 24px;
-                display: none;
-            }
-
-            .alert.success {
-                background: rgba(16, 185, 129, 0.1);
-                border: 1px solid var(--success);
-                color: var(--success);
-            }
-
-            .alert.error {
-                background: rgba(239, 68, 68, 0.1);
-                border: 1px solid var(--error);
-                color: var(--error);
-            }
-
-            .alert.show {
-                display: block;
-            }
-
-            .spinner {
-                display: inline-block;
-                width: 14px;
-                height: 14px;
-                border: 2px solid rgba(255, 255, 255, 0.3);
-                border-top-color: white;
-                border-radius: 50%;
-                animation: spin 0.6s linear infinite;
-                margin-right: 8px;
-                vertical-align: middle;
-            }
-
-            @keyframes spin {
-                to {
-                    transform: rotate(360deg);
-                }
-            }
-
-            .quick-links {
-                margin-top: 40px;
-                padding-top: 30px;
-                border-top: 1px solid var(--border);
-                text-align: center;
-            }
-
-            .quick-links h3 {
-                color: var(--text);
-                margin-bottom: 16px;
-                font-size: 1rem;
-            }
-
-            .quick-links a {
-                color: var(--primary);
-                text-decoration: none;
-                margin: 0 12px;
-            }
-
-            .quick-links a:hover {
-                text-decoration: underline;
-            }
-
-            @media (max-width: 600px) {
-                .button-group {
-                    flex-direction: column;
-                }
-            }
-        </style>
+        <link rel="stylesheet" href="/css/styles.css" />
     </head>
     <body>
         <div class="container">
-            <header>
-                <h1>Contact Us</h1>
+            <header
+                class="d-flex justify-between align-center border-bottom pb-20 mb-40"
+            >
+                <h1 class="gradient-text m-0">Contact Us</h1>
                 <a href="/" class="back-link">&larr; Back to App</a>
             </header>
 
@@ -267,12 +22,13 @@
                     provide feedback, we'd love to hear from you.
                 </p>
                 <p>
-                    Fill out the form below and we'll respond within 24-48 hours.
+                    Fill out the form below and we'll respond within 24-48
+                    hours.
                 </p>
             </div>
 
             <div id="success-alert" class="alert success">
-                <strong></strong>✓ Message sent successfully!</strong> We'll get back to
+                <strong>✓ Message sent successfully!</strong> We'll get back to
                 you within 24-48 hours.
             </div>
 
@@ -317,7 +73,9 @@
                         >
                         <select id="subject" name="subject" required>
                             <option value="">Select a topic...</option>
-                            <option value="privacy">Privacy & Data Inquiry</option>
+                            <option value="privacy">
+                                Privacy & Data Inquiry
+                            </option>
                             <option value="technical">Technical Support</option>
                             <option value="billing">Billing & Credits</option>
                             <option value="account">Account Management</option>
@@ -352,8 +110,8 @@
                             placeholder="Your API key (if relevant to your inquiry)"
                         />
                         <div class="helper-text">
-                            Include this if your inquiry is about your account or
-                            credits
+                            Include this if your inquiry is about your account
+                            or credits
                         </div>
                     </div>
 
@@ -386,8 +144,7 @@
 
                 // Disable button and show loading
                 submitBtn.disabled = true;
-                submitBtn.innerHTML =
-                    '<span class="spinner"></span>Sending...';
+                submitBtn.innerHTML = '<span class="spinner"></span>Sending...';
 
                 // Hide previous alerts
                 successAlert.classList.remove("show");
