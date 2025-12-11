@@ -57,6 +57,7 @@ struct AppState {
     db: db::Database,
     stripe_client: stripe::Client,
     stripe_webhook_secret: String,
+    resend_api_key: String,
     jobs: Arc<RwLock<HashMap<String, JobStatus>>>,
     worker_semaphore: Arc<Semaphore>,
 }
@@ -77,6 +78,7 @@ async fn main() -> Result<()> {
         std::env::var("STRIPE_SECRET_KEY").expect("STRIPE_SECRET_KEY must be set");
     let stripe_webhook_secret =
         std::env::var("STRIPE_WEBHOOK_SECRET").expect("STRIPE_WEBHOOK_SECRET must be set");
+    let resend_api_key = std::env::var("RESEND_API_KEY").expect("RESEND_API_KEY must be set");
 
     // 2. Setup Filesystem
     fs::create_dir_all(UPLOAD_DIR).context("Failed to create upload dir")?;
@@ -97,6 +99,7 @@ async fn main() -> Result<()> {
         db,
         stripe_client,
         stripe_webhook_secret,
+        resend_api_key,
         jobs: Arc::new(RwLock::new(HashMap::new())),
         worker_semaphore: Arc::new(Semaphore::new(worker_slots)),
     };
@@ -108,6 +111,7 @@ async fn main() -> Result<()> {
     let app = Router::new()
         // Public Routes
         .route("/config", get(get_config))
+        .route("/contact", post(contact_handler))
         .route("/job/:id", get(job_status_handler))
         .route(
             "/history",
@@ -1101,6 +1105,93 @@ async fn history_handler(
             error!("Failed to get history for key={}: {:?}", &auth_key.0, e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
+    }
+}
+
+// --- CONTACT FORM HANDLER ---
+
+#[derive(Debug, Deserialize)]
+struct ContactForm {
+    name: String,
+    email: String,
+    subject: String,
+    message: String,
+    api_key: Option<String>,
+}
+
+async fn contact_handler(
+    State(state): State<AppState>,
+    Json(form): Json<ContactForm>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    // Map subject codes to human-readable labels
+    let subject_label = match form.subject.as_str() {
+        "privacy" => "Privacy & Data Inquiry",
+        "technical" => "Technical Support",
+        "billing" => "Billing & Credits",
+        "account" => "Account Management",
+        "feature" => "Feature Request",
+        "bug" => "Bug Report",
+        "other" => "Other",
+        _ => &form.subject,
+    };
+
+    // Build HTML email body
+    let api_key_section = form
+        .api_key
+        .as_ref()
+        .filter(|k| !k.is_empty())
+        .map(|k| format!(r#"<p><strong>API Key:</strong> {}</p>"#, k))
+        .unwrap_or_default();
+
+    let html_body = format!(
+        r#"
+        <h2>New Support Request</h2>
+        <p><strong>From:</strong> {} &lt;{}&gt;</p>
+        <p><strong>Subject:</strong> {}</p>
+        {}
+        <hr />
+        <h3>Message:</h3>
+        <p style="white-space: pre-wrap;">{}</p>
+        "#,
+        form.name, form.email, subject_label, api_key_section, form.message
+    );
+
+    let email_subject = format!("[Mesh Optimizer] {}: {}", subject_label, form.name);
+
+    // Build Resend API request
+    let client = reqwest::Client::new();
+    let res = client
+        .post("https://api.resend.com/emails")
+        .header("Authorization", format!("Bearer {}", state.resend_api_key))
+        .json(&json!({
+            "from": "Mesh Optimizer Support <support@webdeliveryengine.com>",
+            "to": ["support@webdeliveryengine.com"],
+            "reply_to": form.email,
+            "subject": email_subject,
+            "html": html_body
+        }))
+        .send()
+        .await
+        .map_err(|e| {
+            error!("Failed to send email: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to send message" })),
+            )
+        })?;
+
+    if res.status().is_success() {
+        info!("Support email sent from {} <{}>", form.name, form.email);
+        Ok(Json(
+            json!({ "success": true, "message": "Message sent successfully" }),
+        ))
+    } else {
+        let error_text = res.text().await.unwrap_or_default();
+        error!("Resend API error: {}", error_text);
+        Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Failed to send message" })),
+        ))
     }
 }
 
