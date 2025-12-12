@@ -1,3 +1,6 @@
+# Application purpose
+The app is developed on the macos using the Zed editor. It is then pushed to the prod server (see hardware) as a basically Rust application. It is to help online and api users optimize 3D assets for web and mobile platforms and other needs.
+
 # Application Capabilities
 
 This document outlines the current features and capabilities of the Mesh Optimizer application.

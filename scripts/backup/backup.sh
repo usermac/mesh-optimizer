@@ -15,6 +15,13 @@
 
 set -euo pipefail
 
+# Load environment variables
+if [ -f "/root/mesh-optimizer/.env" ]; then
+    set -a
+    source "/root/mesh-optimizer/.env"
+    set +a
+fi
+
 # Configuration
 BACKUP_DIR="/root/backups"
 LOG_DIR="/var/log/mesh"
@@ -45,7 +52,7 @@ BACKUP_PATH="$BACKUP_DIR/$BACKUP_NAME"
 # Logging Function
 ################################################################################
 log() {
-    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE" >&2
 }
 
 ################################################################################
@@ -77,7 +84,7 @@ send_success_email() {
   "from": "Mesh Optimizer Backups <support@webdeliveryengine.com>",
   "to": ["$BACKUP_EMAIL"],
   "subject": "✅ Database Backup Successful - $TIMESTAMP",
-  "html": "<h2>✅ Backup Completed Successfully</h2><p><strong>Timestamp:</strong> $DATE_READABLE</p><p><strong>Backup Size:</strong> $backup_size</p><p><strong>Files Backed Up:</strong></p><ul>$files_backed_up</ul><p><strong>Storage Locations:</strong></p><ul><li>Local: $BACKUP_DIR (kept for $LOCAL_RETENTION_DAYS days)</li><li>Storage Box: $storage_box_status</li></ul><p><strong>Backup Name:</strong> ${BACKUP_NAME}.tar.gz</p><hr><p><small>Automated backup from Mesh Optimizer Server (webdeliveryengine.com)</small></p>"
+  "text": "Backup Completed Successfully\n\nTimestamp: $DATE_READABLE\nBackup Size: $backup_size\nBackup Name: ${BACKUP_NAME}.tar.gz\n\nStorage Locations:\n- Local: $BACKUP_DIR (kept for $LOCAL_RETENTION_DAYS days)\n- Storage Box: $storage_box_status\n\n---\nAutomated backup from Mesh Optimizer Server (webdeliveryengine.com)"
 }
 EOF
 )
@@ -114,7 +121,7 @@ send_failure_email() {
   "from": "Mesh Optimizer Backups <support@webdeliveryengine.com>",
   "to": ["$BACKUP_EMAIL"],
   "subject": "❌ Database Backup FAILED - $TIMESTAMP",
-  "html": "<h2>❌ Backup Failed</h2><p><strong>Timestamp:</strong> $DATE_READABLE</p><p><strong>Error:</strong></p><pre style='background:#f5f5f5;padding:10px;border-radius:5px;'>$error_message</pre><hr><p><strong>⚠️ Action Required:</strong> Please SSH into the server and investigate immediately.</p><p><code>ssh root@webdeliveryengine.com</code></p><p>Check logs at: <code>$LOG_FILE</code></p><p><small>Automated alert from Mesh Optimizer Server</small></p>"
+  "text": "Backup Failed\n\nTimestamp: $DATE_READABLE\n\nError:\n$error_message\n\n---\nAction Required: Please SSH into the server and investigate immediately.\n\nssh root@webdeliveryengine.com\n\nCheck logs at: $LOG_FILE\n\n---\nAutomated alert from Mesh Optimizer Server"
 }
 EOF
 )
@@ -162,12 +169,12 @@ upload_to_storage_box() {
     eval "$ssh_cmd ${STORAGE_BOX_USER}@${STORAGE_BOX_HOST} 'mkdir -p ${STORAGE_BOX_PATH}'" 2>/dev/null || true
 
     # Upload using rsync (efficient, resumable)
-    if eval "rsync -avz -e \"$rsync_ssh\" '$backup_file' '${STORAGE_BOX_USER}@${STORAGE_BOX_HOST}:${STORAGE_BOX_PATH}/'" 2>&1 | tee -a "$LOG_FILE"; then
+    if eval "rsync -avz -e \"$rsync_ssh\" '$backup_file' '${STORAGE_BOX_USER}@${STORAGE_BOX_HOST}:${STORAGE_BOX_PATH}/'" 2>&1 | tee -a "$LOG_FILE" >&2; then
         log "✅ Uploaded to Storage Box successfully"
 
         # Clean up old backups on Storage Box (keep last 30 days)
         log "Cleaning old backups on Storage Box (keeping last $REMOTE_RETENTION_DAYS days)..."
-        eval "$ssh_cmd ${STORAGE_BOX_USER}@${STORAGE_BOX_HOST} 'find ${STORAGE_BOX_PATH} -name \"mesh-backup-*.tar.gz\" -type f -mtime +${REMOTE_RETENTION_DAYS} -delete'" 2>&1 | tee -a "$LOG_FILE" || true
+        eval "$ssh_cmd ${STORAGE_BOX_USER}@${STORAGE_BOX_HOST} 'find ${STORAGE_BOX_PATH} -name \"mesh-backup-*.tar.gz\" -type f -mtime +${REMOTE_RETENTION_DAYS} -delete'" 2>&1 | tee -a "$LOG_FILE" >&2 || true
 
         echo "Successfully uploaded to Storage Box"
     else
