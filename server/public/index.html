@@ -350,7 +350,7 @@
                     </div>
                     <div class="modal-footer">
                         <strong class="text-muted">Fair Use Policy:</strong>
-                        Free re-optimizations of the same file within 24
+                        Free re-optimizations of the same file within <span id="history-free-spin-hours">24</span>
                         hours of first use (credit paid at the time of first use).
                     </div>
                 </div>
@@ -1139,6 +1139,11 @@
                         ") - " +
                         data.credits +
                         " Credits";
+                    // Update free spin hours display
+                    if (data.free_spin_hours !== undefined) {
+                        const historySpan = document.getElementById("history-free-spin-hours");
+                        if (historySpan) historySpan.textContent = data.free_spin_hours;
+                    }
                 });
 
             // History Logic
