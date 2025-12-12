@@ -292,45 +292,56 @@ bash /root/mesh-optimizer/scripts/backup/backup.sh
 
 ---
 
-### 6. **MISSING BLENDER INSTALLATION VERIFICATION**
+### 6. **BLENDER INSTALLATION VERIFICATION** ✅ **FIXED**
 
-**Severity:** HIGH  
-**Location:** `mesh-optimizer/scripts/reports/blender_health_check.sh`  
-**Impact:** Jobs will fail silently if Blender is misconfigured
+**Severity:** ~~HIGH~~ **RESOLVED**  
+**Location:** `mesh-optimizer/scripts/reports/blender_health_check.sh` (Lines 30-60)  
+**Status:** ✅ **FIXED - Blender installation checks added to health watchdog**
 
 **Issue:**
-The health check monitors Blender processes but doesn't verify Blender is actually installed and functional.
+The health check monitored Blender processes but didn't verify Blender was actually installed and functional.
 
-**Fix Required:**
-Add to the beginning of `blender_health_check.sh`:
+**Solution Implemented:**
+Added comprehensive Blender verification checks at the start of the health check script:
 
 ```bash
 # ------------------------------------------------------------------------------
 # 0. Verify Blender Installation
 # ------------------------------------------------------------------------------
-
-# Check if Blender is in PATH
+# Check if Blender is installed and accessible
 if ! command -v blender &> /dev/null; then
     HAS_ISSUES=true
-    ZOMBIE_REPORT="${ZOMBIE_REPORT}
+    BLENDER_REPORT="${BLENDER_REPORT}
+- ❌ CRITICAL: Blender executable not found in PATH
+  Action: Install Blender or add to PATH
 
-⛔ CRITICAL: Blender executable not found in PATH
-   - Install: apt-get install blender
-   - Or add to PATH if installed in custom location"
+  Installation options:
+  - Ubuntu/Debian: apt-get install blender
+  - Download: https://www.blender.org/download/
+  - Verify PATH includes Blender location"
 fi
 
-# Test Blender can execute (quick version check)
+# Test Blender can start (quick version check)
 if command -v blender &> /dev/null; then
-    if ! timeout 10 blender --version &> /dev/null; then
+    if ! timeout 5 blender --version &> /dev/null 2>&1; then
         HAS_ISSUES=true
-        ZOMBIE_REPORT="${ZOMBIE_REPORT}
+        BLENDER_REPORT="${BLENDER_REPORT}
+- ❌ WARNING: Blender cannot execute (--version check failed)
+  Action: Check Blender installation and permissions
 
-⚠️ WARNING: Blender found but cannot execute
-   - Test manually: blender --version
-   - Check permissions and dependencies"
+  Troubleshooting:
+  - Run manually: blender --version
+  - Check permissions: ls -lh \$(which blender)
+  - Verify dependencies: ldd \$(which blender)"
     fi
 fi
 ```
+
+**Features:**
+- Checks if Blender is in PATH
+- Tests if Blender can execute with timeout protection
+- Provides actionable error messages with installation instructions
+- Sends email alerts if Blender is missing or broken
 
 **Manual Verification:**
 ```bash
@@ -807,8 +818,8 @@ Use this checklist before going live:
 - [x] **Fix cron job environment loading** in `setup.sh` ✅ COMPLETED
 - [x] **Add upload cleanup cron job** ✅ COMPLETED
 - [x] **Improve cron error handling** ✅ COMPLETED
+- [x] **Add Blender verification** to health check ✅ COMPLETED
 - [ ] **Set WORKER_SLOTS** in `.env` based on hardware (Issue #4)
-- [ ] **Add Blender verification** to health check (Issue #6)
 - [ ] **Add disk space monitoring** (Issue #7)
 - [ ] **Test backup system end-to-end** - Run setup.sh and wait for first automated backup
 - [ ] **Test email notifications** - Verify you receive success/failure emails
@@ -855,9 +866,10 @@ Use this checklist before going live:
 **Issues Fixed This Session:**
 - ✅ Issue #1: Cron environment variable loading - FIXED
 - ✅ Issue #3: Upload cleanup automation - FIXED  
+- ✅ Issue #6: Blender installation verification - FIXED
 - ✅ Issue #10: Cron error handling - FIXED
 
-**Remaining Critical Issues:** 3 of 6
+**Remaining Critical Issues:** 2 of 6
 **Remaining High Priority Issues:** 9 of 9
 **Estimated Time to Launch Ready:** 4-8 hours
 
@@ -1057,9 +1069,9 @@ After reviewing all changes, use this command to commit:
 ```bash
 cd /Users/brianginn/Documents/ZedDocs/mesh-code/mesh-optimizer
 
-git add scripts/backup/setup.sh launch_prep.md
+git add scripts/backup/setup.sh scripts/reports/blender_health_check.sh launch_prep.md
 
-git commit -m "fix: Critical cron job environment loading and upload cleanup
+git commit -m "fix: Critical production issues - cron, cleanup, and Blender verification
 
 FIXES:
 - Issue #1: Fixed cron environment variable loading syntax
@@ -1070,15 +1082,22 @@ FIXES:
   - New cron job runs every 15 minutes
   - Deletes files older than 15 minutes from uploads directory
   
+- Issue #6: Added Blender installation verification
+  - Health check now verifies Blender is installed and executable
+  - Tests 'blender --version' with 5-second timeout
+  - Provides actionable error messages with installation instructions
+  - Sends email alerts if Blender is missing or broken
+  
 - Issue #10: Improved cron cleanup error handling
   - Safer approach checks if crontab exists before modifying
   - Prevents accidental deletion of existing cron jobs
 
 CHANGES:
 - scripts/backup/setup.sh: Fixed setup_cron() function (lines 187-223)
-- launch_prep.md: Updated issue status, marked 3 issues as FIXED
+- scripts/reports/blender_health_check.sh: Added verification checks (lines 30-60)
+- launch_prep.md: Updated issue status, marked 4 issues as FIXED
 
-STATUS: 3 of 6 critical issues resolved. Ready for testing."
+STATUS: 4 of 6 critical issues resolved. Remaining: WORKER_SLOTS config, disk monitoring."
 ```
 
 ---
@@ -1106,6 +1125,6 @@ Good luck with the launch! 🎉
 ---
 
 **Review Completed:** December 12, 2025  
-**Updated:** December 12, 2025 (Post-Fix)  
+**Updated:** December 12, 2025 (Post-Fix #2 - Blender Verification Added)  
 **Reviewer:** AI Assistant (Claude Sonnet 4.5)  
 **Next Review:** After 1 week of production operation

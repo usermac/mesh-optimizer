@@ -27,6 +27,38 @@ ALERT_SUBJECT="⚠️ Blender Health Alert: Production Server"
 HAS_ISSUES=false
 ZOMBIE_REPORT=""
 OOM_REPORT=""
+BLENDER_REPORT=""
+
+# ------------------------------------------------------------------------------
+# 0. Verify Blender Installation
+# ------------------------------------------------------------------------------
+# Check if Blender is installed and accessible
+if ! command -v blender &> /dev/null; then
+    HAS_ISSUES=true
+    BLENDER_REPORT="${BLENDER_REPORT}
+- ❌ CRITICAL: Blender executable not found in PATH
+  Action: Install Blender or add to PATH
+
+  Installation options:
+  - Ubuntu/Debian: apt-get install blender
+  - Download: https://www.blender.org/download/
+  - Verify PATH includes Blender location"
+fi
+
+# Test Blender can start (quick version check)
+if command -v blender &> /dev/null; then
+    if ! timeout 5 blender --version &> /dev/null 2>&1; then
+        HAS_ISSUES=true
+        BLENDER_REPORT="${BLENDER_REPORT}
+- ❌ WARNING: Blender cannot execute (--version check failed)
+  Action: Check Blender installation and permissions
+
+  Troubleshooting:
+  - Run manually: blender --version
+  - Check permissions: ls -lh \$(which blender)
+  - Verify dependencies: ldd \$(which blender)"
+    fi
+fi
 
 # ------------------------------------------------------------------------------
 # 1. Check for Zombie Processes
@@ -75,6 +107,14 @@ fi
 if [ "$HAS_ISSUES" = true ]; then
     # Construct the email body
     BODY="The Blender Watchdog has detected issues on the production server."
+
+    if [[ -n "$BLENDER_REPORT" ]]; then
+        BODY="${BODY}
+
+### 🔧 Blender Installation Issues
+Critical problems detected with Blender installation or accessibility.
+${BLENDER_REPORT}"
+    fi
 
     if [[ -n "$ZOMBIE_REPORT" ]]; then
         BODY="${BODY}
