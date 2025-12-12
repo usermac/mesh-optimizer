@@ -262,6 +262,7 @@ def process(input_path, output_path, target_faces, texture_size):
     low_poly.select_set(True)
     bpy.context.view_layer.objects.active = low_poly
 
+    # Export GLB
     bpy.ops.export_scene.gltf(
         filepath=output_path,
         use_selection=True,
@@ -269,15 +270,44 @@ def process(input_path, output_path, target_faces, texture_size):
         export_image_format="JPEG",
     )
 
-    # Verify output was created
+    # Verify GLB output was created
     if not os.path.exists(output_path):
-        raise RuntimeError(f"Export failed - output file not created: {output_path}")
+        raise RuntimeError(
+            f"GLB export failed - output file not created: {output_path}"
+        )
 
     output_size = os.path.getsize(output_path)
     if output_size == 0:
-        raise RuntimeError(f"Export failed - output file is empty: {output_path}")
+        raise RuntimeError(f"GLB export failed - output file is empty: {output_path}")
 
-    print(f"[SUCCESS] Remesh complete! Output: {output_path} ({output_size} bytes)")
+    print(f"[INFO] GLB export complete: {output_path} ({output_size} bytes)")
+
+    # Export USDZ (same base name, different extension)
+    # Blender automatically creates USDZ archive when filepath ends in .usdz
+    usdz_path = os.path.splitext(output_path)[0] + ".usdz"
+    print(f"[INFO] Exporting USDZ to {usdz_path}...")
+
+    try:
+        # Ensure low_poly is still selected
+        bpy.ops.object.select_all(action="DESELECT")
+        low_poly.select_set(True)
+        bpy.context.view_layer.objects.active = low_poly
+
+        # Use absolute minimal parameters - just filepath and selection
+        # The .usdz extension triggers USDZ archive format automatically
+        bpy.ops.wm.usd_export(filepath=usdz_path, selected_objects_only=True)
+
+        if os.path.exists(usdz_path) and os.path.getsize(usdz_path) > 0:
+            usdz_size = os.path.getsize(usdz_path)
+            print(f"[INFO] USDZ export complete: {usdz_path} ({usdz_size} bytes)")
+        else:
+            print(f"[WARN] USDZ export may have failed - file missing or empty")
+    except Exception as e:
+        print(f"[WARN] USDZ export failed: {e}")
+        traceback.print_exc()
+        print("[WARN] Continuing without USDZ - GLB is available")
+
+    print(f"[SUCCESS] Remesh complete! GLB: {output_path} ({output_size} bytes)")
 
 
 if __name__ == "__main__":
