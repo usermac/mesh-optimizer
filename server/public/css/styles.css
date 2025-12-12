@@ -1022,3 +1022,46 @@ button[type="reset"]:hover {
     outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
 }
+
+/* Code Block - API Code Modal */
+.code-block {
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-dark);
+    border-radius: 6px;
+    padding: 15px;
+    overflow-x: auto;
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-all;
+    margin: 0;
+}
+
+.code-block code {
+    background: transparent;
+    padding: 0;
+    color: #e5e7eb;
+}
+
+.code-block-small {
+    font-size: 0.8rem;
+    padding: 10px;
+}
+
+.code-block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.code-block-header h3 {
+    margin: 0;
+}
+
+/* Copy button success state */
+.btn-copy-success {
+    background: var(--success) !important;
+    color: white !important;
+}
