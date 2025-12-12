@@ -342,7 +342,7 @@
                                 <tr>
                                     <th scope="col">Date</th>
                                     <th scope="col">Activity</th>
-                                    <th scope="col">Amount</th>
+                                    <th scope="col" class="text-right">Amount</th>
                                 </tr>
                             </thead>
                             <tbody id="historyTableBody">
@@ -716,7 +716,7 @@
                     <tr>
                         <td class="text-muted text-small">${date}</td>
                         <td>${tx.description}</td>
-                        <td class="${colorClass} font-bold">
+                        <td class="${colorClass} font-bold text-right">
                             ${tx.amount > 0 ? "+" : ""}${tx.amount}
                         </td>
                     </tr>
