@@ -208,11 +208,17 @@ async fn get_config() -> Json<serde_json::Value> {
         .and_then(|v| v.parse::<i32>().ok())
         .unwrap_or(5);
 
+    let free_spin_hours = std::env::var("CREDIT_FREE_SPIN")
+        .ok()
+        .and_then(|v| v.parse::<i32>().ok())
+        .unwrap_or(24);
+
     Json(json!({
         "cost": cost,
         "credits": credits,
         "cost_decimate": cost_decimate,
-        "cost_remesh": cost_remesh
+        "cost_remesh": cost_remesh,
+        "free_spin_hours": free_spin_hours
     }))
 }
 

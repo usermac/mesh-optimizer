@@ -471,7 +471,7 @@
                                 </li>
                                 <li>
                                     <strong>Re-runs:</strong> Optimizing the exact same file
-                                    again within 24 hours (e.g., to try a different ratio)
+                                    again within <span id="help-free-spin-hours">24</span> hours (e.g., to try a different ratio)
                                     is <strong>FREE</strong>.
                                 </li>
                             </ul>
@@ -1269,6 +1269,9 @@
                     if (pricingConfig.cost_remesh !== undefined) {
                         document.getElementById("help-cost-remesh").innerText = pricingConfig.cost_remesh;
                         document.getElementById("help-label-remesh").innerText = pricingConfig.cost_remesh === 1 ? "Credit" : "Credits";
+                    }
+                    if (pricingConfig.free_spin_hours !== undefined) {
+                        document.getElementById("help-free-spin-hours").innerText = pricingConfig.free_spin_hours;
                     }
                 }
 
