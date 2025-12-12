@@ -27,6 +27,8 @@ STORAGE_BOX_PATH="${STORAGE_BOX_PATH:-/backups}"
 RESEND_API_KEY="${RESEND_API_KEY:-}"
 BACKUP_EMAIL="${BACKUP_EMAIL:-}"
 
+SEND_REPORT_SCRIPT="/root/mesh-optimizer/scripts/backup/send_report.sh"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -64,40 +66,38 @@ send_verification_email() {
         return 0
     fi
 
-    local subject
+    local subject_text
     local status_icon
     if [[ $failed -eq 0 ]]; then
-        subject="✅ Backup Verification Passed"
+        subject_text="✅ Backup Verification Passed"
         status_icon="✅"
     else
-        subject="⚠️ Backup Verification Issues Detected"
+        subject_text="⚠️ Backup Verification Issues Detected"
         status_icon="⚠️"
     fi
 
+    local final_subject="$subject_text - $(date +'%Y-%m-%d')"
+    local message="$status_icon Backup Verification Report
+
+Date: $(date +'%Y-%m-%d %H:%M:%S %Z')
+
+Summary:
+- Total Backups Checked: $total
+- Passed: $passed
+- Failed: $failed
+
+Details:
+$report
+
+---
+Automated verification from Mesh Optimizer Server"
+
     log "Sending verification report email..."
 
-    local json_payload=$(cat <<EOF
-{
-  "from": "Mesh Optimizer Backups <support@webdeliveryengine.com>",
-  "to": ["$BACKUP_EMAIL"],
-  "subject": "$subject - $(date +'%Y-%m-%d')",
-  "text": "$status_icon Backup Verification Report\n\nDate: $(date +'%Y-%m-%d %H:%M:%S %Z')\n\nSummary:\n- Total Backups Checked: $total\n- Passed: $passed\n- Failed: $failed\n\nDetails:\n$report\n\n---\nAutomated verification from Mesh Optimizer Server"
-}
-EOF
-)
-
-    local response=$(curl -s -w "\n%{http_code}" -X POST \
-        "https://api.resend.com/emails" \
-        -H "Authorization: Bearer $RESEND_API_KEY" \
-        -H "Content-Type: application/json" \
-        -d "$json_payload")
-
-    local http_code=$(echo "$response" | tail -n1)
-
-    if [[ "$http_code" == "200" ]]; then
-        log "✅ Verification report email sent"
+    if [[ -x "$SEND_REPORT_SCRIPT" ]]; then
+        "$SEND_REPORT_SCRIPT" "$final_subject" "$message" >> "$LOG_FILE" 2>&1 || log "WARNING: Failed to execute send_report.sh"
     else
-        log "WARNING: Failed to send email. HTTP $http_code"
+        log "WARNING: send_report.sh not found or not executable at $SEND_REPORT_SCRIPT"
     fi
 }
 
@@ -236,10 +236,12 @@ verify_all_backups() {
 
         if verify_single_backup "$backup" > /dev/null; then
             passed=$((passed + 1))
-            report="${report}✅ ${filename}\n"
+            report="${report}✅ ${filename}
+"
         else
             failed=$((failed + 1))
-            report="${report}❌ ${filename}\n"
+            report="${report}❌ ${filename}
+"
         fi
     done
 
@@ -263,7 +265,7 @@ verify_all_backups() {
     fi
 
     # Send email report
-    send_verification_email "$total" "$passed" "$failed" "$(echo -e "$report")"
+    send_verification_email "$total" "$passed" "$failed" "$report"
 
     if [[ $failed -gt 0 ]]; then
         return 1

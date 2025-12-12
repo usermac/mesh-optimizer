@@ -31,6 +31,7 @@ STATS_DB="$DB_DIR/stats.db"
 DATABASE_JSON="$DB_DIR/database.json"
 LOCAL_RETENTION_DAYS=7
 REMOTE_RETENTION_DAYS=30
+SEND_REPORT_SCRIPT="/root/mesh-optimizer/scripts/backup/send_report.sh"
 
 # Storage Box Configuration (from environment)
 STORAGE_BOX_USER="${STORAGE_BOX_USER:-}"
@@ -79,28 +80,24 @@ send_success_email() {
 
     log "Sending success notification email..."
 
-    local json_payload=$(cat <<EOF
-{
-  "from": "Mesh Optimizer Backups <support@webdeliveryengine.com>",
-  "to": ["$BACKUP_EMAIL"],
-  "subject": "✅ Database Backup Successful - $TIMESTAMP",
-  "text": "Backup Completed Successfully\n\nTimestamp: $DATE_READABLE\nBackup Size: $backup_size\nBackup Name: ${BACKUP_NAME}.tar.gz\n\nStorage Locations:\n- Local: $BACKUP_DIR (kept for $LOCAL_RETENTION_DAYS days)\n- Storage Box: $storage_box_status\n\n---\nAutomated backup from Mesh Optimizer Server (webdeliveryengine.com)"
-}
-EOF
-)
+    local subject="✅ Database Backup Successful - $TIMESTAMP"
+    local message="Backup Completed Successfully
 
-    local response=$(curl -s -w "\n%{http_code}" -X POST \
-        "https://api.resend.com/emails" \
-        -H "Authorization: Bearer $RESEND_API_KEY" \
-        -H "Content-Type: application/json" \
-        -d "$json_payload")
+Timestamp: $DATE_READABLE
+Backup Size: $backup_size
+Backup Name: ${BACKUP_NAME}.tar.gz
 
-    local http_code=$(echo "$response" | tail -n1)
+Storage Locations:
+- Local: $BACKUP_DIR (kept for $LOCAL_RETENTION_DAYS days)
+- Storage Box: $storage_box_status
 
-    if [[ "$http_code" == "200" ]]; then
-        log "✅ Success email sent"
+---
+Automated backup from Mesh Optimizer Server (webdeliveryengine.com)"
+
+    if [[ -x "$SEND_REPORT_SCRIPT" ]]; then
+        "$SEND_REPORT_SCRIPT" "$subject" "$message" >> "$LOG_FILE" 2>&1 || log "WARNING: Failed to execute send_report.sh"
     else
-        log "WARNING: Failed to send email. HTTP $http_code"
+        log "WARNING: send_report.sh not found or not executable at $SEND_REPORT_SCRIPT"
     fi
 }
 
@@ -116,21 +113,29 @@ send_failure_email() {
 
     log "Sending failure notification email..."
 
-    local json_payload=$(cat <<EOF
-{
-  "from": "Mesh Optimizer Backups <support@webdeliveryengine.com>",
-  "to": ["$BACKUP_EMAIL"],
-  "subject": "❌ Database Backup FAILED - $TIMESTAMP",
-  "text": "Backup Failed\n\nTimestamp: $DATE_READABLE\n\nError:\n$error_message\n\n---\nAction Required: Please SSH into the server and investigate immediately.\n\nssh root@webdeliveryengine.com\n\nCheck logs at: $LOG_FILE\n\n---\nAutomated alert from Mesh Optimizer Server"
-}
-EOF
-)
+    local subject="❌ Database Backup FAILED - $TIMESTAMP"
+    local message="Backup Failed
 
-    curl -s -X POST \
-        "https://api.resend.com/emails" \
-        -H "Authorization: Bearer $RESEND_API_KEY" \
-        -H "Content-Type: application/json" \
-        -d "$json_payload" > /dev/null
+Timestamp: $DATE_READABLE
+
+Error:
+$error_message
+
+---
+Action Required: Please SSH into the server and investigate immediately.
+
+ssh root@webdeliveryengine.com
+
+Check logs at: $LOG_FILE
+
+---
+Automated alert from Mesh Optimizer Server"
+
+    if [[ -x "$SEND_REPORT_SCRIPT" ]]; then
+        "$SEND_REPORT_SCRIPT" "$subject" "$message" >> "$LOG_FILE" 2>&1 || true
+    else
+        log "WARNING: send_report.sh not found or not executable at $SEND_REPORT_SCRIPT"
+    fi
 }
 
 ################################################################################
