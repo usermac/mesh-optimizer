@@ -184,27 +184,32 @@ setup_cron() {
     local stats_script="/root/mesh-optimizer/scripts/reports/daily_stats.sh"
     local blender_check_script="/root/mesh-optimizer/scripts/reports/blender_health_check.sh"
 
-    # Remove existing cron jobs for mesh backup (if any)
-    crontab -l 2>/dev/null | grep -v "mesh-optimizer/scripts" | crontab - 2>/dev/null || true
+    # Remove existing cron jobs for mesh backup (if any) - safer approach
+    if crontab -l >/dev/null 2>&1; then
+        crontab -l 2>/dev/null | grep -v "mesh-optimizer/scripts" | crontab -
+    fi
 
-    # Add new cron jobs
+    # Add new cron jobs with PROPER environment loading
     (crontab -l 2>/dev/null || echo ""; cat <<EOF
 
 # Mesh Optimizer Backup System
 # Backup every 6 hours (at 00:00, 06:00, 12:00, 18:00)
-0 */6 * * * /root/mesh-optimizer/.env bash $backup_script >> /var/log/mesh/backup.log 2>&1
+0 */6 * * * /bin/bash -c 'set -a; source /root/mesh-optimizer/.env; set +a; bash $backup_script' >> /var/log/mesh/backup.log 2>&1
 
 # Verify backups weekly (every Sunday at 2 AM)
-0 2 * * 0 /root/mesh-optimizer/.env bash $verify_script >> /var/log/mesh/verify.log 2>&1
+0 2 * * 0 /bin/bash -c 'set -a; source /root/mesh-optimizer/.env; set +a; bash $verify_script' >> /var/log/mesh/verify.log 2>&1
 
 # Health Check (Hourly)
-0 * * * * /root/mesh-optimizer/.env bash $health_script >> /var/log/mesh/health_check.log 2>&1
+0 * * * * /bin/bash -c 'set -a; source /root/mesh-optimizer/.env; set +a; bash $health_script' >> /var/log/mesh/health_check.log 2>&1
 
 # Daily Stats Report (Daily at 00:00)
-0 0 * * * /root/mesh-optimizer/.env bash $stats_script >> /var/log/mesh/daily_stats.log 2>&1
+0 0 * * * /bin/bash -c 'set -a; source /root/mesh-optimizer/.env; set +a; bash $stats_script' >> /var/log/mesh/daily_stats.log 2>&1
 
 # Blender Health Watchdog (Every 30 mins)
-*/30 * * * * /root/mesh-optimizer/.env bash $blender_check_script >> /var/log/mesh/blender_monitor.log 2>&1
+*/30 * * * * /bin/bash -c 'set -a; source /root/mesh-optimizer/.env; set +a; bash $blender_check_script' >> /var/log/mesh/blender_monitor.log 2>&1
+
+# Upload Cleanup (Every 15 mins)
+*/15 * * * * find /root/mesh-optimizer/uploads -type f -mmin +15 -delete 2>&1 | logger -t upload-cleanup
 
 EOF
     ) | crontab -
@@ -215,6 +220,7 @@ EOF
     echo "   - Health Check: Hourly"
     echo "   - Daily Stats: Daily (00:00)"
     echo "   - Blender Watchdog: Every 30 mins"
+    echo "   - Upload Cleanup: Every 15 mins"
 }
 
 ################################################################################
