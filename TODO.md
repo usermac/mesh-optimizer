@@ -46,3 +46,14 @@
 - [ ] **Dashboard**: Simple page for users to check their credit balance.
 - [ ] **Subscriptions**: Support for recurring billing (monthly unlimited or refill) for "whale" clients.
 - [ ] **DAILY Usage for Hardware**: I need to know when my hardware is being used and not living up to the work ask.
+
+
+## add to ship.sh
+# Add this line to your ship.sh if it's not already there:
+ssh root@your-server "bash /root/mesh-optimizer/scripts/backup/setup.sh"
+
+## just for me to use anytime
+ssh root@your-server "bash /root/mesh-optimizer/scripts/backup/backup.sh"
+"✅ Blender health check passed" message:
+```bash
+./scripts/reports/blender_health_check.sh

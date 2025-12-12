@@ -142,6 +142,7 @@ setup_scripts() {
     chmod +x "$script_dir/health_check.sh"
     chmod +x "$script_dir/send_report.sh"
     chmod +x "/root/mesh-optimizer/scripts/reports/daily_stats.sh"
+    chmod +x "/root/mesh-optimizer/scripts/reports/blender_health_check.sh"
 
     print_color "$GREEN" "✅ Scripts configured"
 }
@@ -181,6 +182,7 @@ setup_cron() {
     local verify_script="/root/mesh-optimizer/scripts/backup/verify_backup.sh"
     local health_script="/root/mesh-optimizer/scripts/backup/health_check.sh"
     local stats_script="/root/mesh-optimizer/scripts/reports/daily_stats.sh"
+    local blender_check_script="/root/mesh-optimizer/scripts/reports/blender_health_check.sh"
 
     # Remove existing cron jobs for mesh backup (if any)
     crontab -l 2>/dev/null | grep -v "mesh-optimizer/scripts" | crontab - 2>/dev/null || true
@@ -201,6 +203,9 @@ setup_cron() {
 # Daily Stats Report (Daily at 00:00)
 0 0 * * * /root/mesh-optimizer/.env bash $stats_script >> /var/log/mesh/daily_stats.log 2>&1
 
+# Blender Health Watchdog (Every 30 mins)
+*/30 * * * * /root/mesh-optimizer/.env bash $blender_check_script >> /var/log/mesh/blender_monitor.log 2>&1
+
 EOF
     ) | crontab -
 
@@ -209,6 +214,7 @@ EOF
     echo "   - Verification: Weekly (Sunday 2:00 AM)"
     echo "   - Health Check: Hourly"
     echo "   - Daily Stats: Daily (00:00)"
+    echo "   - Blender Watchdog: Every 30 mins"
 }
 
 ################################################################################
