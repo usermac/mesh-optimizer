@@ -7,7 +7,8 @@
 # It is designed to be run via cron (e.g., hourly).
 #
 # CHECKS PERFORMED:
-# 1. High Failure Rate: Alerts if >50% of jobs failed in the last hour.
+# 1. Disk Space: Alerts if disk usage exceeds 80% on root partition
+# 2. High Failure Rate: Alerts if >50% of jobs failed in the last hour.
 #    (Requires minimum 5 jobs to trigger to avoid noise)
 #
 # USAGE:
@@ -33,7 +34,43 @@ fi
 mkdir -p "$(dirname "$LOG_FILE")"
 
 # ------------------------------------------------------------------------------
-# Run Health Analysis (Python)
+# Check Disk Space
+# ------------------------------------------------------------------------------
+DISK_THRESHOLD=80  # Alert at 80% full
+DISK_REPORT=""
+
+# Get disk usage for root partition (where everything lives)
+DISK_USAGE=$(df /root | awk 'NR==2 {print $5}' | sed 's/%//')
+
+if [ "$DISK_USAGE" -gt "$DISK_THRESHOLD" ]; then
+    DISK_REPORT="🚨 DISK SPACE ALERT: ${DISK_USAGE}% used on root partition
+
+Current Disk Usage:
+$(df -h /root | tail -n 1)
+
+Largest Directories in uploads:
+$(du -sh /root/mesh-optimizer/uploads/* 2>/dev/null | sort -rh | head -10 || echo 'No uploads found')
+
+Backup Directory Size:
+$(du -sh /root/backups 2>/dev/null || echo 'No backups directory')
+
+Docker Space Usage:
+$(docker system df 2>/dev/null || echo 'Docker info unavailable')
+
+RECOMMENDED ACTIONS:
+1. Clean old uploads: find /root/mesh-optimizer/uploads -type f -mmin +15 -delete
+2. Verify upload cleanup cron is running: grep upload-cleanup /var/log/syslog | tail -5
+3. Check for stuck processes: ps aux | grep blender
+4. Clean Docker: docker system prune -a
+5. Remove old backups: find /root/backups -name 'mesh-backup-*.tar.gz' -mtime +7 -delete
+
+---
+Timestamp: $(date)
+Server: $(hostname)"
+fi
+
+# ------------------------------------------------------------------------------
+# Run Job Failure Analysis (Python)
 # ------------------------------------------------------------------------------
 # We use Python to interact with SQLite and calculate statistics reliably.
 # The script outputs an alert message ONLY if thresholds are exceeded.
@@ -137,17 +174,39 @@ except Exception as e:
 ")
 
 # ------------------------------------------------------------------------------
-# Handle Report
+# Handle Reports
 # ------------------------------------------------------------------------------
 
+# Combine all reports
+COMBINED_REPORT=""
+
+if [[ -n "$DISK_REPORT" ]]; then
+    COMBINED_REPORT="${COMBINED_REPORT}${DISK_REPORT}
+
+"
+fi
+
 if [[ -n "$REPORT" ]]; then
+    COMBINED_REPORT="${COMBINED_REPORT}${REPORT}"
+fi
+
+# Send alert if any issues detected
+if [[ -n "$COMBINED_REPORT" ]]; then
     echo "[$(date)] Issues detected. Sending alert." | tee -a "$LOG_FILE"
 
-    # Extract the first line as the subject
-    SUBJECT=$(echo "$REPORT" | head -n 1)
+    # Create subject line
+    SUBJECT="🚨 Health Alert: Production Server"
+
+    if [[ -n "$DISK_REPORT" ]] && [[ -n "$REPORT" ]]; then
+        SUBJECT="🚨 Multiple Issues Detected: Disk Space + Job Failures"
+    elif [[ -n "$DISK_REPORT" ]]; then
+        SUBJECT="🚨 Disk Space Alert: ${DISK_USAGE}% Full"
+    else
+        SUBJECT=$(echo "$REPORT" | head -n 1)
+    fi
 
     if [[ -x "$SEND_REPORT_SCRIPT" ]]; then
-        "$SEND_REPORT_SCRIPT" "$SUBJECT" "$REPORT" >> "$LOG_FILE" 2>&1
+        "$SEND_REPORT_SCRIPT" "$SUBJECT" "$COMBINED_REPORT" >> "$LOG_FILE" 2>&1
     else
         echo "ERROR: Send report script not executable at $SEND_REPORT_SCRIPT" | tee -a "$LOG_FILE"
     fi
