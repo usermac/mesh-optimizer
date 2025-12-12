@@ -365,8 +365,8 @@
                 <p>&copy; 2025 Brian Ginn. All rights reserved.</p>
                 <a href="#" id="tosLink">Terms of Service</a>
                 <a href="#" id="privacyLink">Privacy Policy</a>
+                <a href="#" id="apiDocsLinkFooter">API Docs</a>
                 <a href="#" id="contactLink">Contact</a>
-                <a href="#" id="apiCodeLinkFooter">API Code</a>
             </footer>
 
             <!-- Help Modal -->
@@ -795,6 +795,158 @@
                         <section class="content-section">
                             <h3>13. Contact</h3>
                             <p>Questions about these Terms? Use our <a href="#" id="tosToContactLink" class="text-primary">Contact Form</a>.</p>
+                        </section>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API Documentation Modal -->
+            <div id="apiDocsModal" class="modal-overlay" role="dialog" aria-labelledby="apiDocsModalTitle" aria-modal="true">
+                <div class="modal-window modal-window-large">
+                    <div class="modal-header">
+                        <div>
+                            <h2 class="m-0" id="apiDocsModalTitle">API Documentation</h2>
+                            <p class="text-muted text-small m-0">REST API Reference</p>
+                        </div>
+                        <button type="button" class="modal-close" onclick="closeModal('apiDocsModal')" aria-label="Close API documentation">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="highlight-box mb-20">
+                            <p class="m-0">
+                                <strong>Base URL:</strong> <code>https://webdeliveryengine.com</code><br>
+                                <strong>Authentication:</strong> All protected endpoints require <code>Authorization: Bearer YOUR_API_KEY</code>
+                            </p>
+                        </div>
+
+                        <section class="content-section">
+                            <h3>POST /optimize</h3>
+                            <p class="text-muted">Process a 3D model. Returns a job ID for polling. <strong>Requires authentication.</strong></p>
+
+                            <h4>Request (multipart/form-data)</h4>
+                            <table class="api-table">
+                                <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>file</code></td><td>file</td><td>Yes</td><td>3D model file (.obj, .fbx, .glb, .gltf) or .zip containing model + textures</td></tr>
+                                    <tr><td><code>mode</code></td><td>string</td><td>No</td><td><code>decimate</code> (default) or <code>remesh</code></td></tr>
+                                    <tr><td><code>ratio</code></td><td>float</td><td>No</td><td>0.0-1.0 quality ratio for decimate mode (default: 0.5)</td></tr>
+                                    <tr><td><code>faces</code></td><td>int</td><td>No</td><td>Target face count for remesh mode (default: 5000)</td></tr>
+                                    <tr><td><code>texture_size</code></td><td>int</td><td>No</td><td>Texture resolution for remesh: 1024, 2048, 4096 (default: 2048)</td></tr>
+                                </tbody>
+                            </table>
+
+                            <h4>Response</h4>
+                            <pre class="code-block"><code>{
+  "jobId": "1734012345678",
+  "status": "processing"
+}</code></pre>
+                            <p class="text-muted text-small">Header <code>X-Credits-Remaining</code> contains your updated balance.</p>
+                        </section>
+
+                        <section class="content-section">
+                            <h3>GET /job/:id</h3>
+                            <p class="text-muted">Poll job status. <strong>No authentication required.</strong></p>
+
+                            <h4>Response (Processing)</h4>
+                            <pre class="code-block"><code>{ "status": "Processing" }</code></pre>
+
+                            <h4>Response (Completed)</h4>
+                            <pre class="code-block"><code>{
+  "status": {
+    "Completed": {
+      "output_size": 245678,
+      "glb_url": "/download/1734012345678/model_opt.glb",
+      "usdz_url": "/download/1734012345678/model_opt.usdz"
+    }
+  }
+}</code></pre>
+
+                            <h4>Response (Failed)</h4>
+                            <pre class="code-block"><code>{
+  "status": {
+    "Failed": { "error": "Timeout" }
+  }
+}</code></pre>
+                        </section>
+
+                        <section class="content-section">
+                            <h3>GET /credits</h3>
+                            <p class="text-muted">Get your current credit balance. <strong>Requires authentication.</strong></p>
+
+                            <h4>Response</h4>
+                            <pre class="code-block"><code>{ "credits": 97 }</code></pre>
+                        </section>
+
+                        <section class="content-section">
+                            <h3>GET /history</h3>
+                            <p class="text-muted">Get your transaction history (last 50). <strong>Requires authentication.</strong></p>
+
+                            <h4>Response</h4>
+                            <pre class="code-block"><code>[
+  {
+    "id": 42,
+    "user_key": "sk_...",
+    "amount": -1,
+    "description": "chair.obj; Dec; 50%",
+    "reference_job_hash": "abc123...",
+    "created_at": 1734012345678
+  }
+]</code></pre>
+                        </section>
+
+                        <section class="content-section">
+                            <h3>GET /config</h3>
+                            <p class="text-muted">Get current pricing and configuration. <strong>No authentication required.</strong></p>
+
+                            <h4>Response</h4>
+                            <pre class="code-block"><code>{
+  "cost": 4900,
+  "credits": 100,
+  "cost_decimate": 1,
+  "cost_remesh": 5,
+  "free_spin_hours": 24
+}</code></pre>
+                        </section>
+
+                        <section class="content-section">
+                            <h3>Error Codes</h3>
+                            <table class="api-table">
+                                <thead><tr><th>Status</th><th>Meaning</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>400</code></td><td>Bad Request — No supported 3D model found in upload</td></tr>
+                                    <tr><td><code>401</code></td><td>Unauthorized — Missing or invalid API key</td></tr>
+                                    <tr><td><code>402</code></td><td>Payment Required — Insufficient credits</td></tr>
+                                    <tr><td><code>404</code></td><td>Not Found — Job ID or resource not found</td></tr>
+                                    <tr><td><code>500</code></td><td>Server Error — Something went wrong on our end</td></tr>
+                                </tbody>
+                            </table>
+                        </section>
+
+                        <section class="content-section">
+                            <h3>Billing Notes</h3>
+                            <ul>
+                                <li><strong>Decimate</strong> costs <span id="docs-cost-decimate">1</span> credit per job</li>
+                                <li><strong>Remesh</strong> costs <span id="docs-cost-remesh">5</span> credits per job</li>
+                                <li><strong>Free re-optimization:</strong> Same file + same mode within <span id="docs-free-hours">24</span> hours is free</li>
+                                <li><strong>Auto-refunds:</strong> Failed jobs are automatically refunded</li>
+                                <li><strong>Credits never expire</strong></li>
+                            </ul>
+                        </section>
+
+                        <section class="content-section">
+                            <h3>Quick Start Example</h3>
+                            <pre class="code-block"><code># 1. Submit a job
+curl -X POST 'https://webdeliveryengine.com/optimize' \
+     -H 'Authorization: Bearer YOUR_API_KEY' \
+     -F 'file=@model.zip' \
+     -F 'mode=decimate' \
+     -F 'ratio=0.5'
+
+# 2. Poll for completion (replace JOB_ID)
+curl 'https://webdeliveryengine.com/job/JOB_ID'
+
+# 3. Download results when complete
+curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.glb'
+curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></pre>
                         </section>
                     </div>
                 </div>
@@ -1475,7 +1627,7 @@
             // Close any open modal on ESC key
             document.addEventListener("keydown", function (e) {
                 if (e.key === "Escape") {
-                    const modals = ["historyModal", "helpModal", "contactModal", "privacyModal", "apiCodeModal", "tosModal"];
+                    const modals = ["historyModal", "helpModal", "contactModal", "privacyModal", "apiCodeModal", "tosModal", "apiDocsModal"];
                     modals.forEach(function(modalId) {
                         const modal = document.getElementById(modalId);
                         if (modal && modal.style.display === "flex") {
@@ -1559,10 +1711,20 @@ done`;
                 openModal("apiCodeModal", this);
             });
 
-            document.getElementById("apiCodeLinkFooter").addEventListener("click", function(e) {
+            // API Docs modal handler
+            document.getElementById("apiDocsLinkFooter").addEventListener("click", function(e) {
                 e.preventDefault();
-                generateApiCode();
-                openModal("apiCodeModal", this);
+                // Update pricing values in docs
+                if (pricingConfig.cost_decimate !== undefined) {
+                    document.getElementById("docs-cost-decimate").innerText = pricingConfig.cost_decimate;
+                }
+                if (pricingConfig.cost_remesh !== undefined) {
+                    document.getElementById("docs-cost-remesh").innerText = pricingConfig.cost_remesh;
+                }
+                if (pricingConfig.free_spin_hours !== undefined) {
+                    document.getElementById("docs-free-hours").innerText = pricingConfig.free_spin_hours;
+                }
+                openModal("apiDocsModal", this);
             });
 
             // Copy API code to clipboard
@@ -1591,7 +1753,7 @@ done`;
             });
 
             // Close modal when clicking outside the modal window
-            ["helpModal", "contactModal", "privacyModal", "historyModal", "apiCodeModal", "tosModal"].forEach(function(modalId) {
+            ["helpModal", "contactModal", "privacyModal", "historyModal", "apiCodeModal", "tosModal", "apiDocsModal"].forEach(function(modalId) {
                 document.getElementById(modalId).addEventListener("click", function(e) {
                     if (e.target === this) {
                         closeModal(modalId);
