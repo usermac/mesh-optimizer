@@ -99,19 +99,22 @@
             </div>
 
             <!-- Upload -->
-            <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Upload 3D file. Drag and drop or click to select. Supported formats: OBJ, FBX, GLB, GLTF">
+            <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Upload 3D file. Drag and drop or click to select. Supported formats: OBJ, FBX, GLB, GLTF, ZIP">
                 <div id="dropText">
                     Drag 3D file here<br /><span class="text-small text-muted"
-                        >(.obj, .fbx, .glb, .gltf)</span
+                        >(.obj, .fbx, .glb, .gltf, .zip)</span
                     >
                 </div>
                 <input
                     type="file"
                     id="fileInput"
                     class="d-none"
-                    accept=".obj,.fbx,.glb,.gltf"
+                    accept=".obj,.fbx,.glb,.gltf,.zip"
                     aria-label="Select 3D file to upload"
                 />
+            </div>
+            <div id="zipNotice" class="text-muted text-small mt-10" style="display: none;">
+                <em>ZIP detected. Make sure your model and textures are inside.</em>
             </div>
             <div id="fileName" class="text-success text-small" aria-live="polite" aria-atomic="true"></div>
 
@@ -351,8 +354,9 @@
                     </div>
                     <div class="modal-footer">
                         <strong class="text-muted">Fair Use Policy:</strong>
-                        Free re-optimizations of the same file within <span id="history-free-spin-hours">24</span>
-                        hours of first use (credit paid at the time of first use).
+                        Free re-optimizations of the same file* within <span id="history-free-spin-hours">24</span>
+                        hours of first use (credit paid at the time of first use).<br>
+                        "*file" is single file or a zip file containing multiple files of the same content as before.
                     </div>
                 </div>
             </div>
@@ -991,14 +995,23 @@
                 if (!file) return;
                 selectedFile = file;
 
-                // Show/Hide Optional Inputs based on extension
+                // Show/Hide Optional Inputs and ZIP notice based on extension
                 const ext = file.name.split(".").pop().toLowerCase();
                 const objInputs = document.getElementById("objInputs");
+                const zipNotice = document.getElementById("zipNotice");
 
                 if (ext === "obj") {
                     objInputs.style.display = "block";
+                    zipNotice.style.display = "none";
+                } else if (ext === "zip") {
+                    objInputs.style.display = "none";
+                    zipNotice.style.display = "block";
+                    // Clear optional inputs since they're inside the ZIP
+                    document.getElementById("mtlInput").value = "";
+                    document.getElementById("texInput").value = "";
                 } else {
                     objInputs.style.display = "none";
+                    zipNotice.style.display = "none";
                     // Clear optional inputs if switching away from OBJ
                     document.getElementById("mtlInput").value = "";
                     document.getElementById("texInput").value = "";
@@ -1015,7 +1028,8 @@
                 processBtn.style.background = "#10b981";
 
                 // Announce file selection to screen readers
-                announceStatus("File selected: " + file.name + ", " + fileSizeMB + " megabytes. Ready to optimize.");
+                const fileTypeMsg = ext === "zip" ? " ZIP archive containing model and textures." : "";
+                announceStatus("File selected: " + file.name + ", " + fileSizeMB + " megabytes." + fileTypeMsg + " Ready to optimize.");
             }
 
             processBtn.addEventListener("click", async () => {

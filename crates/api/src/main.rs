@@ -486,6 +486,7 @@ async fn optimize_handler(
     let mut texture_size = 2048;
     let mut input_filepath: Option<PathBuf> = None;
     let mut file_hash = String::new();
+    let mut was_zip = false;
 
     while let Ok(Some(field)) = multipart.next_field().await {
         let name = field.name().unwrap_or_default().to_string();
@@ -566,6 +567,7 @@ async fn optimize_handler(
 
                     if let Some(name) = found_model {
                         input_filename = Some(name);
+                        was_zip = true;
                     }
                 } else if ["obj", "fbx", "glb", "gltf"].contains(&ext.as_str()) {
                     input_filename = Some(filename);
@@ -671,13 +673,19 @@ async fn optimize_handler(
                 -required_credits,
                 &if mode == "remesh" {
                     format!(
-                        "{}; Rem; {}k faces; {}px",
+                        "{}{}; Rem; {}k faces; {}px",
                         input_filename,
+                        if was_zip { " (zip)" } else { "" },
                         faces / 1000,
                         texture_size
                     )
                 } else {
-                    format!("{}; Dec; {}%", input_filename, (ratio * 100.0) as i32)
+                    format!(
+                        "{}{}; Dec; {}%",
+                        input_filename,
+                        if was_zip { " (zip)" } else { "" },
+                        (ratio * 100.0) as i32
+                    )
                 },
                 Some(file_mode_hash.clone()),
             )
@@ -709,15 +717,17 @@ async fn optimize_handler(
                 0,
                 &if mode == "remesh" {
                     format!(
-                        "{}; Rem; {}k faces; {}px (free re-opt)",
+                        "{}{}; Rem; {}k faces; {}px (free re-opt)",
                         input_filename,
+                        if was_zip { " (zip)" } else { "" },
                         faces / 1000,
                         texture_size
                     )
                 } else {
                     format!(
-                        "{}; Dec; {}% (free re-opt)",
+                        "{}{}; Dec; {}% (free re-opt)",
                         input_filename,
+                        if was_zip { " (zip)" } else { "" },
                         (ratio * 100.0) as i32
                     )
                 },
