@@ -116,7 +116,8 @@ impl Database {
                 output_size_bytes INTEGER NOT NULL,
                 processing_time_ms INTEGER NOT NULL,
                 quality_ratio REAL NOT NULL,
-                status TEXT NOT NULL
+                status TEXT NOT NULL,
+                source TEXT DEFAULT 'api' NOT NULL
             );
 
             CREATE TABLE IF NOT EXISTS credit_transactions (
@@ -131,6 +132,13 @@ impl Database {
             if let Err(e) = sqlx::query(schema).execute(p).await {
                 error!("Failed to run SQLite migration: {:?}", e);
             }
+
+            // Migration: Add source column if missing (ignores error if exists)
+            let _ = sqlx::query(
+                "ALTER TABLE job_history ADD COLUMN source TEXT DEFAULT 'api' NOT NULL",
+            )
+            .execute(p)
+            .await;
         }
 
         // --- 4. Load Salt ---
@@ -383,6 +391,7 @@ impl Database {
         processing_time_ms: u64,
         quality_ratio: f32,
         status: &str,
+        source: &str,
     ) {
         if let Some(pool) = &self.pool {
             // Pseudonymize User
@@ -395,8 +404,8 @@ impl Database {
 
             let query = r#"
             INSERT INTO job_history
-            (user_hash, file_fingerprint, input_format, output_format, input_size_bytes, output_size_bytes, processing_time_ms, quality_ratio, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (user_hash, file_fingerprint, input_format, output_format, input_size_bytes, output_size_bytes, processing_time_ms, quality_ratio, status, source)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             "#;
 
             let res = sqlx::query(query)
@@ -409,6 +418,7 @@ impl Database {
                 .bind(processing_time_ms as i64)
                 .bind(quality_ratio)
                 .bind(status)
+                .bind(source)
                 .execute(pool)
                 .await;
 

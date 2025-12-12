@@ -1025,7 +1025,10 @@
                 try {
                     const res = await fetch("/optimize", {
                         method: "POST",
-                        headers: { Authorization: "Bearer " + apiKey },
+                        headers: {
+                            Authorization: "Bearer " + apiKey,
+                            "X-Source": "web",
+                        },
                         body: formData,
                     });
 

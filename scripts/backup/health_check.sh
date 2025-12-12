@@ -60,21 +60,42 @@ try:
 
     # Query job status distribution for the last X hours
     # SQLite 'datetime' function handles the calculation
-    cursor.execute(\"\"\"
-        SELECT status, COUNT(*)
-        FROM job_history
-        WHERE timestamp > datetime('now', ?)
-        GROUP BY status
-    \"\"\", (f'-{hours_back} hour',))
+    # Check if 'source' column exists (migration safety)
+    try:
+        cursor.execute(\"SELECT source FROM job_history LIMIT 1\")
+        has_source = True
+    except sqlite3.OperationalError:
+        has_source = False
+
+    if has_source:
+        cursor.execute(\"\"\"
+            SELECT status, source, COUNT(*)
+            FROM job_history
+            WHERE timestamp > datetime('now', ?)
+            GROUP BY status, source
+        \"\"\", (f'-{hours_back} hour',))
+    else:
+        cursor.execute(\"\"\"
+            SELECT status, 'unknown', COUNT(*)
+            FROM job_history
+            WHERE timestamp > datetime('now', ?)
+            GROUP BY status
+        \"\"\", (f'-{hours_back} hour',))
 
     rows = cursor.fetchall()
     conn.close()
 
     stats = {}
+    source_stats = {}
     total_jobs = 0
 
-    for status, count in rows:
-        stats[status] = count
+    for status, source, count in rows:
+        stats[status] = stats.get(status, 0) + count
+
+        # Track failures by source
+        if status != 'success':
+            source_stats[source] = source_stats.get(source, 0) + count
+
         total_jobs += count
 
     # If not enough data, skip check to avoid false alarms
@@ -98,6 +119,11 @@ try:
         print(\"\nDetailed Status Breakdown:\")
         for status, count in stats.items():
             print(f\"  - {status}: {count}\")
+
+        if source_stats:
+            print(\"\nFailures by Source:\")
+            for source, count in source_stats.items():
+                print(f\"  - {source}: {count}\")
 
         print(\"\n---\")
         print(\"RECOMMENDED ACTIONS:\")

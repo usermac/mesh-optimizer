@@ -448,6 +448,12 @@ async fn optimize_handler(
     headers: HeaderMap,
     mut multipart: Multipart,
 ) -> Response {
+    let source = headers
+        .get("X-Source")
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or("api")
+        .to_string();
+
     let start_time = std::time::Instant::now();
     let batch_id = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -853,6 +859,7 @@ async fn optimize_handler(
                         start_time.elapsed().as_millis() as u64,
                         ratio,
                         "system_error",
+                        &source,
                     )
                     .await;
                 return;
@@ -893,6 +900,7 @@ async fn optimize_handler(
                         start_time.elapsed().as_millis() as u64,
                         ratio,
                         "timeout",
+                        &source,
                     )
                     .await;
                 return;
@@ -929,6 +937,7 @@ async fn optimize_handler(
                     processing_time,
                     ratio,
                     "worker_error",
+                    &source,
                 )
                 .await;
 
@@ -969,6 +978,7 @@ async fn optimize_handler(
                 processing_time,
                 ratio,
                 "success",
+                &source,
             )
             .await;
 
