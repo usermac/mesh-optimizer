@@ -338,9 +338,9 @@
                         <table class="table-container" aria-label="Transaction history">
                             <thead>
                                 <tr>
-                                    <th scope="col">Date</th>
-                                    <th scope="col">Activity</th>
-                                    <th scope="col" class="text-right">Amount</th>
+                                    <th scope="col" style="width: 160px;">Date</th>
+                                    <th scope="col" style="width: auto;">Activity</th>
+                                    <th scope="col" style="width: 70px; text-align: right;">Amount</th>
                                 </tr>
                             </thead>
                             <tbody id="historyTableBody">
@@ -711,9 +711,9 @@
                         tx.amount > 0 ? "text-success" : "text-error";
                     const row = `
                     <tr>
-                        <td class="text-muted text-small">${date}</td>
-                        <td>${tx.description}</td>
-                        <td class="${colorClass} font-bold text-right">
+                        <td class="text-muted text-small" style="width: 160px;">${date}</td>
+                        <td style="width: auto;">${tx.description}</td>
+                        <td class="${colorClass} font-bold" style="width: 70px; text-align: right;">
                             ${tx.amount > 0 ? "+" : ""}${tx.amount}
                         </td>
                     </tr>
