@@ -614,9 +614,12 @@ async fn optimize_handler(
     let usdz_filename = format!("{}_opt.usdz", output_base);
 
     // Fair Billing Logic
+    // Combine file hash with mode so that decimate and remesh are tracked separately
+    // This prevents gaming: decimate (1 credit) then remesh (free) on same file
+    let file_mode_hash = format!("{}:{}", file_hash, mode);
     let should_charge = state
         .db
-        .should_charge_for_file(&auth_key.0, &file_hash)
+        .should_charge_for_file(&auth_key.0, &file_mode_hash)
         .await;
     let mut deducted = false;
 
@@ -670,7 +673,7 @@ async fn optimize_handler(
                 } else {
                     format!("{}; Dec; {}%", input_filename, (ratio * 100.0) as i32)
                 },
-                Some(file_hash.clone()),
+                Some(file_mode_hash.clone()),
             )
             .await
         {
@@ -691,7 +694,7 @@ async fn optimize_handler(
         // Record free re-optimization for transparency in transaction history
         info!(
             "Free Re-roll for hash: {} (recording 0-credit transaction)",
-            file_hash
+            file_mode_hash
         );
         let _ = state
             .db
@@ -712,7 +715,7 @@ async fn optimize_handler(
                         (ratio * 100.0) as i32
                     )
                 },
-                Some(file_hash.clone()),
+                Some(file_mode_hash.clone()),
             )
             .await;
     }
@@ -735,7 +738,7 @@ async fn optimize_handler(
     let input_filename_clone = input_filename.clone();
     let output_filename_clone = output_filename.clone();
     let usdz_filename_clone = usdz_filename.clone();
-    let file_hash_clone = file_hash.clone();
+    let file_mode_hash_clone = file_mode_hash.clone();
     let format_clone = format.clone();
     let mode_clone = mode.clone();
 
@@ -864,7 +867,7 @@ async fn optimize_handler(
                             &auth_key_str,
                             required_credits,
                             "system_error_refund",
-                            Some(file_hash_clone),
+                            Some(file_mode_hash_clone.clone()),
                         )
                         .await;
                 }
@@ -905,7 +908,7 @@ async fn optimize_handler(
                             &auth_key_str,
                             required_credits,
                             "timeout_refund",
-                            Some(file_hash_clone),
+                            Some(file_mode_hash_clone.clone()),
                         )
                         .await;
                 }
@@ -941,7 +944,7 @@ async fn optimize_handler(
                         &auth_key_str,
                         required_credits,
                         &format!("process_failure_refund: {}", input_filename_clone),
-                        Some(file_hash_clone),
+                        Some(file_mode_hash_clone.clone()),
                     )
                     .await;
             }
@@ -998,7 +1001,7 @@ async fn optimize_handler(
                         &auth_key_str,
                         required_credits,
                         &format!("no_output_refund: {}", input_filename_clone),
-                        Some(file_hash_clone),
+                        Some(file_mode_hash_clone.clone()),
                     )
                     .await;
                 info!(
