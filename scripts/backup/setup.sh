@@ -139,6 +139,9 @@ setup_scripts() {
     chmod +x "$script_dir/backup.sh"
     chmod +x "$script_dir/restore.sh"
     chmod +x "$script_dir/verify_backup.sh"
+    chmod +x "$script_dir/health_check.sh"
+    chmod +x "$script_dir/send_report.sh"
+    chmod +x "/root/mesh-optimizer/scripts/reports/daily_stats.sh"
 
     print_color "$GREEN" "✅ Scripts configured"
 }
@@ -176,9 +179,11 @@ setup_cron() {
 
     local backup_script="/root/mesh-optimizer/scripts/backup/backup.sh"
     local verify_script="/root/mesh-optimizer/scripts/backup/verify_backup.sh"
+    local health_script="/root/mesh-optimizer/scripts/backup/health_check.sh"
+    local stats_script="/root/mesh-optimizer/scripts/reports/daily_stats.sh"
 
     # Remove existing cron jobs for mesh backup (if any)
-    crontab -l 2>/dev/null | grep -v "mesh-optimizer/scripts/backup" | crontab - 2>/dev/null || true
+    crontab -l 2>/dev/null | grep -v "mesh-optimizer/scripts" | crontab - 2>/dev/null || true
 
     # Add new cron jobs
     (crontab -l 2>/dev/null || echo ""; cat <<EOF
@@ -190,12 +195,20 @@ setup_cron() {
 # Verify backups weekly (every Sunday at 2 AM)
 0 2 * * 0 /root/mesh-optimizer/.env bash $verify_script >> /var/log/mesh/verify.log 2>&1
 
+# Health Check (Hourly)
+0 * * * * /root/mesh-optimizer/.env bash $health_script >> /var/log/mesh/health_check.log 2>&1
+
+# Daily Stats Report (Daily at 00:00)
+0 0 * * * /root/mesh-optimizer/.env bash $stats_script >> /var/log/mesh/daily_stats.log 2>&1
+
 EOF
     ) | crontab -
 
     print_color "$GREEN" "✅ Cron jobs configured:"
-    echo "   - Backup: Every 6 hours (00:00, 06:00, 12:00, 18:00)"
+    echo "   - Backup: Every 6 hours"
     echo "   - Verification: Weekly (Sunday 2:00 AM)"
+    echo "   - Health Check: Hourly"
+    echo "   - Daily Stats: Daily (00:00)"
 }
 
 ################################################################################
