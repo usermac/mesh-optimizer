@@ -1034,7 +1034,7 @@ async fn optimize_handler(
                 jobs.insert(
                     batch_id_clone,
                     JobStatus::Failed {
-                        error: "Processing completed but no output was generated. The input file may be incompatible.".to_string(),
+                        error: "No Output".to_string(),
                     },
                 );
             }
