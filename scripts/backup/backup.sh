@@ -29,6 +29,7 @@ REMOTE_RETENTION_DAYS=30
 STORAGE_BOX_USER="${STORAGE_BOX_USER:-}"
 STORAGE_BOX_HOST="${STORAGE_BOX_HOST:-}"
 STORAGE_BOX_PATH="${STORAGE_BOX_PATH:-/backups}"
+STORAGE_BOX_PASSWORD="${STORAGE_BOX_PASSWORD:-}"
 
 # Email Configuration (from environment)
 RESEND_API_KEY="${RESEND_API_KEY:-}"
@@ -73,7 +74,7 @@ send_success_email() {
 
     local json_payload=$(cat <<EOF
 {
-  "from": "Mesh Optimizer Backups <backups@webdeliveryengine.com>",
+  "from": "Mesh Optimizer Backups <support@webdeliveryengine.com>",
   "to": ["$BACKUP_EMAIL"],
   "subject": "✅ Database Backup Successful - $TIMESTAMP",
   "html": "<h2>✅ Backup Completed Successfully</h2><p><strong>Timestamp:</strong> $DATE_READABLE</p><p><strong>Backup Size:</strong> $backup_size</p><p><strong>Files Backed Up:</strong></p><ul>$files_backed_up</ul><p><strong>Storage Locations:</strong></p><ul><li>Local: $BACKUP_DIR (kept for $LOCAL_RETENTION_DAYS days)</li><li>Storage Box: $storage_box_status</li></ul><p><strong>Backup Name:</strong> ${BACKUP_NAME}.tar.gz</p><hr><p><small>Automated backup from Mesh Optimizer Server (webdeliveryengine.com)</small></p>"
@@ -110,7 +111,7 @@ send_failure_email() {
 
     local json_payload=$(cat <<EOF
 {
-  "from": "Mesh Optimizer Backups <backups@webdeliveryengine.com>",
+  "from": "Mesh Optimizer Backups <support@webdeliveryengine.com>",
   "to": ["$BACKUP_EMAIL"],
   "subject": "❌ Database Backup FAILED - $TIMESTAMP",
   "html": "<h2>❌ Backup Failed</h2><p><strong>Timestamp:</strong> $DATE_READABLE</p><p><strong>Error:</strong></p><pre style='background:#f5f5f5;padding:10px;border-radius:5px;'>$error_message</pre><hr><p><strong>⚠️ Action Required:</strong> Please SSH into the server and investigate immediately.</p><p><code>ssh root@webdeliveryengine.com</code></p><p>Check logs at: <code>$LOG_FILE</code></p><p><small>Automated alert from Mesh Optimizer Server</small></p>"
@@ -133,28 +134,45 @@ upload_to_storage_box() {
 
     if [[ -z "$STORAGE_BOX_USER" ]] || [[ -z "$STORAGE_BOX_HOST" ]]; then
         log "WARNING: Storage Box not configured. Skipping remote upload."
-        echo "Not configured"
+        echo "Storage Box not configured"
         return 0
     fi
 
     log "Uploading to Storage Box..."
 
+    # Determine authentication method
+    local ssh_cmd="ssh -p 23 -o BatchMode=yes -o ConnectTimeout=10"
+    local rsync_ssh="ssh -p 23 -o BatchMode=yes -o ConnectTimeout=10"
+
+    if [[ -n "$STORAGE_BOX_PASSWORD" ]]; then
+        # Check if sshpass is installed
+        if command -v sshpass >/dev/null 2>&1; then
+            log "Using password authentication"
+            ssh_cmd="sshpass -p '${STORAGE_BOX_PASSWORD}' ssh -p 23 -o ConnectTimeout=10"
+            rsync_ssh="sshpass -p '${STORAGE_BOX_PASSWORD}' ssh -p 23 -o ConnectTimeout=10"
+        else
+            log "WARNING: STORAGE_BOX_PASSWORD set but sshpass not installed. Install with: apt-get install sshpass"
+            log "Falling back to SSH key authentication"
+        fi
+    else
+        log "Using SSH key authentication"
+    fi
+
     # Ensure remote directory exists
-    ssh -p 23 "${STORAGE_BOX_USER}@${STORAGE_BOX_HOST}" "mkdir -p ${STORAGE_BOX_PATH}" 2>/dev/null || true
+    eval "$ssh_cmd ${STORAGE_BOX_USER}@${STORAGE_BOX_HOST} 'mkdir -p ${STORAGE_BOX_PATH}'" 2>/dev/null || true
 
     # Upload using rsync (efficient, resumable)
-    if rsync -avz -e "ssh -p 23" "$backup_file" "${STORAGE_BOX_USER}@${STORAGE_BOX_HOST}:${STORAGE_BOX_PATH}/" 2>&1 | tee -a "$LOG_FILE"; then
+    if eval "rsync -avz -e \"$rsync_ssh\" '$backup_file' '${STORAGE_BOX_USER}@${STORAGE_BOX_HOST}:${STORAGE_BOX_PATH}/'" 2>&1 | tee -a "$LOG_FILE"; then
         log "✅ Uploaded to Storage Box successfully"
 
         # Clean up old backups on Storage Box (keep last 30 days)
         log "Cleaning old backups on Storage Box (keeping last $REMOTE_RETENTION_DAYS days)..."
-        ssh -p 23 "${STORAGE_BOX_USER}@${STORAGE_BOX_HOST}" \
-            "find ${STORAGE_BOX_PATH} -name 'mesh-backup-*.tar.gz' -type f -mtime +${REMOTE_RETENTION_DAYS} -delete" 2>&1 | tee -a "$LOG_FILE" || true
+        eval "$ssh_cmd ${STORAGE_BOX_USER}@${STORAGE_BOX_HOST} 'find ${STORAGE_BOX_PATH} -name \"mesh-backup-*.tar.gz\" -type f -mtime +${REMOTE_RETENTION_DAYS} -delete'" 2>&1 | tee -a "$LOG_FILE" || true
 
-        echo "✅ Uploaded to ${STORAGE_BOX_HOST}:${STORAGE_BOX_PATH}"
+        echo "Successfully uploaded to Storage Box"
     else
         log "ERROR: Failed to upload to Storage Box"
-        echo "❌ Upload failed"
+        echo "Storage Box upload failed"
     fi
 }
 

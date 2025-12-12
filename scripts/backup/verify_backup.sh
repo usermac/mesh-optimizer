@@ -78,7 +78,7 @@ send_verification_email() {
 
     local json_payload=$(cat <<EOF
 {
-  "from": "Mesh Optimizer Backups <backups@webdeliveryengine.com>",
+  "from": "Mesh Optimizer Backups <support@webdeliveryengine.com>",
   "to": ["$BACKUP_EMAIL"],
   "subject": "$subject - $(date +'%Y-%m-%d')",
   "html": "<h2>$status_icon Backup Verification Report</h2><p><strong>Date:</strong> $(date +'%Y-%m-%d %H:%M:%S %Z')</p><p><strong>Summary:</strong></p><ul><li>Total Backups Checked: $total</li><li>Passed: $passed ✅</li><li>Failed: $failed ❌</li></ul><hr><h3>Details:</h3><pre style='background:#f5f5f5;padding:10px;border-radius:5px;font-family:monospace;'>$report</pre><hr><p><small>Automated verification from Mesh Optimizer Server</small></p>"
