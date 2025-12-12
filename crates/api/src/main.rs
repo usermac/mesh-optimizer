@@ -975,13 +975,71 @@ async fn optimize_handler(
             return;
         }
 
-        // Success - Calculate Output Size
+        // Validate Output File Exists and Has Content
         let output_path = if format_clone == "usdz" {
             batch_dir_clone.join(&usdz_filename_clone)
         } else {
             batch_dir_clone.join(&output_filename_clone)
         };
         let output_size = fs::metadata(&output_path).map(|m| m.len()).unwrap_or(0);
+
+        // CRITICAL: Check if output file was actually created
+        if output_size == 0 {
+            error!(
+                "Worker exited successfully but output file is missing or empty: {:?}",
+                output_path
+            );
+
+            // Refund Credit (No Output Generated)
+            if deducted {
+                let _ = state_clone
+                    .db
+                    .record_transaction(
+                        &auth_key_str,
+                        required_credits,
+                        &format!("no_output_refund: {}", input_filename_clone),
+                        Some(file_hash_clone),
+                    )
+                    .await;
+                info!(
+                    "Credit refunded for key={} due to missing output",
+                    &auth_key_str
+                );
+            }
+
+            // Log as failed job
+            let input_ext = Path::new(&input_filename_clone)
+                .extension()
+                .and_then(|s| s.to_str())
+                .unwrap_or("unknown");
+
+            state_clone
+                .db
+                .log_job(
+                    &user_identifier,
+                    &input_filename_clone,
+                    input_size,
+                    input_ext,
+                    &format_clone,
+                    0,
+                    processing_time,
+                    ratio,
+                    "no_output",
+                    &source,
+                )
+                .await;
+
+            {
+                let mut jobs = state_clone.jobs.write().await;
+                jobs.insert(
+                    batch_id_clone,
+                    JobStatus::Failed {
+                        error: "Processing completed but no output was generated. The input file may be incompatible.".to_string(),
+                    },
+                );
+            }
+            return;
+        }
 
         let input_ext = Path::new(&input_filename_clone)
             .extension()
@@ -1007,6 +1065,11 @@ async fn optimize_handler(
         let dl_base = format!("/download/{}", batch_id_clone);
         let glb_url = format!("{}/{}", dl_base, output_filename_clone);
         let usdz_url = format!("{}/{}", dl_base, usdz_filename_clone);
+
+        info!(
+            "Job {} completed successfully. Output size: {} bytes",
+            batch_id_clone, output_size
+        );
 
         {
             let mut jobs = state_clone.jobs.write().await;

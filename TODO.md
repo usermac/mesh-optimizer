@@ -10,6 +10,12 @@
 - [x] **Blender Remeshing Workflow**: Implemented `remesh.py` for high-quality retopology and baking.
 - [x] **API Remesh Support**: Updated backend to handle `mode`, `faces`, and `texture_size` parameters.
 - [x] **Web UI Enhancements**: Added Remeshing controls (Face count, Texture size) to the frontend.
+- [x] **CRITICAL FIX: Blender 4.x API Compatibility**: Updated `remesh.py` to use `temp_override()` instead of deprecated context dict pattern.
+- [x] **CRITICAL FIX: OBJ Import API**: Changed from `bpy.ops.import_scene.obj` (removed in Blender 4.0) to `bpy.ops.wm.obj_import`.
+- [x] **CRITICAL FIX: Output Validation**: Backend now verifies output file exists and has non-zero size before marking job complete.
+- [x] **CRITICAL FIX: Credit Refunds on Empty Output**: Credits are now refunded if worker exits successfully but produces no output file.
+- [x] **CRITICAL FIX: Explicit Exit Codes**: `remesh.py` now uses `sys.exit(0/1)` with try/except to ensure proper exit codes.
+- [x] **CRITICAL FIX: Absolute Paths**: `remesh.py` now converts relative paths to absolute to avoid working directory issues.
 
 ## Testing Required
 - [ ] **Test Payment Success Page**: Verify the enhanced success page displays the API key prominently with the "SAVE YOUR KEY NOW" warning. Confirm users can copy the key easily.
