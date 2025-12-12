@@ -660,7 +660,16 @@ async fn optimize_handler(
             .record_transaction(
                 &auth_key.0,
                 -required_credits,
-                &format!("optimized ({}): {}", mode, input_filename),
+                &if mode == "remesh" {
+                    format!(
+                        "{}; Rem; {}k faces; {}px",
+                        input_filename,
+                        faces / 1000,
+                        texture_size
+                    )
+                } else {
+                    format!("{}; Dec; {}%", input_filename, (ratio * 100.0) as i32)
+                },
                 Some(file_hash.clone()),
             )
             .await
@@ -689,7 +698,20 @@ async fn optimize_handler(
             .record_transaction(
                 &auth_key.0,
                 0,
-                &format!("re-optimized: {} (free - within 24hr)", input_filename),
+                &if mode == "remesh" {
+                    format!(
+                        "{}; Rem; {}k faces; {}px (free re-opt)",
+                        input_filename,
+                        faces / 1000,
+                        texture_size
+                    )
+                } else {
+                    format!(
+                        "{}; Dec; {}% (free re-opt)",
+                        input_filename,
+                        (ratio * 100.0) as i32
+                    )
+                },
                 Some(file_hash.clone()),
             )
             .await;

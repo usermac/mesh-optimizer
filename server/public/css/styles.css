@@ -605,6 +605,8 @@ model-viewer {
 .table-container td {
     padding: 10px;
     border-bottom: 1px solid #333;
+    word-break: break-word;
+    max-width: 0;
 }
 
 /* Documentation / Content Pages Specifics */
