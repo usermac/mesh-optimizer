@@ -387,15 +387,24 @@
                                 </p>
                             </div>
                             <p>
-                                <strong>The Rule:</strong> If you upload an OBJ file, you
-                                MUST also select the texture images (JPG/PNG) and the
-                                material file (MTL) at the same time.
+                                <strong>The Rule:</strong> OBJ files need their associated
+                                material file (<code>.mtl</code>) and texture images (<code>.jpg</code>/<code>.png</code>)
+                                to display colors correctly.
+                            </p>
+                            <h4>How to fix it:</h4>
+                            <p>
+                                <strong>Option 1 (Recommended):</strong> Create a <code>.zip</code> file
+                                containing your <code>model.obj</code>, <code>model.mtl</code>, and all
+                                texture images. Drag the ZIP onto the upload area.
                             </p>
                             <p>
-                                <strong>How to fix it:</strong> In the upload window, select
-                                ALL files (<code>model.obj</code>, <code>model.mtl</code>,
-                                <code>texture.jpg</code>) and drag them in together. Or, use
-                                a <code>.glb</code> file which has textures built-in.
+                                <strong>Option 2:</strong> Drag just the <code>.obj</code> file, then use
+                                the "Material (.mtl)" and "Textures" fields that appear below to add the
+                                additional files separately.
+                            </p>
+                            <p>
+                                <strong>Option 3:</strong> Use a <code>.glb</code> file instead — it has
+                                textures built-in, so you only need one file.
                             </p>
                         </section>
 
@@ -446,20 +455,21 @@
                             <ul>
                                 <li>
                                     <strong>GLB / GLTF:</strong> The best format. Textures
-                                    are embedded.
+                                    are embedded. Just drag and drop.
                                 </li>
                                 <li>
-                                    <strong>OBJ:</strong> Good, but requires you to upload
-                                    <code>.mtl</code> and <code>.jpg/.png</code> textures
-                                    alongside it.
+                                    <strong>ZIP (Recommended for OBJ):</strong> Zip your
+                                    <code>.obj</code> + <code>.mtl</code> + textures into one file.
+                                    Easiest way to keep everything together.
                                 </li>
                                 <li>
-                                    <strong>FBX:</strong> Supported, but textures can
-                                    sometimes be tricky if they aren't embedded in the FBX.
+                                    <strong>OBJ:</strong> Supported. After uploading, use the
+                                    Material and Textures fields to add <code>.mtl</code> and
+                                    <code>.jpg/.png</code> files separately.
                                 </li>
                                 <li>
-                                    <strong>ZIP:</strong> You can zip your OBJ+MTL+Textures
-                                    into a single file and upload that.
+                                    <strong>FBX:</strong> Supported, but textures may not
+                                    transfer if they aren't embedded in the FBX.
                                 </li>
                             </ul>
                         </section>
