@@ -64,6 +64,7 @@ struct PricingConfig {
     max_purchase_usd: u32,
     default_purchase_usd: u32,
     tiers: Vec<PricingTier>,
+    free_reoptimization_hours: u32,
 }
 
 #[derive(Clone)]
@@ -312,22 +313,17 @@ async fn get_config(State(state): State<AppState>) -> Json<serde_json::Value> {
         .and_then(|v| v.parse::<i32>().ok())
         .unwrap_or(5);
 
-    let free_spin_hours = std::env::var("CREDIT_FREE_SPIN")
-        .ok()
-        .and_then(|v| v.parse::<i32>().ok())
-        .unwrap_or(24);
-
     Json(json!({
         "pricing": {
             "base_rate_usd_per_credit": state.pricing.base_rate_usd_per_credit,
             "min_purchase_usd": state.pricing.min_purchase_usd,
             "max_purchase_usd": state.pricing.max_purchase_usd,
             "default_purchase_usd": state.pricing.default_purchase_usd,
-            "tiers": state.pricing.tiers
+            "tiers": state.pricing.tiers,
+            "free_reoptimization_hours": state.pricing.free_reoptimization_hours
         },
         "cost_decimate": cost_decimate,
-        "cost_remesh": cost_remesh,
-        "free_spin_hours": free_spin_hours
+        "cost_remesh": cost_remesh
     }))
 }
 
@@ -830,7 +826,11 @@ async fn optimize_handler(
     let file_mode_hash = format!("{}:{}", file_hash, mode);
     let should_charge = state
         .db
-        .should_charge_for_file(&auth_key.0, &file_mode_hash)
+        .should_charge_for_file(
+            &auth_key.0,
+            &file_mode_hash,
+            state.pricing.free_reoptimization_hours,
+        )
         .await;
     let mut deducted = false;
 

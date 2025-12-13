@@ -157,9 +157,9 @@ Optional:
 - `WORKER_SLOTS` - Default 10
 - `SLOT_COST_DECIMATE` - Default 1
 - `SLOT_COST_REMESH` - Default 5
-- `CREDIT_FREE_SPIN` - Hours for free re-optimization, default 24
 - `BLENDER_PATH` - Default "blender"
 
 Deprecated (no longer used - pricing now in `server/pricing.json`):
 - ~~`CREDIT_COST`~~ - Replaced by `pricing.json`
 - ~~`CREDIT_INCREMENT`~~ - Replaced by `pricing.json`
+- ~~`CREDIT_FREE_SPIN`~~ - Replaced by `pricing.json` (`free_reoptimization_hours`)

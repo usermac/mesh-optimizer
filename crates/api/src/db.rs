@@ -477,19 +477,19 @@ impl Database {
     }
 
     // Check if we should charge for this file (Fairness Logic)
-    pub async fn should_charge_for_file(&self, key: &str, file_hash: &str) -> bool {
+    pub async fn should_charge_for_file(
+        &self,
+        key: &str,
+        file_hash: &str,
+        free_reoptimization_hours: u32,
+    ) -> bool {
         if let Some(pool) = &self.pool {
             // Check for transactions within the free re-optimization window
-            let free_spin_hours: i64 = std::env::var("CREDIT_FREE_SPIN")
-                .ok()
-                .and_then(|v| v.parse().ok())
-                .unwrap_or(24);
-
             let cutoff = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap()
                 .as_millis() as i64
-                - (free_spin_hours * 60 * 60 * 1000);
+                - (free_reoptimization_hours as i64 * 60 * 60 * 1000);
 
             let query = r#"
             SELECT COUNT(*) FROM credit_transactions

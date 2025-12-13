@@ -978,11 +978,19 @@
 
                             <h4>Response</h4>
                             <pre class="code-block"><code>{
-  "cost": 4900,
-  "credits": 100,
+  "pricing": {
+    "base_rate_usd_per_credit": 0.5,
+    "min_purchase_usd": 10,
+    "max_purchase_usd": 500,
+    "default_purchase_usd": 50,
+    "tiers": [
+      { "name": "Pro Tier", "min_spend_usd": 50, "bonus_percent": 10 },
+      { "name": "Studio Tier", "min_spend_usd": 200, "bonus_percent": 20 }
+    ],
+    "free_reoptimization_hours": 24
+  },
   "cost_decimate": 1,
-  "cost_remesh": 5,
-  "free_spin_hours": 24
+  "cost_remesh": 5
 }</code></pre>
                         </section>
 
@@ -1540,9 +1548,9 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                     }
 
                     // Update free spin hours display
-                    if (data.free_spin_hours !== undefined) {
+                    if (data.pricing && data.pricing.free_reoptimization_hours !== undefined) {
                         const historySpan = document.getElementById("history-free-spin-hours");
-                        if (historySpan) historySpan.textContent = data.free_spin_hours;
+                        if (historySpan) historySpan.textContent = data.pricing.free_reoptimization_hours;
                     }
                 });
 
@@ -1675,8 +1683,8 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                         document.getElementById("help-cost-remesh").innerText = pricingConfig.cost_remesh;
                         document.getElementById("help-label-remesh").innerText = pricingConfig.cost_remesh === 1 ? "Credit" : "Credits";
                     }
-                    if (pricingConfig.free_spin_hours !== undefined) {
-                        document.getElementById("help-free-spin-hours").innerText = pricingConfig.free_spin_hours;
+                    if (pricingConfig.pricing && pricingConfig.pricing.free_reoptimization_hours !== undefined) {
+                        document.getElementById("help-free-spin-hours").innerText = pricingConfig.pricing.free_reoptimization_hours;
                     }
                 }
 
@@ -1803,8 +1811,8 @@ done`;
                 if (pricingConfig.cost_remesh !== undefined) {
                     document.getElementById("docs-cost-remesh").innerText = pricingConfig.cost_remesh;
                 }
-                if (pricingConfig.free_spin_hours !== undefined) {
-                    document.getElementById("docs-free-hours").innerText = pricingConfig.free_spin_hours;
+                if (pricingConfig.pricing && pricingConfig.pricing.free_reoptimization_hours !== undefined) {
+                    document.getElementById("docs-free-hours").innerText = pricingConfig.pricing.free_reoptimization_hours;
                 }
                 openModal("apiDocsModal", this);
             });
