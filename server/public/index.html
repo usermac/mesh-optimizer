@@ -352,6 +352,27 @@
                             </div>
                         </div>
 
+                        <!-- Use Case Indicators -->
+                        <div class="mb-15" style="background: #0d0d1a; border-radius: 8px; padding: 12px;">
+                            <div class="text-small text-muted mb-10 text-center">What can you do with these credits?</div>
+                            <div style="display: flex; justify-content: space-between; gap: 10px;">
+                                <div style="flex: 1; text-align: center; padding: 8px; background: #1a1a2e; border-radius: 6px;">
+                                    <div style="font-size: 1.25rem; font-weight: bold; color: #60a5fa;" id="purchaseDecimateOnly">100</div>
+                                    <div class="text-small text-muted">Decimates</div>
+                                </div>
+                                <div style="flex: 1; text-align: center; padding: 8px; background: #1a1a2e; border-radius: 6px;">
+                                    <div style="font-size: 0.9rem; font-weight: bold; color: #a78bfa;">
+                                        <span id="purchaseMixedDecimate">80</span> + <span id="purchaseMixedRemesh">4</span>
+                                    </div>
+                                    <div class="text-small text-muted">Mixed (80/20)</div>
+                                </div>
+                                <div style="flex: 1; text-align: center; padding: 8px; background: #1a1a2e; border-radius: 6px;">
+                                    <div style="font-size: 1.25rem; font-weight: bold; color: #f472b6;" id="purchaseRemeshOnly">20</div>
+                                    <div class="text-small text-muted">Remeshes</div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Tier Hint -->
                         <p id="purchaseTierHint" class="text-small text-muted text-center mb-15">
                             ✨ Bonus credits start at $50!
@@ -1964,6 +1985,26 @@ done`;
                 } else {
                     purchaseCreditBreakdown.textContent = "";
                 }
+
+                // Update use-case indicators
+                const costDecimate = pricingConfig.cost_decimate || 1;
+                const costRemesh = pricingConfig.cost_remesh || 5;
+
+                // Decimates only
+                const decimateOnly = Math.floor(totalCredits / costDecimate);
+                document.getElementById("purchaseDecimateOnly").textContent = decimateOnly;
+
+                // Remeshes only
+                const remeshOnly = Math.floor(totalCredits / costRemesh);
+                document.getElementById("purchaseRemeshOnly").textContent = remeshOnly;
+
+                // Mixed 80/20 split (80% credits to decimate, 20% to remesh)
+                const decimateCredits = Math.floor(totalCredits * 0.8);
+                const remeshCredits = totalCredits - decimateCredits;
+                const mixedDecimate = Math.floor(decimateCredits / costDecimate);
+                const mixedRemesh = Math.floor(remeshCredits / costRemesh);
+                document.getElementById("purchaseMixedDecimate").textContent = mixedDecimate;
+                document.getElementById("purchaseMixedRemesh").textContent = mixedRemesh;
 
                 // Update tier hint based on position
                 if (pricing.tiers.length > 0) {
