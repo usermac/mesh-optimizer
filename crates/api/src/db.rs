@@ -1,4 +1,10 @@
+use aes_gcm::{
+    aead::{Aead, KeyInit},
+    Aes256Gcm, Nonce,
+};
 use anyhow::Result;
+use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
+use rand::RngCore;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
@@ -10,7 +16,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 use uuid::Uuid;
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
@@ -52,10 +58,96 @@ pub struct Database {
     data: Arc<RwLock<DbData>>,
     pool: Option<Pool<Sqlite>>,
     salt: String,
+    encryption_key: Option<[u8; 32]>,
+}
+
+/// Encrypt data using AES-256-GCM
+fn encrypt_data(key: &[u8; 32], plaintext: &[u8]) -> Result<Vec<u8>> {
+    let cipher = Aes256Gcm::new_from_slice(key)
+        .map_err(|e| anyhow::anyhow!("Failed to create cipher: {}", e))?;
+
+    // Generate random 12-byte nonce
+    let mut nonce_bytes = [0u8; 12];
+    rand::thread_rng().fill_bytes(&mut nonce_bytes);
+    let nonce = Nonce::from_slice(&nonce_bytes);
+
+    let ciphertext = cipher
+        .encrypt(nonce, plaintext)
+        .map_err(|e| anyhow::anyhow!("Encryption failed: {}", e))?;
+
+    // Prepend nonce to ciphertext (nonce is not secret, just needs to be unique)
+    let mut result = nonce_bytes.to_vec();
+    result.extend(ciphertext);
+    Ok(result)
+}
+
+/// Decrypt data using AES-256-GCM
+fn decrypt_data(key: &[u8; 32], encrypted: &[u8]) -> Result<Vec<u8>> {
+    if encrypted.len() < 12 {
+        return Err(anyhow::anyhow!("Encrypted data too short"));
+    }
+
+    let cipher = Aes256Gcm::new_from_slice(key)
+        .map_err(|e| anyhow::anyhow!("Failed to create cipher: {}", e))?;
+
+    let nonce = Nonce::from_slice(&encrypted[..12]);
+    let ciphertext = &encrypted[12..];
+
+    cipher
+        .decrypt(nonce, ciphertext)
+        .map_err(|e| anyhow::anyhow!("Decryption failed: {}", e))
+}
+
+/// Parse encryption key from environment variable (hex or base64 encoded, must be 32 bytes)
+fn parse_encryption_key(key_str: &str) -> Result<[u8; 32]> {
+    // Try hex first (64 characters = 32 bytes)
+    if key_str.len() == 64 {
+        if let Ok(bytes) = hex::decode(key_str) {
+            if bytes.len() == 32 {
+                let mut key = [0u8; 32];
+                key.copy_from_slice(&bytes);
+                return Ok(key);
+            }
+        }
+    }
+
+    // Try base64 (44 characters with padding = 32 bytes)
+    if let Ok(bytes) = BASE64.decode(key_str) {
+        if bytes.len() == 32 {
+            let mut key = [0u8; 32];
+            key.copy_from_slice(&bytes);
+            return Ok(key);
+        }
+    }
+
+    Err(anyhow::anyhow!(
+        "ENCRYPTION_KEY must be 32 bytes, provided as 64 hex chars or 44 base64 chars"
+    ))
 }
 
 impl Database {
     pub async fn new(json_path: PathBuf, sqlite_path: PathBuf) -> Self {
+        // --- 0. Load Encryption Key ---
+        let encryption_key = match env::var("ENCRYPTION_KEY") {
+            Ok(key_str) => match parse_encryption_key(&key_str) {
+                Ok(key) => {
+                    info!("Database encryption enabled");
+                    Some(key)
+                }
+                Err(e) => {
+                    error!(
+                        "Invalid ENCRYPTION_KEY: {}. Database will NOT be encrypted!",
+                        e
+                    );
+                    None
+                }
+            },
+            Err(_) => {
+                warn!("ENCRYPTION_KEY not set. Database file will be stored in PLAINTEXT. Set ENCRYPTION_KEY for production use.");
+                None
+            }
+        };
+
         // --- 1. JSON Flat File Setup ---
         // Ensure directory exists
         if let Some(parent) = json_path.parent() {
@@ -63,13 +155,7 @@ impl Database {
         }
 
         let data = if json_path.exists() {
-            match fs::read_to_string(&json_path) {
-                Ok(content) => serde_json::from_str(&content).unwrap_or_default(),
-                Err(e) => {
-                    error!("Failed to read JSON DB: {:?}", e);
-                    DbData::default()
-                }
-            }
+            Self::load_data_from_file(&json_path, encryption_key.as_ref())
         } else {
             DbData::default()
         };
@@ -152,14 +238,75 @@ impl Database {
             data: Arc::new(RwLock::new(data)),
             pool,
             salt,
+            encryption_key,
         }
     }
 
-    /// Persist the current state to disk (JSON)
+    /// Load database from file, handling both encrypted and plaintext formats
+    fn load_data_from_file(path: &PathBuf, encryption_key: Option<&[u8; 32]>) -> DbData {
+        match fs::read(path) {
+            Ok(content) => {
+                // Try to parse as JSON first (plaintext or legacy format)
+                if let Ok(text) = std::str::from_utf8(&content) {
+                    if let Ok(data) = serde_json::from_str::<DbData>(text) {
+                        if encryption_key.is_some() {
+                            info!("Loaded plaintext database - will be encrypted on next save");
+                        }
+                        return data;
+                    }
+                }
+
+                // Try to decrypt if we have a key
+                if let Some(key) = encryption_key {
+                    // Check for base64 prefix marker "ENC:"
+                    if content.starts_with(b"ENC:") {
+                        let encoded = &content[4..];
+                        if let Ok(encrypted) = BASE64.decode(encoded) {
+                            match decrypt_data(key, &encrypted) {
+                                Ok(decrypted) => {
+                                    if let Ok(text) = std::str::from_utf8(&decrypted) {
+                                        if let Ok(data) = serde_json::from_str::<DbData>(text) {
+                                            info!("Loaded and decrypted database successfully");
+                                            return data;
+                                        }
+                                    }
+                                    error!("Decrypted data is not valid JSON");
+                                }
+                                Err(e) => {
+                                    error!("Failed to decrypt database: {}. Wrong key?", e);
+                                }
+                            }
+                        }
+                    } else {
+                        error!("Database file is not plaintext JSON and not encrypted format");
+                    }
+                } else {
+                    error!("Database appears encrypted but no ENCRYPTION_KEY provided");
+                }
+
+                DbData::default()
+            }
+            Err(e) => {
+                error!("Failed to read database file: {:?}", e);
+                DbData::default()
+            }
+        }
+    }
+
+    /// Persist the current state to disk (encrypted if key is set)
     async fn persist(&self) -> Result<()> {
         let data = self.data.read().await;
         let json = serde_json::to_string_pretty(&*data)?;
-        tokio::fs::write(&self.file_path, json).await?;
+
+        let file_content = if let Some(ref key) = self.encryption_key {
+            let encrypted = encrypt_data(key, json.as_bytes())?;
+            let encoded = BASE64.encode(&encrypted);
+            format!("ENC:{}", encoded).into_bytes()
+        } else {
+            json.into_bytes()
+        };
+
+        tokio::fs::write(&self.file_path, file_content).await?;
         Ok(())
     }
 

@@ -83,6 +83,10 @@ async fn main() -> Result<()> {
     let admin_secret = std::env::var("ADMIN_SECRET")
         .expect("ADMIN_SECRET must be set - this is required for admin endpoint security");
 
+    // Validate ENCRYPTION_KEY is set (actual parsing happens in db.rs)
+    std::env::var("ENCRYPTION_KEY")
+        .expect("ENCRYPTION_KEY must be set - this is required to encrypt database.json at rest");
+
     // 2. Setup Filesystem
     fs::create_dir_all(UPLOAD_DIR).context("Failed to create upload dir")?;
     // Ensure "server" dir exists for db file compat with Node paths
