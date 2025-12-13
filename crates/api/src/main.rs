@@ -20,7 +20,7 @@ use std::{
     fs,
     path::{Path, PathBuf},
     str::FromStr,
-    time::{Duration, SystemTime, UNIX_EPOCH},
+    time::{Duration, SystemTime},
 };
 use stripe::{
     CheckoutSessionMode, CreateCheckoutSession, CreateCheckoutSessionLineItems,
@@ -41,6 +41,7 @@ use tracing::{error, info};
 const UPLOAD_DIR: &str = "uploads";
 const DB_FILE: &str = "server/database.json";
 const DB_SQLITE_FILE: &str = "server/stats.db";
+const DOWNLOAD_EXPIRES_SECS: u64 = 60 * 60; // 1 hour
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum JobStatus {
@@ -50,6 +51,7 @@ pub enum JobStatus {
         output_size: u64,
         glb_url: String,
         usdz_url: String,
+        expires_in_secs: u64,
     },
     Failed {
         error: String,
@@ -483,11 +485,7 @@ async fn optimize_handler(
         .to_string();
 
     let start_time = std::time::Instant::now();
-    let batch_id = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_millis()
-        .to_string();
+    let batch_id = uuid::Uuid::new_v4().to_string();
     let batch_dir = Path::new(UPLOAD_DIR).join(&batch_id);
 
     if let Err(e) = fs::create_dir_all(&batch_dir) {
@@ -1120,6 +1118,7 @@ async fn optimize_handler(
                     output_size,
                     glb_url,
                     usdz_url,
+                    expires_in_secs: DOWNLOAD_EXPIRES_SECS,
                 },
             );
         }
@@ -1324,7 +1323,7 @@ async fn contact_handler(
 }
 
 async fn cleanup_task() {
-    let cleanup_age = Duration::from_secs(60 * 60); // 1 Hour
+    let cleanup_age = Duration::from_secs(DOWNLOAD_EXPIRES_SECS);
     let interval = Duration::from_secs(15 * 60); // 15 Min
 
     loop {
