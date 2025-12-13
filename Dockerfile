@@ -67,7 +67,7 @@ ENV XDG_CONFIG_HOME=/config
 
 # Configure Caddy (Same config as before)
 RUN echo "{" > /etc/caddy/Caddyfile && \
-    echo "    email Brian@BrianGinn.com" >> /etc/caddy/Caddyfile && \
+    echo "    email {\$ACME_EMAIL}" >> /etc/caddy/Caddyfile && \
     echo "}" >> /etc/caddy/Caddyfile && \
     echo "www.webdeliveryengine.com {" >> /etc/caddy/Caddyfile && \
     echo "    reverse_proxy localhost:3000" >> /etc/caddy/Caddyfile && \
