@@ -92,7 +92,7 @@
     4. Remove test key
 
 ### Documentation
-- [ ] ~~**Review and Update Pricing**: In `Capabilities.md`.~~
+- [x] ~~**Review and Update Pricing**: In `Capabilities.md`.~~ Replaced with dynamic `pricing.json` system.
 - [ ] **Document Disaster Recovery**: Procedures for restore.
 - [ ] **Create Internal vs External Docs**: Separation.
 
@@ -108,14 +108,14 @@
 - [ ] **Daily Hardware Usage Report**: Know when hardware is maxed out.
 
 ### User Experience
-- [ ] **Persist API Key in localStorage**: So users don't re-paste on refresh.
+- [x] **Persist API Key in localStorage**: Implemented - pre-populates in purchase modal.
 - [ ] **Password-Type API Key Input**: Prevent shoulder-surfing.
 - [ ] **Credit Balance Dashboard**: Simple page for users.
 - [ ] **Subscriptions**: Monthly unlimited or refill for "whale" clients.
 
 ### Performance
 - [ ] **Enable GPU Support**: Docker `--gpus all` for Blender cycles baking.
-- [ ] **Tiered Pricing Logic**: Higher credit cost for remesh vs decimate (already in UI, verify backend).
+- [x] **Tiered Pricing Logic**: Implemented via `pricing.json` with configurable bonus tiers and live UI calculator.
 
 ### Features
 - [ ] **Add More 3D Formats**: STEP, STL, etc.
@@ -150,13 +150,16 @@ Required for production (server will fail without these):
 - `RESEND_API_KEY`
 - `ADMIN_SECRET` - Strong unique secret for admin endpoints
 - `ENCRYPTION_KEY` - 32 bytes as 64 hex chars (generate: `openssl rand -hex 32`)
-
-Should set (has insecure defaults):
-- `METRICS_SALT` - For pseudonymizing user data in logs
+- `METRICS_SALT` - For pseudonymizing user data in logs (generate: `openssl rand -hex 16`)
 
 Optional:
+- `ACME_EMAIL` - Email for Let's Encrypt SSL certificate registration (used by Caddy)
 - `WORKER_SLOTS` - Default 10
 - `SLOT_COST_DECIMATE` - Default 1
 - `SLOT_COST_REMESH` - Default 5
 - `CREDIT_FREE_SPIN` - Hours for free re-optimization, default 24
 - `BLENDER_PATH` - Default "blender"
+
+Deprecated (no longer used - pricing now in `server/pricing.json`):
+- ~~`CREDIT_COST`~~ - Replaced by `pricing.json`
+- ~~`CREDIT_INCREMENT`~~ - Replaced by `pricing.json`

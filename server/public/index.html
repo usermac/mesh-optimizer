@@ -297,6 +297,75 @@
                 </div>
             </main>
 
+            <!-- Purchase Modal -->
+            <div id="purchaseModal" class="modal-overlay" role="dialog" aria-labelledby="purchaseModalTitle" aria-modal="true">
+                <div class="modal-window">
+                    <div class="modal-header">
+                        <h2 class="m-0" id="purchaseModalTitle">Buy Credits</h2>
+                        <button type="button" class="modal-close" onclick="closeModal('purchaseModal')" aria-label="Close purchase modal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted mb-15">
+                            Adjust the slider or enter an amount to purchase credits.
+                            <strong>Already have credits?</strong> Buying more adds to your existing balance.
+                        </p>
+
+                        <!-- API Key Input (for existing customers) -->
+                        <div class="form-group mb-15">
+                            <label for="purchaseApiKey">Existing API Key (Optional)</label>
+                            <input
+                                type="text"
+                                id="purchaseApiKey"
+                                placeholder="sk_... (leave blank if new customer)"
+                                class="w-100"
+                            />
+                            <small id="purchaseApiKeyMessage" class="text-muted"></small>
+                        </div>
+
+                        <!-- Purchase Amount Slider -->
+                        <div class="form-group mb-15">
+                            <label for="purchaseSlider">Purchase Amount: <strong id="purchaseUsdLabel">$50</strong></label>
+                            <input
+                                type="range"
+                                id="purchaseSlider"
+                                min="10"
+                                max="500"
+                                value="50"
+                                class="w-100"
+                                style="cursor: pointer;"
+                            />
+                            <div class="d-flex justify-between text-small text-muted mt-5">
+                                <span id="purchaseMinLabel">$10</span>
+                                <span id="purchaseMaxLabel">$500</span>
+                            </div>
+                        </div>
+
+                        <!-- Credit Calculation Display -->
+                        <div class="alert-box mb-15" style="background: #1a1a2e; border: 1px solid #3b82f6; border-radius: 8px; padding: 15px; text-align: center;">
+                            <div class="text-small text-muted mb-5">You Get:</div>
+                            <div style="font-size: 1.75rem; font-weight: bold; color: #10b981;">
+                                <span id="purchaseTotalCredits">100</span> Credits
+                            </div>
+                            <div id="purchaseCreditBreakdown" class="text-small text-muted mt-5"></div>
+                            <div id="purchaseTierBadge" class="mt-10" style="display: none;">
+                                <span style="background: #3b82f6; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.75rem; font-weight: bold;"></span>
+                            </div>
+                        </div>
+
+                        <!-- Tier Hint -->
+                        <p id="purchaseTierHint" class="text-small text-muted text-center mb-15">
+                            ✨ Bonus credits start at $50!
+                        </p>
+                    </div>
+                    <div class="modal-footer d-flex justify-between align-center">
+                        <button type="button" class="btn-secondary" onclick="closeModal('purchaseModal')">Cancel</button>
+                        <button type="button" id="purchasePayBtn" class="btn-primary">
+                            Pay with Stripe →
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <!-- History Modal -->
             <div id="historyModal" class="modal-overlay" role="dialog" aria-labelledby="historyModalTitle" aria-modal="true">
                 <div class="modal-window modal-window-large">
@@ -1461,12 +1530,15 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 .then((data) => {
                     pricingConfig = data;
                     updateProcessButton();
-                    document.getElementById("buyBtn").textContent =
-                        "Buy License ($" +
-                        data.cost +
-                        ") - " +
-                        data.credits +
-                        " Credits";
+
+                    // Update buy button with default pricing info
+                    if (data.pricing) {
+                        const defaultUsd = data.pricing.default_purchase_usd;
+                        const baseCredits = Math.floor(defaultUsd / data.pricing.base_rate_usd_per_credit);
+                        document.getElementById("buyBtn").textContent =
+                            "Buy Credits (from $" + data.pricing.min_purchase_usd + ")";
+                    }
+
                     // Update free spin hours display
                     if (data.free_spin_hours !== undefined) {
                         const historySpan = document.getElementById("history-free-spin-hours");
@@ -1838,20 +1910,142 @@ done`;
                 .getElementById("downloadHistoryBtn")
                 .addEventListener("click", downloadHistoryAsCSV);
 
-            // Add event listener for buy button
+            // Purchase Modal Logic
+            const purchaseSlider = document.getElementById("purchaseSlider");
+            const purchaseUsdLabel = document.getElementById("purchaseUsdLabel");
+            const purchaseTotalCredits = document.getElementById("purchaseTotalCredits");
+            const purchaseCreditBreakdown = document.getElementById("purchaseCreditBreakdown");
+            const purchaseTierBadge = document.getElementById("purchaseTierBadge");
+            const purchaseApiKey = document.getElementById("purchaseApiKey");
+            const purchaseApiKeyMessage = document.getElementById("purchaseApiKeyMessage");
+            const purchaseMinLabel = document.getElementById("purchaseMinLabel");
+            const purchaseMaxLabel = document.getElementById("purchaseMaxLabel");
+            const purchaseTierHint = document.getElementById("purchaseTierHint");
+
+            function updatePurchaseUI(usdAmount) {
+                if (!pricingConfig || !pricingConfig.pricing) return;
+
+                const pricing = pricingConfig.pricing;
+                const baseCredits = Math.floor(usdAmount / pricing.base_rate_usd_per_credit);
+
+                // Find the best applicable tier
+                const applicableTier = pricing.tiers
+                    .filter(tier => usdAmount >= tier.min_spend_usd)
+                    .sort((a, b) => b.min_spend_usd - a.min_spend_usd)[0];
+
+                let bonusCredits = 0;
+                let bonusPercent = 0;
+
+                if (applicableTier) {
+                    bonusPercent = applicableTier.bonus_percent;
+                    bonusCredits = Math.floor(baseCredits * (bonusPercent / 100));
+                    purchaseTierBadge.style.display = "block";
+                    purchaseTierBadge.querySelector("span").textContent =
+                        applicableTier.name + " - " + bonusPercent + "% BONUS";
+                } else {
+                    purchaseTierBadge.style.display = "none";
+                }
+
+                const totalCredits = baseCredits + bonusCredits;
+
+                purchaseUsdLabel.textContent = "$" + usdAmount;
+                purchaseTotalCredits.textContent = totalCredits;
+
+                if (bonusCredits > 0) {
+                    purchaseCreditBreakdown.textContent = "(" + baseCredits + " base + " + bonusCredits + " bonus)";
+                } else {
+                    purchaseCreditBreakdown.textContent = "";
+                }
+
+                // Update tier hint based on position
+                if (pricing.tiers.length > 0) {
+                    const lowestTier = pricing.tiers.reduce((min, t) => t.min_spend_usd < min.min_spend_usd ? t : min);
+                    if (usdAmount < lowestTier.min_spend_usd) {
+                        purchaseTierHint.innerHTML = "✨ Bonus credits start at $" + lowestTier.min_spend_usd + "!";
+                        purchaseTierHint.style.display = "block";
+                    } else {
+                        purchaseTierHint.style.display = "none";
+                    }
+                }
+            }
+
+            // Slider event listener
+            purchaseSlider.addEventListener("input", (e) => {
+                updatePurchaseUI(parseInt(e.target.value, 10));
+            });
+
+            // Add event listener for buy button - opens modal
             document
                 .getElementById("buyBtn")
                 .addEventListener("click", async () => {
-                    const apiKey = document.getElementById("apiKey").value;
+                    if (!pricingConfig || !pricingConfig.pricing) {
+                        alert("Pricing not loaded. Please refresh the page.");
+                        return;
+                    }
+
+                    const pricing = pricingConfig.pricing;
+
+                    // Configure slider from pricing config
+                    purchaseSlider.min = pricing.min_purchase_usd;
+                    purchaseSlider.max = pricing.max_purchase_usd;
+                    purchaseSlider.value = pricing.default_purchase_usd;
+                    purchaseMinLabel.textContent = "$" + pricing.min_purchase_usd;
+                    purchaseMaxLabel.textContent = "$" + pricing.max_purchase_usd;
+
+                    // Pre-populate API key from localStorage or current input
+                    const savedKey = localStorage.getItem("meshOptimizerApiKey");
+                    const currentKey = document.getElementById("apiKey").value;
+
+                    if (currentKey) {
+                        purchaseApiKey.value = currentKey;
+                        purchaseApiKeyMessage.textContent = "✅ Using your current API key. Credits will be added to this account.";
+                        purchaseApiKeyMessage.style.color = "#10b981";
+                    } else if (savedKey) {
+                        purchaseApiKey.value = savedKey;
+                        purchaseApiKeyMessage.textContent = "✅ Using saved API key. Credits will be added to this account.";
+                        purchaseApiKeyMessage.style.color = "#10b981";
+                    } else {
+                        purchaseApiKey.value = "";
+                        purchaseApiKeyMessage.textContent = "Leave blank if you are a new customer.";
+                        purchaseApiKeyMessage.style.color = "";
+                    }
+
+                    // Initial UI update
+                    updatePurchaseUI(pricing.default_purchase_usd);
+
+                    // Show modal
+                    openModal("purchaseModal", document.getElementById("buyBtn"));
+                });
+
+            // Pay button in modal
+            document
+                .getElementById("purchasePayBtn")
+                .addEventListener("click", async () => {
+                    const usdAmount = parseInt(purchaseSlider.value, 10);
+                    const apiKey = purchaseApiKey.value.trim();
+
                     const res = await fetch("/create-checkout-session", {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
                         },
-                        body: JSON.stringify({ api_key: apiKey }),
+                        body: JSON.stringify({
+                            api_key: apiKey || null,
+                            usd_amount: usdAmount
+                        }),
                     });
+
+                    if (!res.ok) {
+                        alert("Failed to create checkout session. Please try again.");
+                        return;
+                    }
+
                     const data = await res.json();
-                    window.location.href = data.url; // Go to Stripe
+                    if (data.url) {
+                        window.location.href = data.url; // Go to Stripe
+                    } else {
+                        alert("Could not initiate payment. Please try again.");
+                    }
                 });
         </script>
     </body>

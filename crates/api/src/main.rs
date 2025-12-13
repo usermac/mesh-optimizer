@@ -11,7 +11,7 @@ use axum::{
     routing::{get, post},
     Extension, Json, Router,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sha2::Digest;
 use std::collections::HashMap;
@@ -49,6 +49,23 @@ const DOWNLOAD_EXPIRES_SECS: u64 = 60 * 60; // 1 hour
 // Allowed file extensions for optimization
 const ALLOWED_EXTENSIONS: &[&str] = &["glb", "gltf", "obj", "fbx", "zip"];
 
+// --- PRICING CONFIGURATION ---
+#[derive(Clone, Deserialize, Serialize)]
+struct PricingTier {
+    name: String,
+    min_spend_usd: u32,
+    bonus_percent: u32,
+}
+
+#[derive(Clone, Deserialize, Serialize)]
+struct PricingConfig {
+    base_rate_usd_per_credit: f64,
+    min_purchase_usd: u32,
+    max_purchase_usd: u32,
+    default_purchase_usd: u32,
+    tiers: Vec<PricingTier>,
+}
+
 #[derive(Clone)]
 struct AppState {
     db: db::Database,
@@ -59,6 +76,7 @@ struct AppState {
     jobs: Arc<RwLock<HashMap<String, JobStatus>>>,
     worker_semaphore: Arc<Semaphore>,
     admin_rate_limiter: Arc<RwLock<HashMap<String, Vec<std::time::Instant>>>>,
+    pricing: Arc<PricingConfig>,
 }
 
 #[derive(Clone)]
@@ -85,7 +103,18 @@ async fn main() -> Result<()> {
     std::env::var("ENCRYPTION_KEY")
         .expect("ENCRYPTION_KEY must be set - this is required to encrypt database.json at rest");
 
-    // 2. Setup Filesystem
+    // 2a. Load Pricing Configuration
+    let pricing_config_str =
+        fs::read_to_string("server/pricing.json").context("Failed to read server/pricing.json")?;
+    let pricing_config: PricingConfig =
+        serde_json::from_str(&pricing_config_str).context("Failed to parse server/pricing.json")?;
+    info!(
+        "Loaded pricing config: base_rate=${}/credit, {} tiers defined",
+        pricing_config.base_rate_usd_per_credit,
+        pricing_config.tiers.len()
+    );
+
+    // 2b. Setup Filesystem
     fs::create_dir_all(UPLOAD_DIR).context("Failed to create upload dir")?;
     // Ensure "server" dir exists for db file compat with Node paths
     if let Some(parent) = Path::new(DB_FILE).parent() {
@@ -169,6 +198,7 @@ async fn main() -> Result<()> {
         jobs: Arc::new(RwLock::new(recovered_jobs)),
         worker_semaphore: Arc::new(Semaphore::new(worker_slots)),
         admin_rate_limiter: Arc::new(RwLock::new(HashMap::new())),
+        pricing: Arc::new(pricing_config),
     };
 
     // 4. Start Cleanup Task
@@ -272,16 +302,7 @@ async fn auth_middleware(
 
 // --- HANDLERS ---
 
-async fn get_config() -> Json<serde_json::Value> {
-    let cost = std::env::var("CREDIT_COST")
-        .ok()
-        .and_then(|v| v.parse::<i64>().ok())
-        .unwrap_or(49);
-    let credits = std::env::var("CREDIT_INCREMENT")
-        .ok()
-        .and_then(|v| v.parse::<i32>().ok())
-        .unwrap_or(100);
-
+async fn get_config(State(state): State<AppState>) -> Json<serde_json::Value> {
     let cost_decimate = std::env::var("COST_DECIMATE")
         .ok()
         .and_then(|v| v.parse::<i32>().ok())
@@ -297,8 +318,13 @@ async fn get_config() -> Json<serde_json::Value> {
         .unwrap_or(24);
 
     Json(json!({
-        "cost": cost,
-        "credits": credits,
+        "pricing": {
+            "base_rate_usd_per_credit": state.pricing.base_rate_usd_per_credit,
+            "min_purchase_usd": state.pricing.min_purchase_usd,
+            "max_purchase_usd": state.pricing.max_purchase_usd,
+            "default_purchase_usd": state.pricing.default_purchase_usd,
+            "tiers": state.pricing.tiers
+        },
         "cost_decimate": cost_decimate,
         "cost_remesh": cost_remesh,
         "free_spin_hours": free_spin_hours
@@ -308,19 +334,53 @@ async fn get_config() -> Json<serde_json::Value> {
 #[derive(Deserialize)]
 struct CreateCheckoutPayload {
     api_key: Option<String>,
+    usd_amount: u32,
 }
 
 async fn create_checkout_session(
     State(state): State<AppState>,
-    payload: Option<Json<CreateCheckoutPayload>>,
+    Json(payload): Json<CreateCheckoutPayload>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
-    info!("Starting Checkout Session...");
+    info!("Starting Checkout Session for ${}", payload.usd_amount);
 
-    // 1. Resolve Customer ID if API Key is present
+    let pricing = &state.pricing;
+
+    // 1. Validate amount is within bounds
+    if payload.usd_amount < pricing.min_purchase_usd
+        || payload.usd_amount > pricing.max_purchase_usd
+    {
+        error!(
+            "Invalid purchase amount: ${} (min: ${}, max: ${})",
+            payload.usd_amount, pricing.min_purchase_usd, pricing.max_purchase_usd
+        );
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
+    // 2. Calculate base credits from USD amount
+    let base_credits =
+        (payload.usd_amount as f64 / pricing.base_rate_usd_per_credit).floor() as i32;
+
+    // 3. Determine bonus percentage from tiers (highest qualifying tier wins)
+    let bonus_percent = pricing
+        .tiers
+        .iter()
+        .filter(|tier| payload.usd_amount >= tier.min_spend_usd)
+        .max_by_key(|tier| tier.min_spend_usd)
+        .map_or(0, |tier| tier.bonus_percent);
+
+    let bonus_credits = (base_credits as f64 * (bonus_percent as f64 / 100.0)).floor() as i32;
+    let total_credits = base_credits + bonus_credits;
+
+    info!(
+        "Pricing calculation: ${} -> {} base + {} bonus ({}%) = {} total credits",
+        payload.usd_amount, base_credits, bonus_credits, bonus_percent, total_credits
+    );
+
+    // 4. Resolve Customer ID if API Key is present
     let mut customer_id_opt = None;
-    if let Some(Json(payload)) = payload {
-        if let Some(key) = payload.api_key {
-            if let Some(info) = state.db.get_key_info(&key).await {
+    if let Some(key) = &payload.api_key {
+        if !key.is_empty() {
+            if let Some(info) = state.db.get_key_info(key).await {
                 info!("Existing user detected: {}", info.email);
                 if let Ok(cid) = CustomerId::from_str(&info.stripe_customer_id) {
                     customer_id_opt = Some(cid);
@@ -329,15 +389,11 @@ async fn create_checkout_session(
         }
     }
 
-    let credit_cost = std::env::var("CREDIT_COST")
-        .ok()
-        .and_then(|v| v.parse::<i64>().ok())
-        .unwrap_or(49);
-    let credit_amount = std::env::var("CREDIT_INCREMENT")
-        .ok()
-        .and_then(|v| v.parse::<i32>().ok())
-        .unwrap_or(100);
+    // 5. Build metadata to pass total_credits to the webhook
+    let mut metadata: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+    metadata.insert("total_credits".to_string(), total_credits.to_string());
 
+    // 6. Create Stripe Checkout Session
     let params = CreateCheckoutSession {
         customer: customer_id_opt,
         payment_method_types: Some(vec![CreateCheckoutSessionPaymentMethodTypes::Card]),
@@ -345,16 +401,17 @@ async fn create_checkout_session(
             price_data: Some(CreateCheckoutSessionLineItemsPriceData {
                 currency: Currency::USD,
                 product_data: Some(CreateCheckoutSessionLineItemsPriceDataProductData {
-                    name: format!("MeshOpt Pro License ({} Credits)", credit_amount),
+                    name: format!("{} Mesh Optimizer Credits", total_credits),
                     ..Default::default()
                 }),
-                unit_amount: Some(credit_cost * 100), // Convert to cents
+                unit_amount: Some(payload.usd_amount as i64 * 100), // Convert to cents
                 ..Default::default()
             }),
             quantity: Some(1),
             ..Default::default()
         }]),
         mode: Some(CheckoutSessionMode::Payment),
+        metadata: Some(metadata),
         success_url: Some(
             "https://www.webdeliveryengine.com/success?session_id={CHECKOUT_SESSION_ID}",
         ),
@@ -398,10 +455,18 @@ async fn stripe_webhook(
                     };
                     info!("💰 Payment received from {}", email);
 
-                    let credit_amount = std::env::var("CREDIT_INCREMENT")
-                        .ok()
+                    // Read total_credits from session metadata
+                    let credit_amount = session
+                        .metadata
+                        .as_ref()
+                        .and_then(|m| m.get("total_credits"))
                         .and_then(|v| v.parse::<i32>().ok())
-                        .unwrap_or(100);
+                        .unwrap_or_else(|| {
+                            error!("No total_credits in session metadata, using fallback");
+                            100
+                        });
+
+                    info!("Credits to grant: {}", credit_amount);
 
                     // Check if user exists
                     let mut key_found = state.db.get_key_by_customer_id(&customer_id).await;

@@ -1,0 +1,28 @@
+{
+    "_comment": "Pricing Configuration for Mesh Optimizer",
+    "_instructions": [
+        "base_rate_usd_per_credit: The cost in USD for one credit (e.g., 0.50 means $0.50 per credit)",
+        "min_purchase_usd: Minimum dollar amount a user can spend",
+        "max_purchase_usd: Maximum dollar amount a user can spend",
+        "default_purchase_usd: The default value shown in the slider when the modal opens",
+        "tiers: Array of bonus tiers. Users get bonus credits when they spend at or above min_spend_usd.",
+        "Tiers are evaluated from highest to lowest. User gets the best tier they qualify for.",
+        "Example: At $50, user gets 100 base credits + 10% bonus = 110 total credits"
+    ],
+    "base_rate_usd_per_credit": 0.50,
+    "min_purchase_usd": 10,
+    "max_purchase_usd": 500,
+    "default_purchase_usd": 50,
+    "tiers": [
+        {
+            "name": "Pro Tier",
+            "min_spend_usd": 50,
+            "bonus_percent": 10
+        },
+        {
+            "name": "Studio Tier",
+            "min_spend_usd": 200,
+            "bonus_percent": 20
+        }
+    ]
+}
