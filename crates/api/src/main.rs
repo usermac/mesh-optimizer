@@ -58,6 +58,7 @@ struct AppState {
     stripe_client: stripe::Client,
     stripe_webhook_secret: String,
     resend_api_key: String,
+    admin_secret: String,
     jobs: Arc<RwLock<HashMap<String, JobStatus>>>,
     worker_semaphore: Arc<Semaphore>,
 }
@@ -79,6 +80,8 @@ async fn main() -> Result<()> {
     let stripe_webhook_secret =
         std::env::var("STRIPE_WEBHOOK_SECRET").expect("STRIPE_WEBHOOK_SECRET must be set");
     let resend_api_key = std::env::var("RESEND_API_KEY").expect("RESEND_API_KEY must be set");
+    let admin_secret = std::env::var("ADMIN_SECRET")
+        .expect("ADMIN_SECRET must be set - this is required for admin endpoint security");
 
     // 2. Setup Filesystem
     fs::create_dir_all(UPLOAD_DIR).context("Failed to create upload dir")?;
@@ -100,6 +103,7 @@ async fn main() -> Result<()> {
         stripe_client,
         stripe_webhook_secret,
         resend_api_key,
+        admin_secret,
         jobs: Arc::new(RwLock::new(HashMap::new())),
         worker_semaphore: Arc::new(Semaphore::new(worker_slots)),
     };
@@ -1136,11 +1140,7 @@ async fn admin_add_credits(
     State(state): State<AppState>,
     Json(payload): Json<AdminAddCredits>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
-    // In production, set ADMIN_SECRET in env
-    let admin_secret =
-        std::env::var("ADMIN_SECRET").unwrap_or_else(|_| "supersecret123".to_string());
-
-    if payload.secret != admin_secret {
+    if payload.secret != state.admin_secret {
         return Err(StatusCode::UNAUTHORIZED);
     }
 
@@ -1154,11 +1154,7 @@ async fn admin_create_key(
     State(state): State<AppState>,
     Json(payload): Json<AdminCreateKey>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
-    // In production, set ADMIN_SECRET in env
-    let admin_secret =
-        std::env::var("ADMIN_SECRET").unwrap_or_else(|_| "supersecret123".to_string());
-
-    if payload.secret != admin_secret {
+    if payload.secret != state.admin_secret {
         return Err(StatusCode::UNAUTHORIZED);
     }
 
