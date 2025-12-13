@@ -1,11 +1,11 @@
 #!/bin/bash
-# ship_pricing.sh - Deploys only pricing changes to production.
+# ship_pricing.sh - Deploys pricing changes to production.
 #
 # Usage: ./ship_pricing.sh
 #
-# This script syncs only the pricing.json file to the server and restarts
-# the Docker container to apply the new pricing configuration.
-# Use this for rapid pricing updates without a full rebuild.
+# This script syncs only the pricing.json file to the server.
+# Thanks to hot-reload, pricing changes take effect immediately
+# without restarting the server or interrupting running jobs.
 
 set -euo pipefail
 
@@ -39,18 +39,8 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-echo "✅ Pricing file synced."
-
-# 4. Restart the Docker container to apply the new pricing
-echo "🔄 Restarting API to load new configuration..."
-ssh "$SERVER" "docker restart api"
-
-if [ $? -eq 0 ]; then
-    echo ""
-    echo "🎉 Deployment Complete! New pricing is live."
-    echo ""
-    echo "Pricing changes take effect immediately for new checkout sessions."
-else
-    echo "❌ Failed to restart container."
-    exit 1
-fi
+echo ""
+echo "🎉 Deployment Complete! New pricing is live."
+echo ""
+echo "Hot-reload enabled: No restart needed."
+echo "The next user to open the Buy Credits modal will see the new pricing."

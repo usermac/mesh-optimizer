@@ -50,6 +50,8 @@ const DOWNLOAD_EXPIRES_SECS: u64 = 60 * 60; // 1 hour
 const ALLOWED_EXTENSIONS: &[&str] = &["glb", "gltf", "obj", "fbx", "zip"];
 
 // --- PRICING CONFIGURATION ---
+const PRICING_FILE: &str = "server/pricing.json";
+
 #[derive(Clone, Deserialize, Serialize)]
 struct PricingTier {
     name: String,
@@ -67,6 +69,13 @@ struct PricingConfig {
     free_reoptimization_hours: u32,
 }
 
+/// Load pricing config fresh from disk (enables hot reloading without restart)
+fn load_pricing_config() -> Result<PricingConfig, String> {
+    let content = fs::read_to_string(PRICING_FILE)
+        .map_err(|e| format!("Failed to read {}: {}", PRICING_FILE, e))?;
+    serde_json::from_str(&content).map_err(|e| format!("Failed to parse {}: {}", PRICING_FILE, e))
+}
+
 #[derive(Clone)]
 struct AppState {
     db: db::Database,
@@ -77,7 +86,6 @@ struct AppState {
     jobs: Arc<RwLock<HashMap<String, JobStatus>>>,
     worker_semaphore: Arc<Semaphore>,
     admin_rate_limiter: Arc<RwLock<HashMap<String, Vec<std::time::Instant>>>>,
-    pricing: Arc<PricingConfig>,
 }
 
 #[derive(Clone)]
@@ -104,16 +112,19 @@ async fn main() -> Result<()> {
     std::env::var("ENCRYPTION_KEY")
         .expect("ENCRYPTION_KEY must be set - this is required to encrypt database.json at rest");
 
-    // 2a. Load Pricing Configuration
-    let pricing_config_str =
-        fs::read_to_string("server/pricing.json").context("Failed to read server/pricing.json")?;
-    let pricing_config: PricingConfig =
-        serde_json::from_str(&pricing_config_str).context("Failed to parse server/pricing.json")?;
-    info!(
-        "Loaded pricing config: base_rate=${}/credit, {} tiers defined",
-        pricing_config.base_rate_usd_per_credit,
-        pricing_config.tiers.len()
-    );
+    // 2a. Verify Pricing Configuration exists (will be loaded fresh on each request)
+    match load_pricing_config() {
+        Ok(config) => {
+            info!(
+                "Verified pricing config: base_rate=${}/credit, {} tiers defined (hot-reload enabled)",
+                config.base_rate_usd_per_credit,
+                config.tiers.len()
+            );
+        }
+        Err(e) => {
+            return Err(anyhow::anyhow!("Pricing config error: {}", e));
+        }
+    }
 
     // 2b. Setup Filesystem
     fs::create_dir_all(UPLOAD_DIR).context("Failed to create upload dir")?;
@@ -199,7 +210,6 @@ async fn main() -> Result<()> {
         jobs: Arc::new(RwLock::new(recovered_jobs)),
         worker_semaphore: Arc::new(Semaphore::new(worker_slots)),
         admin_rate_limiter: Arc::new(RwLock::new(HashMap::new())),
-        pricing: Arc::new(pricing_config),
     };
 
     // 4. Start Cleanup Task
@@ -303,7 +313,12 @@ async fn auth_middleware(
 
 // --- HANDLERS ---
 
-async fn get_config(State(state): State<AppState>) -> Json<serde_json::Value> {
+async fn get_config() -> Result<Json<serde_json::Value>, StatusCode> {
+    let pricing = load_pricing_config().map_err(|e| {
+        error!("Failed to load pricing config: {}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
     let cost_decimate = std::env::var("COST_DECIMATE")
         .ok()
         .and_then(|v| v.parse::<i32>().ok())
@@ -313,18 +328,18 @@ async fn get_config(State(state): State<AppState>) -> Json<serde_json::Value> {
         .and_then(|v| v.parse::<i32>().ok())
         .unwrap_or(5);
 
-    Json(json!({
+    Ok(Json(json!({
         "pricing": {
-            "base_rate_usd_per_credit": state.pricing.base_rate_usd_per_credit,
-            "min_purchase_usd": state.pricing.min_purchase_usd,
-            "max_purchase_usd": state.pricing.max_purchase_usd,
-            "default_purchase_usd": state.pricing.default_purchase_usd,
-            "tiers": state.pricing.tiers,
-            "free_reoptimization_hours": state.pricing.free_reoptimization_hours
+            "base_rate_usd_per_credit": pricing.base_rate_usd_per_credit,
+            "min_purchase_usd": pricing.min_purchase_usd,
+            "max_purchase_usd": pricing.max_purchase_usd,
+            "default_purchase_usd": pricing.default_purchase_usd,
+            "tiers": pricing.tiers,
+            "free_reoptimization_hours": pricing.free_reoptimization_hours
         },
         "cost_decimate": cost_decimate,
         "cost_remesh": cost_remesh
-    }))
+    })))
 }
 
 #[derive(Deserialize)]
@@ -339,7 +354,10 @@ async fn create_checkout_session(
 ) -> Result<Json<serde_json::Value>, StatusCode> {
     info!("Starting Checkout Session for ${}", payload.usd_amount);
 
-    let pricing = &state.pricing;
+    let pricing = load_pricing_config().map_err(|e| {
+        error!("Failed to load pricing config: {}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
     // 1. Validate amount is within bounds
     if payload.usd_amount < pricing.min_purchase_usd
@@ -824,13 +842,12 @@ async fn optimize_handler(
     // Combine file hash with mode so that decimate and remesh are tracked separately
     // This prevents gaming: decimate (1 credit) then remesh (free) on same file
     let file_mode_hash = format!("{}:{}", file_hash, mode);
+    let free_reoptimization_hours = load_pricing_config()
+        .map(|p| p.free_reoptimization_hours)
+        .unwrap_or(24);
     let should_charge = state
         .db
-        .should_charge_for_file(
-            &auth_key.0,
-            &file_mode_hash,
-            state.pricing.free_reoptimization_hours,
-        )
+        .should_charge_for_file(&auth_key.0, &file_mode_hash, free_reoptimization_hours)
         .await;
     let mut deducted = false;
 
