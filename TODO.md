@@ -92,7 +92,7 @@
     4. Remove test key
 
 ### Documentation
-- [ ] **Review and Update Pricing**: In `Capabilities.md`.
+- [ ] ~~**Review and Update Pricing**: In `Capabilities.md`.~~
 - [ ] **Document Disaster Recovery**: Procedures for restore.
 - [ ] **Create Internal vs External Docs**: Separation.
 
