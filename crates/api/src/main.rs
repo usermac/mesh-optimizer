@@ -15,6 +15,7 @@ use serde::Deserialize;
 use serde_json::json;
 use sha2::Digest;
 use std::collections::HashMap;
+use std::net::SocketAddr;
 use std::process::Stdio;
 use std::sync::Arc;
 use std::{
@@ -37,13 +38,16 @@ use tower_http::{
     cors::{AllowOrigin, CorsLayer},
     services::ServeDir,
 };
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 // --- CONFIGURATION ---
 const UPLOAD_DIR: &str = "uploads";
 const DB_FILE: &str = "server/database.json";
 const DB_SQLITE_FILE: &str = "server/stats.db";
 const DOWNLOAD_EXPIRES_SECS: u64 = 60 * 60; // 1 hour
+
+// Allowed file extensions for optimization
+const ALLOWED_EXTENSIONS: &[&str] = &["glb", "gltf", "obj", "fbx", "zip"];
 
 #[derive(Clone)]
 struct AppState {
@@ -54,6 +58,7 @@ struct AppState {
     admin_secret: String,
     jobs: Arc<RwLock<HashMap<String, JobStatus>>>,
     worker_semaphore: Arc<Semaphore>,
+    admin_rate_limiter: Arc<RwLock<HashMap<String, Vec<std::time::Instant>>>>,
 }
 
 #[derive(Clone)]
@@ -163,11 +168,16 @@ async fn main() -> Result<()> {
         admin_secret,
         jobs: Arc::new(RwLock::new(recovered_jobs)),
         worker_semaphore: Arc::new(Semaphore::new(worker_slots)),
+        admin_rate_limiter: Arc::new(RwLock::new(HashMap::new())),
     };
 
     // 4. Start Cleanup Task
     let db_for_cleanup = state.db.clone();
     tokio::spawn(cleanup_task(db_for_cleanup));
+
+    // 4b. Start Capacity Stats Task
+    let semaphore_for_stats = state.worker_semaphore.clone();
+    tokio::spawn(capacity_stats_task(semaphore_for_stats, worker_slots));
 
     // 5. Build Router
     let app = Router::new()
@@ -192,6 +202,7 @@ async fn main() -> Result<()> {
         .route("/create-checkout-session", post(create_checkout_session))
         .route("/webhook", post(stripe_webhook))
         .route("/success", get(success_page))
+        // Admin Routes
         .route("/admin/add-credits", post(admin_add_credits))
         .route("/admin/create-key", post(admin_create_key))
         // Static Files
@@ -220,8 +231,8 @@ async fn main() -> Result<()> {
         )
         .with_state(state);
 
-    // 6. Start Server
-    let addr = std::net::SocketAddr::from(([0, 0, 0, 0], 3000));
+    // 7. Start Server
+    let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
     info!("Server running on {}", addr);
     let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app).await?;
@@ -596,6 +607,23 @@ async fn optimize_handler(
                     .unwrap_or("")
                     .to_lowercase();
 
+                // Validate file extension
+                if !ALLOWED_EXTENSIONS.contains(&ext.as_str()) {
+                    error!(
+                        "Invalid file extension: {} (allowed: {:?})",
+                        ext, ALLOWED_EXTENSIONS
+                    );
+                    let _ = fs::remove_dir_all(&batch_dir);
+                    return (
+                        StatusCode::BAD_REQUEST,
+                        format!(
+                            "Invalid file type. Allowed: {}",
+                            ALLOWED_EXTENSIONS.join(", ")
+                        ),
+                    )
+                        .into_response();
+                }
+
                 if ext == "zip" {
                     let zip_path = filepath.clone();
                     let target_dir = batch_dir.clone();
@@ -659,27 +687,54 @@ async fn optimize_handler(
         } else if name == "ratio" {
             if let Ok(val) = field.text().await {
                 if let Ok(parsed) = val.parse::<f32>() {
-                    ratio = parsed;
+                    // Validate ratio bounds
+                    ratio = parsed.clamp(0.01, 1.0);
+                    if parsed != ratio {
+                        warn!("Ratio {} clamped to {}", parsed, ratio);
+                    }
                 }
             }
         } else if name == "format" {
             if let Ok(val) = field.text().await {
-                format = val;
+                // Validate format
+                if ["glb", "usdz"].contains(&val.as_str()) {
+                    format = val;
+                } else {
+                    warn!("Invalid format '{}', defaulting to 'glb'", val);
+                }
             }
         } else if name == "mode" {
             if let Ok(val) = field.text().await {
-                mode = val;
+                // Validate mode
+                if ["decimate", "remesh"].contains(&val.as_str()) {
+                    mode = val;
+                } else {
+                    warn!("Invalid mode '{}', defaulting to 'decimate'", val);
+                }
             }
         } else if name == "faces" {
             if let Ok(val) = field.text().await {
                 if let Ok(parsed) = val.parse::<i32>() {
-                    faces = parsed;
+                    // Validate faces bounds (100 to 10 million)
+                    faces = parsed.clamp(100, 10_000_000);
+                    if parsed != faces {
+                        warn!("Faces {} clamped to {}", parsed, faces);
+                    }
                 }
             }
         } else if name == "texture_size" {
             if let Ok(val) = field.text().await {
                 if let Ok(parsed) = val.parse::<i32>() {
-                    texture_size = parsed;
+                    // Validate texture size (powers of 2 from 256 to 8192)
+                    let valid_sizes = [256, 512, 1024, 2048, 4096, 8192];
+                    if valid_sizes.contains(&parsed) {
+                        texture_size = parsed;
+                    } else {
+                        warn!(
+                            "Invalid texture_size {}, defaulting to 2048 (valid: {:?})",
+                            parsed, valid_sizes
+                        );
+                    }
                 }
             }
         }
@@ -859,11 +914,20 @@ async fn optimize_handler(
             slot_cost_decimate
         };
 
+        // Log semaphore wait time for capacity monitoring
+        let wait_start = std::time::Instant::now();
         let _permit = state_clone
             .worker_semaphore
             .acquire_many(required_permits)
             .await
             .unwrap();
+        let wait_time = wait_start.elapsed();
+        if wait_time.as_secs() > 0 {
+            warn!(
+                "CAPACITY: job {} waited {:?} for {} slot(s)",
+                batch_id_clone, wait_time, required_permits
+            );
+        }
 
         // Run Command
         let mut cmd = if mode_clone == "remesh" {
@@ -1240,6 +1304,32 @@ fn get_admin_secret_from_header(headers: &HeaderMap) -> Option<String> {
         .map(|s| s.to_string())
 }
 
+/// Simple in-memory rate limiter: returns true if request is allowed
+async fn check_admin_rate_limit(
+    rate_limiter: &Arc<RwLock<HashMap<String, Vec<std::time::Instant>>>>,
+    client_ip: &str,
+    max_requests: usize,
+    window_secs: u64,
+) -> bool {
+    let now = std::time::Instant::now();
+    let window = Duration::from_secs(window_secs);
+
+    let mut limiter = rate_limiter.write().await;
+    let requests = limiter
+        .entry(client_ip.to_string())
+        .or_insert_with(Vec::new);
+
+    // Remove old requests outside the window
+    requests.retain(|&t| now.duration_since(t) < window);
+
+    if requests.len() >= max_requests {
+        false // Rate limited
+    } else {
+        requests.push(now);
+        true // Allowed
+    }
+}
+
 /// Log admin action for audit trail
 fn log_admin_audit(action: &str, success: bool, details: &str, client_ip: Option<&str>) {
     let ip = client_ip.unwrap_or("unknown");
@@ -1265,6 +1355,14 @@ async fn admin_add_credits(
         .get("X-Forwarded-For")
         .and_then(|v| v.to_str().ok())
         .or_else(|| headers.get("X-Real-IP").and_then(|v| v.to_str().ok()));
+
+    let ip_for_limit = client_ip.unwrap_or("unknown");
+
+    // Rate limit: 5 requests per minute per IP
+    if !check_admin_rate_limit(&state.admin_rate_limiter, ip_for_limit, 5, 60).await {
+        log_admin_audit("add_credits", false, "rate limited", client_ip);
+        return Err(StatusCode::TOO_MANY_REQUESTS);
+    }
 
     let provided_secret = match get_admin_secret_from_header(&headers) {
         Some(s) => s,
@@ -1318,6 +1416,14 @@ async fn admin_create_key(
         .get("X-Forwarded-For")
         .and_then(|v| v.to_str().ok())
         .or_else(|| headers.get("X-Real-IP").and_then(|v| v.to_str().ok()));
+
+    let ip_for_limit = client_ip.unwrap_or("unknown");
+
+    // Rate limit: 5 requests per minute per IP
+    if !check_admin_rate_limit(&state.admin_rate_limiter, ip_for_limit, 5, 60).await {
+        log_admin_audit("create_key", false, "rate limited", client_ip);
+        return Err(StatusCode::TOO_MANY_REQUESTS);
+    }
 
     let provided_secret = match get_admin_secret_from_header(&headers) {
         Some(s) => s,
@@ -1532,5 +1638,31 @@ async fn cleanup_task(db: db::Database) {
 
         // Clean up old job records from database
         let _ = db.cleanup_old_jobs(DOWNLOAD_EXPIRES_SECS as i64).await;
+    }
+}
+
+/// Periodic task to log capacity statistics
+async fn capacity_stats_task(semaphore: Arc<Semaphore>, total_slots: usize) {
+    let interval = Duration::from_secs(60); // Log every minute
+
+    loop {
+        tokio::time::sleep(interval).await;
+
+        let available = semaphore.available_permits();
+        let in_use = total_slots - available;
+        let utilization = (in_use as f64 / total_slots as f64) * 100.0;
+
+        if utilization > 80.0 {
+            warn!(
+                "CAPACITY: high utilization - {}/{} slots in use ({:.0}%)",
+                in_use, total_slots, utilization
+            );
+        } else if utilization > 0.0 {
+            info!(
+                "CAPACITY: {}/{} slots in use ({:.0}%)",
+                in_use, total_slots, utilization
+            );
+        }
+        // Don't log if nothing is happening (0% utilization)
     }
 }
