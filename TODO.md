@@ -6,7 +6,7 @@
 - [x] **Credit System Logic**: Database now tracks `credits` per API Key.
 - [x] **Payment Integration**: Stripe payments (or top-ups) now automatically add credits.
 - [x] **Admin Tools**: "God Mode" API endpoint created to manually add/refund credits.
-- [x] **Configurable Pricing**: `CREDIT_COST` and `CREDIT_INCREMENT` are now loaded from `.env`.
+- [x] **Configurable Pricing**: Pricing now managed via `server/pricing.json` with tiered bonuses and dynamic purchase amounts.
 - [x] **Transaction History UI**: Realtime search/filter by activity, date, and amount with CSV export.
 - [x] **Process Failure Refunds**: Include filename in transaction description for better debugging.
 - [x] **Blender Remeshing Workflow**: Implemented `remesh.py` for high-quality retopology and baking.
