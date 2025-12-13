@@ -31,8 +31,10 @@ fi
 echo "✅ Pricing file validated."
 
 # 3. Sync only the pricing.json file
+# --inplace is critical: it modifies the file in place rather than creating a new file
+# Docker bind mounts track by inode, so without --inplace the container sees the old file
 echo "📤 Uploading pricing.json..."
-rsync -avz "$PRICING_FILE" "$SERVER:$REMOTE_DIR/$PRICING_FILE"
+rsync -avz --inplace "$PRICING_FILE" "$SERVER:$REMOTE_DIR/$PRICING_FILE"
 
 if [ $? -ne 0 ]; then
     echo "❌ Failed to sync pricing.json."
