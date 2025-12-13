@@ -378,6 +378,9 @@
                         <p id="purchaseTierHint" class="text-small text-muted text-center mb-15">
                             ✨ Bonus credits start at $50!
                         </p>
+
+                        <!-- Billing Notes -->
+                        <div class="fair-use-policy-container" style="margin-top: 20px;"></div>
                     </div>
                     <div class="modal-footer d-flex justify-between align-center">
                         <button type="button" class="btn-secondary" onclick="closeModal('purchaseModal')" aria-label="Cancel purchase and close">Cancel</button>
@@ -443,12 +446,7 @@
                             </tbody>
                         </table>
                     </div>
-                    <div class="modal-footer">
-                        <strong class="text-muted">Fair Use Policy:</strong>
-                        Free re-optimizations of the same file* within <span id="history-free-spin-hours">24</span>
-                        hours of first use (credit paid at the time of first use).<br>
-                        "*file" is single file or a zip file containing multiple files of the same content as before.
-                    </div>
+                    <div class="modal-footer fair-use-policy-container"></div>
                 </div>
             </div>
             <!-- Footer -->
@@ -1035,10 +1033,10 @@
                             <ul>
                                 <li><strong>Decimate</strong> costs <span id="docs-cost-decimate">1</span> credit per job</li>
                                 <li><strong>Remesh</strong> costs <span id="docs-cost-remesh">5</span> credits per job</li>
-                                <li><strong>Free re-optimization:</strong> Same file + same mode within <span id="docs-free-hours">24</span> hours is free</li>
                                 <li><strong>Auto-refunds:</strong> Failed jobs are automatically refunded</li>
                                 <li><strong>Credits never expire</strong></li>
                             </ul>
+                            <div class="fair-use-policy-container mt-10"></div>
                         </section>
 
                         <section class="content-section">
@@ -1226,6 +1224,22 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
             let selectedFile = null;
             let currentBlobUrl = null;
             let pricingConfig = { cost_decimate: 1, cost_remesh: 5 };
+
+            function updateFairUseDisplay(hours) {
+                const containers = document.querySelectorAll(".fair-use-policy-container");
+                const html = `
+                    <p class="text-small text-muted text-center m-0">
+                        <strong>Fair Use Policy:</strong> Free re-optimizations of the same file* within <span class="text-primary">${hours} hours</span> of first use (credit paid at the time of first use).
+                    </p>
+                    <p class="text-xs text-muted text-center mt-5 m-0">
+                        <em>*file is single file or a zip file containing multiple files of the same content as before.</em>
+                    </p>
+                `;
+
+                containers.forEach(container => {
+                    container.innerHTML = html;
+                });
+            }
 
             function updateProcessButton() {
                 if (!selectedFile) {
@@ -1571,8 +1585,7 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
 
                     // Update free spin hours display
                     if (data.pricing && data.pricing.free_reoptimization_hours !== undefined) {
-                        const historySpan = document.getElementById("history-free-spin-hours");
-                        if (historySpan) historySpan.textContent = data.pricing.free_reoptimization_hours;
+                        updateFairUseDisplay(data.pricing.free_reoptimization_hours);
                     }
                 });
 
@@ -1833,9 +1846,7 @@ done`;
                 if (pricingConfig.cost_remesh !== undefined) {
                     document.getElementById("docs-cost-remesh").innerText = pricingConfig.cost_remesh;
                 }
-                if (pricingConfig.pricing && pricingConfig.pricing.free_reoptimization_hours !== undefined) {
-                    document.getElementById("docs-free-hours").innerText = pricingConfig.pricing.free_reoptimization_hours;
-                }
+
                 openModal("apiDocsModal", this);
             });
 
@@ -2073,6 +2084,8 @@ done`;
 
                     // Initial UI update
                     updatePurchaseUI(pricing.default_purchase_usd);
+
+
 
                     // Show modal
                     openModal("purchaseModal", document.getElementById("buyBtn"));
