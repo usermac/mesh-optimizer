@@ -1,6 +1,7 @@
 mod db;
 
 use anyhow::{Context, Result};
+use axum::http::{header, Method};
 use axum::{
     extract::{DefaultBodyLimit, Multipart, Path as AxumPath, Query, Request, State},
     http::{HeaderMap, StatusCode},
@@ -30,7 +31,10 @@ use stripe::{
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::sync::RwLock;
 use tokio::sync::Semaphore;
-use tower_http::{cors::CorsLayer, services::ServeDir};
+use tower_http::{
+    cors::{AllowOrigin, CorsLayer},
+    services::ServeDir,
+};
 use tracing::{error, info};
 
 // --- CONFIGURATION ---
@@ -153,7 +157,17 @@ async fn main() -> Result<()> {
         )
         // Global Middleware
         .layer(DefaultBodyLimit::max(5 * 1024 * 1024 * 1024)) // 5GB
-        .layer(CorsLayer::permissive())
+        .layer(
+            CorsLayer::new()
+                .allow_origin(AllowOrigin::list([
+                    "https://www.webdeliveryengine.com".parse().unwrap(),
+                    "https://webdeliveryengine.com".parse().unwrap(),
+                    "http://localhost:3000".parse().unwrap(),
+                ]))
+                .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
+                .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION, header::ACCEPT])
+                .allow_credentials(true),
+        )
         .with_state(state);
 
     // 6. Start Server
