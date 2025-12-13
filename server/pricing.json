@@ -13,7 +13,7 @@
   "base_rate_usd_per_credit": 0.5,
   "min_purchase_usd": 10,
   "max_purchase_usd": 500,
-  "default_purchase_usd": 51,
+  "default_purchase_usd": 49,
   "tiers": [
     {
       "name": "Pro Tier",
@@ -31,5 +31,5 @@
       "bonus_percent": 25
     }
   ],
-  "free_reoptimization_hours": 24
+  "free_reoptimization_hours": 48
 }

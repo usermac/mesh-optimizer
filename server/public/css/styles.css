@@ -810,6 +810,26 @@ footer.main-footer.sticky {
     margin-bottom: 24px;
 }
 
+.api-key-row {
+    display: flex;
+    align-items: baseline;
+}
+
+.api-key-row label {
+    flex: 0 0 auto;
+    margin-bottom: 0;
+    margin-right: 0.75rem;
+}
+
+.api-key-row input {
+    flex: 0 1 200px; /* Do not grow, allow shrinking, base width 200px */
+}
+
+.api-key-row small {
+    flex: 1 1 auto;
+    margin-left: 0.75rem;
+}
+
 label .required {
     color: var(--error);
 }

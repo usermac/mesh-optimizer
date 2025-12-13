@@ -305,27 +305,21 @@
                         <button type="button" class="modal-close" onclick="closeModal('purchaseModal')" aria-label="Close purchase modal">&times;</button>
                     </div>
                     <div class="modal-body">
-                        <p class="text-muted mb-15">
-                            Adjust the slider or enter an amount to purchase credits.
-                            <strong>Already have credits?</strong> Buying more adds to your existing balance.
-                        </p>
-
                         <!-- API Key Input (for existing customers) -->
-                        <div class="form-group mb-15">
-                            <label for="purchaseApiKey">Existing API Key (Optional)</label>
+                        <div class="form-group mb-15 api-key-row">
+                            <label for="purchaseApiKey">API Key (optional)</label>
                             <input
                                 type="text"
                                 id="purchaseApiKey"
-                                placeholder="sk_... (leave blank if new customer)"
-                                class="w-100"
+                                placeholder="sk_... (optional)"
                                 aria-describedby="purchaseApiKeyMessage"
                             />
-                            <small id="purchaseApiKeyMessage" class="text-muted" aria-live="polite"></small>
+                            <small id="purchaseApiKeyMessage" class="text-muted"></small>
                         </div>
 
                         <!-- Purchase Amount Slider -->
                         <div class="form-group mb-15" role="group" aria-labelledby="purchaseSliderLabel">
-                            <label for="purchaseSlider" id="purchaseSliderLabel">Purchase Amount: <strong id="purchaseUsdLabel" aria-live="polite">$50</strong></label>
+                            <label for="purchaseSlider" id="purchaseSliderLabel">Purchase Amount (Adjust the slider): <strong id="purchaseUsdLabel" aria-live="polite">$50</strong></label>
                             <input
                                 type="range"
                                 id="purchaseSlider"
@@ -2067,12 +2061,10 @@ done`;
 
                     if (currentKey) {
                         purchaseApiKey.value = currentKey;
-                        purchaseApiKeyMessage.textContent = "✅ Using your current API key. Credits will be added to this account.";
-                        purchaseApiKeyMessage.style.color = "#10b981";
+                        purchaseApiKeyMessage.textContent = "Credits will be added to this account.";
                     } else if (savedKey) {
                         purchaseApiKey.value = savedKey;
-                        purchaseApiKeyMessage.textContent = "✅ Using saved API key. Credits will be added to this account.";
-                        purchaseApiKeyMessage.style.color = "#10b981";
+                        purchaseApiKeyMessage.textContent = "Credits will be added to this account.";
                     } else {
                         purchaseApiKey.value = "";
                         purchaseApiKeyMessage.textContent = "Leave blank if you are a new customer.";
