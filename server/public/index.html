@@ -318,13 +318,14 @@
                                 id="purchaseApiKey"
                                 placeholder="sk_... (leave blank if new customer)"
                                 class="w-100"
+                                aria-describedby="purchaseApiKeyMessage"
                             />
-                            <small id="purchaseApiKeyMessage" class="text-muted"></small>
+                            <small id="purchaseApiKeyMessage" class="text-muted" aria-live="polite"></small>
                         </div>
 
                         <!-- Purchase Amount Slider -->
-                        <div class="form-group mb-15">
-                            <label for="purchaseSlider">Purchase Amount: <strong id="purchaseUsdLabel">$50</strong></label>
+                        <div class="form-group mb-15" role="group" aria-labelledby="purchaseSliderLabel">
+                            <label for="purchaseSlider" id="purchaseSliderLabel">Purchase Amount: <strong id="purchaseUsdLabel" aria-live="polite">$50</strong></label>
                             <input
                                 type="range"
                                 id="purchaseSlider"
@@ -333,15 +334,19 @@
                                 value="50"
                                 class="w-100"
                                 style="cursor: pointer;"
+                                aria-valuemin="10"
+                                aria-valuemax="500"
+                                aria-valuenow="50"
+                                aria-describedby="purchaseSliderDesc"
                             />
-                            <div class="d-flex justify-between text-small text-muted mt-5">
+                            <div class="d-flex justify-between text-small text-muted mt-5" id="purchaseSliderDesc">
                                 <span id="purchaseMinLabel">$10</span>
                                 <span id="purchaseMaxLabel">$500</span>
                             </div>
                         </div>
 
                         <!-- Credit Calculation Display -->
-                        <div class="alert-box mb-15" style="background: #1a1a2e; border: 1px solid #3b82f6; border-radius: 8px; padding: 15px; text-align: center;">
+                        <div class="alert-box mb-15" style="background: #1a1a2e; border: 1px solid #3b82f6; border-radius: 8px; padding: 15px; text-align: center;" role="region" aria-label="Credit calculation summary" aria-live="polite" aria-atomic="true">
                             <div class="text-small text-muted mb-5">You Get:</div>
                             <div style="font-size: 1.75rem; font-weight: bold; color: #10b981;">
                                 <span id="purchaseTotalCredits">100</span> Credits
@@ -353,22 +358,22 @@
                         </div>
 
                         <!-- Use Case Indicators -->
-                        <div class="mb-15" style="background: #0d0d1a; border-radius: 8px; padding: 12px;">
-                            <div class="text-small text-muted mb-10 text-center">What can you do with these credits?</div>
-                            <div style="display: flex; justify-content: space-between; gap: 10px;">
-                                <div style="flex: 1; text-align: center; padding: 8px; background: #1a1a2e; border-radius: 6px;">
-                                    <div style="font-size: 1.25rem; font-weight: bold; color: #60a5fa;" id="purchaseDecimateOnly">100</div>
-                                    <div class="text-small text-muted">Decimates</div>
+                        <div class="mb-15" style="background: #0d0d1a; border-radius: 8px; padding: 12px;" role="region" aria-label="Estimated job counts">
+                            <div class="text-small text-muted mb-10 text-center" id="useCaseHeading">What can you do with these credits?</div>
+                            <div style="display: flex; justify-content: space-between; gap: 10px;" role="list" aria-labelledby="useCaseHeading">
+                                <div style="flex: 1; text-align: center; padding: 8px; background: #1a1a2e; border-radius: 6px;" role="listitem">
+                                    <div style="font-size: 1.25rem; font-weight: bold; color: #60a5fa;" id="purchaseDecimateOnly" aria-label="Decimate jobs">100</div>
+                                    <div class="text-small text-muted" aria-hidden="true">Decimates</div>
                                 </div>
-                                <div style="flex: 1; text-align: center; padding: 8px; background: #1a1a2e; border-radius: 6px;">
+                                <div style="flex: 1; text-align: center; padding: 8px; background: #1a1a2e; border-radius: 6px;" role="listitem">
                                     <div style="font-size: 0.9rem; font-weight: bold; color: #a78bfa;">
-                                        <span id="purchaseMixedDecimate">80</span> + <span id="purchaseMixedRemesh">4</span>
+                                        <span id="purchaseMixedDecimate" aria-label="Decimate jobs in mixed workflow">80</span> + <span id="purchaseMixedRemesh" aria-label="Remesh jobs in mixed workflow">4</span>
                                     </div>
-                                    <div class="text-small text-muted">Mixed (80/20)</div>
+                                    <div class="text-small text-muted" aria-hidden="true">Mixed (80/20)</div>
                                 </div>
-                                <div style="flex: 1; text-align: center; padding: 8px; background: #1a1a2e; border-radius: 6px;">
-                                    <div style="font-size: 1.25rem; font-weight: bold; color: #f472b6;" id="purchaseRemeshOnly">20</div>
-                                    <div class="text-small text-muted">Remeshes</div>
+                                <div style="flex: 1; text-align: center; padding: 8px; background: #1a1a2e; border-radius: 6px;" role="listitem">
+                                    <div style="font-size: 1.25rem; font-weight: bold; color: #f472b6;" id="purchaseRemeshOnly" aria-label="Remesh jobs">20</div>
+                                    <div class="text-small text-muted" aria-hidden="true">Remeshes</div>
                                 </div>
                             </div>
                         </div>
@@ -379,8 +384,8 @@
                         </p>
                     </div>
                     <div class="modal-footer d-flex justify-between align-center">
-                        <button type="button" class="btn-secondary" onclick="closeModal('purchaseModal')">Cancel</button>
-                        <button type="button" id="purchasePayBtn" class="btn-primary">
+                        <button type="button" class="btn-secondary" onclick="closeModal('purchaseModal')" aria-label="Cancel purchase and close">Cancel</button>
+                        <button type="button" id="purchasePayBtn" class="btn-primary" aria-label="Proceed to Stripe payment">
                             Pay with Stripe →
                         </button>
                     </div>
@@ -2020,7 +2025,9 @@ done`;
 
             // Slider event listener
             purchaseSlider.addEventListener("input", (e) => {
-                updatePurchaseUI(parseInt(e.target.value, 10));
+                const value = parseInt(e.target.value, 10);
+                purchaseSlider.setAttribute("aria-valuenow", value);
+                updatePurchaseUI(value);
             });
 
             // Add event listener for buy button - opens modal
@@ -2038,6 +2045,9 @@ done`;
                     purchaseSlider.min = pricing.min_purchase_usd;
                     purchaseSlider.max = pricing.max_purchase_usd;
                     purchaseSlider.value = pricing.default_purchase_usd;
+                    purchaseSlider.setAttribute("aria-valuemin", pricing.min_purchase_usd);
+                    purchaseSlider.setAttribute("aria-valuemax", pricing.max_purchase_usd);
+                    purchaseSlider.setAttribute("aria-valuenow", pricing.default_purchase_usd);
                     purchaseMinLabel.textContent = "$" + pricing.min_purchase_usd;
                     purchaseMaxLabel.textContent = "$" + pricing.max_purchase_usd;
 

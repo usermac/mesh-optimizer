@@ -117,6 +117,9 @@
 - [ ] **Enable GPU Support**: Docker `--gpus all` for Blender cycles baking.
 - [x] **Tiered Pricing Logic**: Implemented via `pricing.json` with configurable bonus tiers and live UI calculator.
 
+### Configuration Cleanup
+- [ ] **Consolidate COST_DECIMATE/COST_REMESH into pricing.json**: These are customer-facing credit costs and should be hot-reloadable like other pricing settings. Currently in `.env`, should move to `pricing.json`. Note: `SLOT_COST_*` variables should stay in `.env` as they are server infrastructure settings (semaphore capacity), not pricing.
+
 ### Features
 - [ ] **Add More 3D Formats**: STEP, STL, etc.
 - [ ] **User Documentation**: Public-facing guides.
