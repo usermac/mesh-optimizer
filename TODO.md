@@ -56,8 +56,8 @@
 - [ ] **Test CSV Download**: Verify proper formatting and filename.
 
 ### Security
-- [ ] **Remove Hardcoded Metrics Salt**: `METRICS_SALT` must not default to `"default-insecure-salt"`.
-- [ ] **Remove Email from Dockerfile**: Replace hardcoded `Brian@BrianGinn.com` in Caddyfile with env var.
+- [x] **Remove Hardcoded Metrics Salt**: `METRICS_SALT` must not default to `"default-insecure-salt"`.
+- [x] **Remove Email from Dockerfile**: Replace hardcoded `Brian@BrianGinn.com` in Caddyfile with env var.
 
 ---
 

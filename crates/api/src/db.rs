@@ -261,10 +261,7 @@ impl Database {
         }
 
         // --- 4. Load Salt ---
-        let salt = env::var("METRICS_SALT").unwrap_or_else(|_| "default-insecure-salt".to_string());
-        if salt == "default-insecure-salt" {
-            error!("WARNING: METRICS_SALT not set. Using default.");
-        }
+        let salt = env::var("METRICS_SALT").expect("METRICS_SALT must be set");
 
         Database {
             file_path: json_path,
