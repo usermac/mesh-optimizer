@@ -29,6 +29,7 @@ use stripe::{
     CreateCheckoutSessionPaymentMethodTypes, Currency, CustomerId, EventObject, EventType,
     Expandable, Webhook,
 };
+use subtle::ConstantTimeEq;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::sync::RwLock;
 use tokio::sync::Semaphore;
@@ -1217,35 +1218,127 @@ async fn optimize_handler(
 struct AdminAddCredits {
     key: String,
     amount: i32,
-    secret: String,
 }
 
 #[derive(Deserialize)]
 struct AdminCreateKey {
     email: String,
     initial_credits: i32,
-    secret: String,
+}
+
+/// Timing-safe comparison for admin secret
+fn verify_admin_secret(provided: &str, expected: &str) -> bool {
+    // Constant-time comparison to prevent timing attacks
+    provided.as_bytes().ct_eq(expected.as_bytes()).into()
+}
+
+/// Extract admin secret from X-Admin-Secret header
+fn get_admin_secret_from_header(headers: &HeaderMap) -> Option<String> {
+    headers
+        .get("X-Admin-Secret")
+        .and_then(|v| v.to_str().ok())
+        .map(|s| s.to_string())
+}
+
+/// Log admin action for audit trail
+fn log_admin_audit(action: &str, success: bool, details: &str, client_ip: Option<&str>) {
+    let ip = client_ip.unwrap_or("unknown");
+    if success {
+        info!(
+            "ADMIN_AUDIT: action={}, success=true, details=\"{}\", ip={}",
+            action, details, ip
+        );
+    } else {
+        error!(
+            "ADMIN_AUDIT: action={}, success=false, details=\"{}\", ip={}",
+            action, details, ip
+        );
+    }
 }
 
 async fn admin_add_credits(
     State(state): State<AppState>,
+    headers: HeaderMap,
     Json(payload): Json<AdminAddCredits>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
-    if payload.secret != state.admin_secret {
+    let client_ip = headers
+        .get("X-Forwarded-For")
+        .and_then(|v| v.to_str().ok())
+        .or_else(|| headers.get("X-Real-IP").and_then(|v| v.to_str().ok()));
+
+    let provided_secret = match get_admin_secret_from_header(&headers) {
+        Some(s) => s,
+        None => {
+            log_admin_audit(
+                "add_credits",
+                false,
+                "missing X-Admin-Secret header",
+                client_ip,
+            );
+            return Err(StatusCode::UNAUTHORIZED);
+        }
+    };
+
+    if !verify_admin_secret(&provided_secret, &state.admin_secret) {
+        log_admin_audit("add_credits", false, "invalid secret", client_ip);
         return Err(StatusCode::UNAUTHORIZED);
     }
 
     match state.db.add_credits(&payload.key, payload.amount).await {
-        Ok(new_balance) => Ok(Json(json!({ "success": true, "new_balance": new_balance }))),
-        Err(_) => Err(StatusCode::NOT_FOUND),
+        Ok(new_balance) => {
+            log_admin_audit(
+                "add_credits",
+                true,
+                &format!(
+                    "key={}, amount={}, new_balance={}",
+                    payload.key, payload.amount, new_balance
+                ),
+                client_ip,
+            );
+            Ok(Json(json!({ "success": true, "new_balance": new_balance })))
+        }
+        Err(_) => {
+            log_admin_audit(
+                "add_credits",
+                false,
+                &format!("key={} not found", payload.key),
+                client_ip,
+            );
+            Err(StatusCode::NOT_FOUND)
+        }
     }
 }
 
 async fn admin_create_key(
     State(state): State<AppState>,
+    headers: HeaderMap,
     Json(payload): Json<AdminCreateKey>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
-    if payload.secret != state.admin_secret {
+    let client_ip = headers
+        .get("X-Forwarded-For")
+        .and_then(|v| v.to_str().ok())
+        .or_else(|| headers.get("X-Real-IP").and_then(|v| v.to_str().ok()));
+
+    let provided_secret = match get_admin_secret_from_header(&headers) {
+        Some(s) => s,
+        None => {
+            log_admin_audit(
+                "create_key",
+                false,
+                "missing X-Admin-Secret header",
+                client_ip,
+            );
+            return Err(StatusCode::UNAUTHORIZED);
+        }
+    };
+
+    if !verify_admin_secret(&provided_secret, &state.admin_secret) {
+        log_admin_audit(
+            "create_key",
+            false,
+            &format!("invalid secret, attempted email={}", payload.email),
+            client_ip,
+        );
         return Err(StatusCode::UNAUTHORIZED);
     }
 
@@ -1258,13 +1351,30 @@ async fn admin_create_key(
         )
         .await
     {
-        Ok(new_key) => Ok(Json(json!({
-            "success": true,
-            "key": new_key,
-            "email": payload.email,
-            "initial_credits": payload.initial_credits
-        }))),
+        Ok(new_key) => {
+            log_admin_audit(
+                "create_key",
+                true,
+                &format!(
+                    "email={}, initial_credits={}",
+                    payload.email, payload.initial_credits
+                ),
+                client_ip,
+            );
+            Ok(Json(json!({
+                "success": true,
+                "key": new_key,
+                "email": payload.email,
+                "initial_credits": payload.initial_credits
+            })))
+        }
         Err(e) => {
+            log_admin_audit(
+                "create_key",
+                false,
+                &format!("db error for email={}: {:?}", payload.email, e),
+                client_ip,
+            );
             error!("Failed to create key: {:?}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
