@@ -15,6 +15,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
+use std::time::SystemTime;
 use tokio::sync::RwLock;
 use tracing::{error, info, warn};
 use uuid::Uuid;
@@ -50,6 +51,31 @@ pub struct CustomerInfo {
 pub struct DbData {
     pub keys: HashMap<String, KeyInfo>,
     pub customers: HashMap<String, CustomerInfo>,
+}
+
+/// Job status for persistence
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum JobStatus {
+    Queued,
+    Processing,
+    Completed {
+        output_size: u64,
+        glb_url: String,
+        usdz_url: String,
+        expires_in_secs: u64,
+    },
+    Failed {
+        error: String,
+    },
+}
+
+/// Stored job record
+#[derive(Clone, Debug)]
+#[allow(dead_code)]
+pub struct StoredJob {
+    pub batch_id: String,
+    pub status: JobStatus,
+    pub created_at: i64,
 }
 
 #[derive(Clone)]
@@ -213,6 +239,13 @@ impl Database {
                 description TEXT NOT NULL,
                 reference_job_hash TEXT,
                 created_at INTEGER NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS jobs (
+                batch_id TEXT PRIMARY KEY,
+                status_json TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL
             );
             "#;
             if let Err(e) = sqlx::query(schema).execute(p).await {
@@ -487,6 +520,123 @@ impl Database {
     pub async fn get_credits(&self, key: &str) -> Option<i32> {
         let data = self.data.read().await;
         data.keys.get(key).map(|info| info.credits)
+    }
+
+    // --- Job Persistence ---
+
+    /// Save or update a job status
+    pub async fn save_job(&self, batch_id: &str, status: &JobStatus) -> Result<()> {
+        if let Some(pool) = &self.pool {
+            let now = SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs() as i64;
+
+            let status_json = serde_json::to_string(status)?;
+
+            let query = r#"
+            INSERT INTO jobs (batch_id, status_json, created_at, updated_at)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(batch_id) DO UPDATE SET
+                status_json = excluded.status_json,
+                updated_at = excluded.updated_at
+            "#;
+
+            sqlx::query(query)
+                .bind(batch_id)
+                .bind(&status_json)
+                .bind(now)
+                .bind(now)
+                .execute(pool)
+                .await
+                .map_err(|e| anyhow::anyhow!("Failed to save job: {}", e))?;
+
+            info!("Job {} saved with status: {:?}", batch_id, status);
+        }
+        Ok(())
+    }
+
+    /// Load a single job by batch_id
+    pub async fn get_job(&self, batch_id: &str) -> Option<JobStatus> {
+        if let Some(pool) = &self.pool {
+            let query = "SELECT status_json FROM jobs WHERE batch_id = ?";
+
+            if let Ok(row) = sqlx::query_as::<_, (String,)>(query)
+                .bind(batch_id)
+                .fetch_one(pool)
+                .await
+            {
+                if let Ok(status) = serde_json::from_str::<JobStatus>(&row.0) {
+                    return Some(status);
+                }
+            }
+        }
+        None
+    }
+
+    /// Load all non-expired jobs (for startup recovery)
+    pub async fn load_active_jobs(&self, max_age_secs: i64) -> Vec<StoredJob> {
+        let mut jobs = Vec::new();
+
+        if let Some(pool) = &self.pool {
+            let cutoff = SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs() as i64
+                - max_age_secs;
+
+            let query = r#"
+            SELECT batch_id, status_json, created_at
+            FROM jobs
+            WHERE created_at > ?
+            ORDER BY created_at DESC
+            "#;
+
+            if let Ok(rows) = sqlx::query_as::<_, (String, String, i64)>(query)
+                .bind(cutoff)
+                .fetch_all(pool)
+                .await
+            {
+                for (batch_id, status_json, created_at) in rows {
+                    if let Ok(status) = serde_json::from_str::<JobStatus>(&status_json) {
+                        jobs.push(StoredJob {
+                            batch_id,
+                            status,
+                            created_at,
+                        });
+                    }
+                }
+            }
+        }
+
+        info!("Loaded {} active jobs from database", jobs.len());
+        jobs
+    }
+
+    /// Delete old jobs from the database
+    pub async fn cleanup_old_jobs(&self, max_age_secs: i64) -> Result<u64> {
+        if let Some(pool) = &self.pool {
+            let cutoff = SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs() as i64
+                - max_age_secs;
+
+            let query = "DELETE FROM jobs WHERE created_at < ?";
+
+            let result = sqlx::query(query)
+                .bind(cutoff)
+                .execute(pool)
+                .await
+                .map_err(|e| anyhow::anyhow!("Failed to cleanup jobs: {}", e))?;
+
+            let deleted = result.rows_affected();
+            if deleted > 0 {
+                info!("Cleaned up {} old job records", deleted);
+            }
+            return Ok(deleted);
+        }
+        Ok(0)
     }
 
     pub async fn get_history(&self, key: &str, limit: i32) -> Result<Vec<Transaction>> {

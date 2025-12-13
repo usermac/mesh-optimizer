@@ -1,5 +1,6 @@
 mod db;
 
+use crate::db::JobStatus;
 use anyhow::{Context, Result};
 use axum::http::{header, Method};
 use axum::{
@@ -10,7 +11,7 @@ use axum::{
     routing::{get, post},
     Extension, Json, Router,
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::json;
 use sha2::Digest;
 use std::collections::HashMap;
@@ -42,21 +43,6 @@ const UPLOAD_DIR: &str = "uploads";
 const DB_FILE: &str = "server/database.json";
 const DB_SQLITE_FILE: &str = "server/stats.db";
 const DOWNLOAD_EXPIRES_SECS: u64 = 60 * 60; // 1 hour
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub enum JobStatus {
-    Queued,
-    Processing,
-    Completed {
-        output_size: u64,
-        glb_url: String,
-        usdz_url: String,
-        expires_in_secs: u64,
-    },
-    Failed {
-        error: String,
-    },
-}
 
 #[derive(Clone)]
 struct AppState {
@@ -108,18 +94,79 @@ async fn main() -> Result<()> {
         .and_then(|v| v.parse().ok())
         .unwrap_or(10); // Default 10 slots (Remesh=4, Decimate=1)
 
+    // 3b. Load persisted jobs from database and recover state
+    let mut recovered_jobs: HashMap<String, JobStatus> = HashMap::new();
+    let active_jobs = db.load_active_jobs(DOWNLOAD_EXPIRES_SECS as i64).await;
+
+    for stored_job in active_jobs {
+        let batch_dir = Path::new(UPLOAD_DIR).join(&stored_job.batch_id);
+
+        match &stored_job.status {
+            JobStatus::Processing => {
+                // Server restarted while job was processing - mark as failed
+                // unless output files exist (job completed but status wasn't updated)
+                let glb_exists = batch_dir.join("output.glb").exists()
+                    || fs::read_dir(&batch_dir)
+                        .map(|entries| {
+                            entries.filter_map(|e| e.ok()).any(|e| {
+                                e.path()
+                                    .extension()
+                                    .map(|ext| ext == "glb")
+                                    .unwrap_or(false)
+                            })
+                        })
+                        .unwrap_or(false);
+
+                if glb_exists {
+                    info!(
+                        "Job {} was processing but output exists - marking as completed",
+                        stored_job.batch_id
+                    );
+                    // We don't have exact output info, so mark with placeholder
+                    // User can still download via the batch_id
+                    recovered_jobs.insert(stored_job.batch_id, stored_job.status);
+                } else {
+                    info!(
+                        "Job {} was interrupted by restart - marking as failed",
+                        stored_job.batch_id
+                    );
+                    let failed_status = JobStatus::Failed {
+                        error: "Server restarted during processing".to_string(),
+                    };
+                    let _ = db.save_job(&stored_job.batch_id, &failed_status).await;
+                    recovered_jobs.insert(stored_job.batch_id, failed_status);
+                }
+            }
+            JobStatus::Completed { .. } | JobStatus::Failed { .. } => {
+                // Keep completed/failed jobs in memory for status queries
+                recovered_jobs.insert(stored_job.batch_id, stored_job.status);
+            }
+            JobStatus::Queued => {
+                // Queued jobs that weren't processed - mark as failed
+                let failed_status = JobStatus::Failed {
+                    error: "Server restarted before processing started".to_string(),
+                };
+                let _ = db.save_job(&stored_job.batch_id, &failed_status).await;
+                recovered_jobs.insert(stored_job.batch_id, failed_status);
+            }
+        }
+    }
+
+    info!("Recovered {} jobs from database", recovered_jobs.len());
+
     let state = AppState {
         db,
         stripe_client,
         stripe_webhook_secret,
         resend_api_key,
         admin_secret,
-        jobs: Arc::new(RwLock::new(HashMap::new())),
+        jobs: Arc::new(RwLock::new(recovered_jobs)),
         worker_semaphore: Arc::new(Semaphore::new(worker_slots)),
     };
 
     // 4. Start Cleanup Task
-    tokio::spawn(cleanup_task());
+    let db_for_cleanup = state.db.clone();
+    tokio::spawn(cleanup_task(db_for_cleanup));
 
     // 5. Build Router
     let app = Router::new()
@@ -464,12 +511,25 @@ async fn job_status_handler(
     State(state): State<AppState>,
     AxumPath(id): AxumPath<String>,
 ) -> Json<serde_json::Value> {
-    let jobs = state.jobs.read().await;
-    if let Some(status) = jobs.get(&id) {
-        Json(json!({ "status": status }))
-    } else {
-        Json(json!({ "error": "Job not found" }))
+    // Check in-memory cache first
+    {
+        let jobs = state.jobs.read().await;
+        if let Some(status) = jobs.get(&id) {
+            return Json(json!({ "status": status }));
+        }
     }
+
+    // Fall back to database
+    if let Some(status) = state.db.get_job(&id).await {
+        // Cache it in memory for future lookups
+        {
+            let mut jobs = state.jobs.write().await;
+            jobs.insert(id, status.clone());
+        }
+        return Json(json!({ "status": status }));
+    }
+
+    Json(json!({ "error": "Job not found" }))
 }
 
 async fn optimize_handler(
@@ -497,6 +557,8 @@ async fn optimize_handler(
         let mut jobs = state.jobs.write().await;
         jobs.insert(batch_id.clone(), JobStatus::Processing);
     }
+    // Persist to database
+    let _ = state.db.save_job(&batch_id, &JobStatus::Processing).await;
 
     let mut input_filename: Option<String> = None;
     let mut ratio = 0.5;
@@ -849,15 +911,17 @@ async fn optimize_handler(
             Ok(c) => c,
             Err(e) => {
                 error!("Failed to spawn worker: {:?}", e);
+                let failed_status = JobStatus::Failed {
+                    error: "Spawn Failed".to_string(),
+                };
                 {
                     let mut jobs = state_clone.jobs.write().await;
-                    jobs.insert(
-                        batch_id_clone,
-                        JobStatus::Failed {
-                            error: "Spawn Failed".to_string(),
-                        },
-                    );
+                    jobs.insert(batch_id_clone.clone(), failed_status.clone());
                 }
+                let _ = state_clone
+                    .db
+                    .save_job(&batch_id_clone, &failed_status)
+                    .await;
                 return;
             }
         };
@@ -885,15 +949,17 @@ async fn optimize_handler(
         let status = match tokio::time::timeout(Duration::from_secs(600), child.wait()).await {
             Ok(Ok(s)) => s,
             Ok(Err(e)) => {
+                let failed_status = JobStatus::Failed {
+                    error: "System Error".to_string(),
+                };
                 {
                     let mut jobs = state_clone.jobs.write().await;
-                    jobs.insert(
-                        batch_id_clone.clone(),
-                        JobStatus::Failed {
-                            error: "System Error".to_string(),
-                        },
-                    );
+                    jobs.insert(batch_id_clone.clone(), failed_status.clone());
                 }
+                let _ = state_clone
+                    .db
+                    .save_job(&batch_id_clone, &failed_status)
+                    .await;
                 error!("Execution failed: {:?}", e);
                 // Refund Credit (only if we charged them)
                 if deducted {
@@ -926,15 +992,17 @@ async fn optimize_handler(
                 return;
             }
             Err(_) => {
+                let failed_status = JobStatus::Failed {
+                    error: "Timeout".to_string(),
+                };
                 {
                     let mut jobs = state_clone.jobs.write().await;
-                    jobs.insert(
-                        batch_id_clone.clone(),
-                        JobStatus::Failed {
-                            error: "Timeout".to_string(),
-                        },
-                    );
+                    jobs.insert(batch_id_clone.clone(), failed_status.clone());
                 }
+                let _ = state_clone
+                    .db
+                    .save_job(&batch_id_clone, &failed_status)
+                    .await;
                 error!("Execution timed out");
                 // Refund Credit (only if we charged them)
                 if deducted {
@@ -1002,15 +1070,17 @@ async fn optimize_handler(
                 )
                 .await;
 
+            let failed_status = JobStatus::Failed {
+                error: "Worker Error".to_string(),
+            };
             {
                 let mut jobs = state_clone.jobs.write().await;
-                jobs.insert(
-                    batch_id_clone.clone(),
-                    JobStatus::Failed {
-                        error: "Worker Error".to_string(),
-                    },
-                );
+                jobs.insert(batch_id_clone.clone(), failed_status.clone());
             }
+            let _ = state_clone
+                .db
+                .save_job(&batch_id_clone, &failed_status)
+                .await;
             return;
         }
 
@@ -1068,15 +1138,17 @@ async fn optimize_handler(
                 )
                 .await;
 
+            let failed_status = JobStatus::Failed {
+                error: "No Output".to_string(),
+            };
             {
                 let mut jobs = state_clone.jobs.write().await;
-                jobs.insert(
-                    batch_id_clone,
-                    JobStatus::Failed {
-                        error: "No Output".to_string(),
-                    },
-                );
+                jobs.insert(batch_id_clone.clone(), failed_status.clone());
             }
+            let _ = state_clone
+                .db
+                .save_job(&batch_id_clone, &failed_status)
+                .await;
             return;
         }
 
@@ -1110,18 +1182,20 @@ async fn optimize_handler(
             batch_id_clone, output_size
         );
 
+        let completed_status = JobStatus::Completed {
+            output_size,
+            glb_url,
+            usdz_url,
+            expires_in_secs: DOWNLOAD_EXPIRES_SECS,
+        };
         {
             let mut jobs = state_clone.jobs.write().await;
-            jobs.insert(
-                batch_id_clone,
-                JobStatus::Completed {
-                    output_size,
-                    glb_url,
-                    usdz_url,
-                    expires_in_secs: DOWNLOAD_EXPIRES_SECS,
-                },
-            );
+            jobs.insert(batch_id_clone.clone(), completed_status.clone());
         }
+        let _ = state_clone
+            .db
+            .save_job(&batch_id_clone, &completed_status)
+            .await;
     });
 
     let mut response = Json(json!({
@@ -1322,7 +1396,7 @@ async fn contact_handler(
     }
 }
 
-async fn cleanup_task() {
+async fn cleanup_task(db: db::Database) {
     let cleanup_age = Duration::from_secs(DOWNLOAD_EXPIRES_SECS);
     let interval = Duration::from_secs(15 * 60); // 15 Min
 
@@ -1330,6 +1404,7 @@ async fn cleanup_task() {
         tokio::time::sleep(interval).await;
         info!("Running cleanup...");
 
+        // Clean up old files
         if let Ok(mut entries) = tokio::fs::read_dir(UPLOAD_DIR).await {
             while let Ok(Some(entry)) = entries.next_entry().await {
                 if let Ok(metadata) = entry.metadata().await {
@@ -1344,5 +1419,8 @@ async fn cleanup_task() {
                 }
             }
         }
+
+        // Clean up old job records from database
+        let _ = db.cleanup_old_jobs(DOWNLOAD_EXPIRES_SECS as i64).await;
     }
 }
