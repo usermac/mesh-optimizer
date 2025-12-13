@@ -364,6 +364,7 @@
                                 <div style="flex: 1; text-align: center; padding: 8px; background: #1a1a2e; border-radius: 6px;" role="listitem">
                                     <div style="font-size: 1.25rem; font-weight: bold; color: #60a5fa;" id="purchaseDecimateOnly" aria-label="Decimate jobs">100</div>
                                     <div class="text-small text-muted" aria-hidden="true">Decimates</div>
+                                    <div class="text-small" style="color: #4ade80; margin-top: 4px;" id="purchaseDecimateCost" aria-label="Cost per decimate">$0.50 each</div>
                                 </div>
                                 <div style="flex: 1; text-align: center; padding: 8px; background: #1a1a2e; border-radius: 6px;" role="listitem">
                                     <div style="font-size: 0.9rem; font-weight: bold; color: #a78bfa;">
@@ -374,6 +375,7 @@
                                 <div style="flex: 1; text-align: center; padding: 8px; background: #1a1a2e; border-radius: 6px;" role="listitem">
                                     <div style="font-size: 1.25rem; font-weight: bold; color: #f472b6;" id="purchaseRemeshOnly" aria-label="Remesh jobs">20</div>
                                     <div class="text-small text-muted" aria-hidden="true">Remeshes</div>
+                                    <div class="text-small" style="color: #4ade80; margin-top: 4px;" id="purchaseRemeshCost" aria-label="Cost per remesh">$2.50 each</div>
                                 </div>
                             </div>
                         </div>
@@ -1995,13 +1997,21 @@ done`;
                 const costDecimate = pricingConfig.cost_decimate || 1;
                 const costRemesh = pricingConfig.cost_remesh || 5;
 
+                // Calculate effective cost per credit based on tier (not affected by rounding)
+                // effectiveRate = baseRate / (1 + bonusPercent/100)
+                const effectiveCostPerCredit = pricing.base_rate_usd_per_credit / (1 + bonusPercent / 100);
+                const costPerDecimate = (effectiveCostPerCredit * costDecimate).toFixed(2);
+                const costPerRemesh = (effectiveCostPerCredit * costRemesh).toFixed(2);
+
                 // Decimates only
                 const decimateOnly = Math.floor(totalCredits / costDecimate);
                 document.getElementById("purchaseDecimateOnly").textContent = decimateOnly;
+                document.getElementById("purchaseDecimateCost").textContent = "$" + costPerDecimate + " each";
 
                 // Remeshes only
                 const remeshOnly = Math.floor(totalCredits / costRemesh);
                 document.getElementById("purchaseRemeshOnly").textContent = remeshOnly;
+                document.getElementById("purchaseRemeshCost").textContent = "$" + costPerRemesh + " each";
 
                 // Mixed 80/20 split (80% credits to decimate, 20% to remesh)
                 const decimateCredits = Math.floor(totalCredits * 0.8);

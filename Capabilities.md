@@ -61,7 +61,7 @@ Based on the feature set, the application fits into the following market categor
 
 *   **Simple Decimation (Polygon Reduction):** **Confirmed.**
     *   The application performs geometry simplification to reduce file size.
-    *   *Market Note:* The current pricing of $2.00/credit is significantly higher than the expected market rate of $0.10 - $0.50 for this specific task.
+    *   See `pricing.json` for up-to-date pricing.
 
 *   **Complex Optimization (Remeshing + Baking):** **Confirmed.**
     *   The application now performs remeshing via Blender (QuadriFlow) and bakes high-fidelity Normal/Diffuse maps onto the optimized mesh.
