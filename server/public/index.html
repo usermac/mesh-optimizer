@@ -383,11 +383,20 @@
                         <!-- Billing Notes -->
                         <div class="fair-use-policy-container" style="margin-top: 20px;"></div>
                     </div>
-                    <div class="modal-footer d-flex justify-between align-center">
-                        <button type="button" class="btn-secondary" onclick="closeModal('purchaseModal')" aria-label="Cancel purchase and close">Cancel</button>
-                        <button type="button" id="purchasePayBtn" class="btn-primary" aria-label="Proceed to Stripe payment">
-                            Pay with Stripe →
-                        </button>
+                    <div class="modal-footer" style="flex-direction: column; gap: 15px;">
+                        <!-- Trust Badge -->
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; background: rgba(99, 102, 241, 0.1); border: 1px solid #6366f1; border-radius: 6px; font-size: 0.85rem;">
+                            <span style="font-size: 1.2rem;">🔒</span>
+                            <span style="color: var(--text-muted);">Secure payments powered by</span>
+                            <strong style="color: #6366f1;">Stripe</strong>
+                        </div>
+                        <!-- Buttons -->
+                        <div class="d-flex justify-between align-center w-100">
+                            <button type="button" class="btn-secondary" onclick="closeModal('purchaseModal')" aria-label="Cancel purchase and close">Cancel</button>
+                            <button type="button" id="purchasePayBtn" class="btn-primary" aria-label="Proceed to Stripe payment">
+                                Pay with Stripe →
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -900,6 +909,17 @@
                         <div>
                             <h2 class="m-0" id="apiDocsModalTitle">API Documentation</h2>
                             <p class="text-muted text-small m-0">REST API Reference</p>
+                            <!-- API Badges -->
+                            <div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
+                                <div style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(76, 175, 80, 0.1); border: 1px solid #4caf50; border-radius: 6px; font-size: 0.75rem;">
+                                    <span style="font-size: 1rem;">📦</span>
+                                    <strong style="color: #4caf50;">glTF 2.0 Compliant</strong>
+                                </div>
+                                <div style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; border-radius: 6px; font-size: 0.75rem;">
+                                    <span style="font-size: 1rem;">🛡️</span>
+                                    <strong style="color: #3b82f6;">Files Auto-Delete After 1hr</strong>
+                                </div>
+                            </div>
                         </div>
                         <button type="button" class="modal-close" onclick="closeModal('apiDocsModal')" aria-label="Close API documentation">&times;</button>
                     </div>
@@ -1067,6 +1087,17 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                         <button type="button" class="modal-close" onclick="closeModal('apiCodeModal')" aria-label="Close API code">&times;</button>
                     </div>
                     <div class="modal-body" id="apiCodeContent" role="tabpanel" aria-labelledby="tab-glb">
+                        <!-- API Badges -->
+                        <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center;">
+                            <div style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(76, 175, 80, 0.1); border: 1px solid #4caf50; border-radius: 6px; font-size: 0.75rem;">
+                                <span style="font-size: 1rem;">📦</span>
+                                <strong style="color: #4caf50;">glTF 2.0 Compliant</strong>
+                            </div>
+                            <div style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; border-radius: 6px; font-size: 0.75rem;">
+                                <span style="font-size: 1rem;">🛡️</span>
+                                <strong style="color: #3b82f6;">Files Auto-Delete After 1hr</strong>
+                            </div>
+                        </div>
                         <section class="content-section">
                             <p class="text-muted">
                                 This command reflects your current settings. Use it to process assets via the API.
