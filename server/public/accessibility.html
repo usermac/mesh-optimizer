@@ -69,15 +69,15 @@
                 margin: 20px 0;
                 border-radius: 4px;
             }
-            .accessibility-page .back-link-top {
-                display: inline-block;
+            .accessibility-page .close-instruction {
+                background: rgba(59, 130, 246, 0.1);
+                border: 1px solid var(--primary);
+                border-radius: 6px;
+                padding: 12px 20px;
                 margin-bottom: 20px;
-                color: var(--primary);
-                text-decoration: none;
-                font-weight: 500;
-            }
-            .accessibility-page .back-link-top:hover {
-                text-decoration: underline;
+                text-align: center;
+                font-size: 0.9rem;
+                color: var(--text-muted);
             }
         </style>
     </head>
@@ -85,7 +85,10 @@
         <a href="#main-content" class="visually-hidden">Skip to main content</a>
 
         <main id="main-content" class="accessibility-page">
-            <a href="/" class="back-link-top">← Back to MeshOpt Console</a>
+            <div class="close-instruction">
+                💡 <strong>Tip:</strong> Close this tab to return to your
+                downloads
+            </div>
 
             <h1>Accessibility Statement</h1>
             <p class="last-updated">
@@ -428,18 +431,8 @@
                     text-align: center;
                 "
             >
-                <p>
-                    <a href="/" class="text-primary font-bold"
-                        >← Return to MeshOpt Console</a
-                    >
-                </p>
                 <p class="text-muted text-small">
                     &copy; 2025 Brian Ginn. All rights reserved.
-                </p>
-                <p class="text-muted text-small">
-                    <a href="/" class="text-muted">Home</a> ·
-                    <a href="/#tosLink" class="text-muted">Terms</a> ·
-                    <a href="/#privacyLink" class="text-muted">Privacy</a>
                 </p>
             </footer>
         </main>
