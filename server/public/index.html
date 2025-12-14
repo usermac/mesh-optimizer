@@ -262,7 +262,7 @@
                         </p>
 
                         <ol>
-                            <li>Runs natively (no heavy Blender overhead).</li>
+                            <li>Cloud-processed (no heavy local Blender overhead).</li>
                             <li>
                                 Uses advanced math (QEM) to reduce polygon
                                 counts by up to 90%+.
@@ -826,7 +826,7 @@
                             <p><strong>Credit System:</strong> The Service operates on a prepaid credit system. Credits are purchased through Stripe and deducted when optimization jobs are processed.</p>
                             <p><strong>Credit Expiration:</strong> Purchased credits <strong>never expire</strong>.</p>
                             <p><strong>Pricing:</strong> Credit costs for different operations (Decimate, Remesh) are displayed in the application before purchase and before processing.</p>
-                            <p><strong>Free Re-optimization:</strong> Re-processing the same file with different settings within 24 hours of the original paid job is free.</p>
+                            <p><strong>Free Re-optimization:</strong> Re-processing the same file with different settings within <span id="tos-free-reopt-hours">48</span> hours of the original paid job is free.</p>
                         </section>
 
                         <section class="content-section">
@@ -1720,6 +1720,13 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                     }
                     if (pricingConfig.pricing && pricingConfig.pricing.free_reoptimization_hours !== undefined) {
                         document.getElementById("help-free-spin-hours").innerText = pricingConfig.pricing.free_reoptimization_hours;
+                    }
+                }
+
+                // Update ToS modal free re-optimization hours if opening ToS modal
+                if (modalId === "tosModal") {
+                    if (pricingConfig.pricing && pricingConfig.pricing.free_reoptimization_hours !== undefined) {
+                        document.getElementById("tos-free-reopt-hours").innerText = pricingConfig.pricing.free_reoptimization_hours;
                     }
                 }
 
