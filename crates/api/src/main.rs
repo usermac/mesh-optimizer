@@ -1042,9 +1042,6 @@ async fn optimize_handler(
                 .arg("--ratio")
                 .arg(ratio.to_string());
 
-            if format_clone == "both" || format_clone == "usdz" {
-                c.arg("--usdz");
-            }
             c
         };
 
@@ -1229,6 +1226,106 @@ async fn optimize_handler(
                 .save_job(&batch_id_clone, &failed_status)
                 .await;
             return;
+        }
+
+        // Post-Processing: Convert to USDZ if requested
+        if format_clone == "both" || format_clone == "usdz" {
+            let script_path = std::env::current_dir()
+                .unwrap_or_else(|_| PathBuf::from("."))
+                .join("scripts/glb_to_usdz.py");
+
+            let blender_exe =
+                std::env::var("BLENDER_PATH").unwrap_or_else(|_| "blender".to_string());
+
+            let mut cmd = tokio::process::Command::new(blender_exe);
+            cmd.arg("-b")
+                .arg("-P")
+                .arg(script_path)
+                .arg("--")
+                .arg("--input")
+                .arg(&output_filename_clone)
+                .arg("--output")
+                .arg(&usdz_filename_clone);
+
+            cmd.current_dir(&batch_dir_clone)
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped());
+
+            info!("Executing USDZ Conversion: {:?}", cmd);
+
+            let mut child = match cmd.spawn() {
+                Ok(c) => c,
+                Err(e) => {
+                    error!("Failed to spawn USDZ conversion: {:?}", e);
+                    let failed_status = JobStatus::Failed {
+                        error: "USDZ Conversion Spawn Failed".to_string(),
+                    };
+                    {
+                        let mut jobs = state_clone.jobs.write().await;
+                        jobs.insert(batch_id_clone.clone(), failed_status.clone());
+                    }
+                    let _ = state_clone
+                        .db
+                        .save_job(&batch_id_clone, &failed_status)
+                        .await;
+                    return;
+                }
+            };
+
+            // Stream stdout
+            if let Some(stdout) = child.stdout.take() {
+                tokio::spawn(async move {
+                    let mut reader = BufReader::new(stdout).lines();
+                    while let Ok(Some(line)) = reader.next_line().await {
+                        info!("USDZ_CONV: {}", line);
+                    }
+                });
+            }
+
+            // Stream stderr
+            if let Some(stderr) = child.stderr.take() {
+                tokio::spawn(async move {
+                    let mut reader = BufReader::new(stderr).lines();
+                    while let Ok(Some(line)) = reader.next_line().await {
+                        error!("USDZ_CONV_ERR: {}", line);
+                    }
+                });
+            }
+
+            match child.wait().await {
+                Ok(status) => {
+                    if !status.success() {
+                        error!("USDZ conversion failed with status: {}", status);
+                        let failed_status = JobStatus::Failed {
+                            error: "USDZ Conversion Failed".to_string(),
+                        };
+                        {
+                            let mut jobs = state_clone.jobs.write().await;
+                            jobs.insert(batch_id_clone.clone(), failed_status.clone());
+                        }
+                        let _ = state_clone
+                            .db
+                            .save_job(&batch_id_clone, &failed_status)
+                            .await;
+                        return;
+                    }
+                }
+                Err(e) => {
+                    error!("Failed to wait for USDZ conversion: {:?}", e);
+                    let failed_status = JobStatus::Failed {
+                        error: "USDZ Conversion Error".to_string(),
+                    };
+                    {
+                        let mut jobs = state_clone.jobs.write().await;
+                        jobs.insert(batch_id_clone.clone(), failed_status.clone());
+                    }
+                    let _ = state_clone
+                        .db
+                        .save_job(&batch_id_clone, &failed_status)
+                        .await;
+                    return;
+                }
+            }
         }
 
         // Validate Output File Exists and Has Content
