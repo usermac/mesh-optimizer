@@ -16,6 +16,27 @@
     border: 0;
 }
 
+/* Skip link - visible on focus for keyboard navigation */
+a.visually-hidden:focus {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    width: auto;
+    height: auto;
+    padding: 12px 20px;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+    background-color: var(--primary);
+    color: #ffffff;
+    font-weight: bold;
+    text-decoration: none;
+    border-radius: 4px;
+    z-index: 9999;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
 :root {
     --primary: #3b82f6;
     --primary-hover: #2563eb;

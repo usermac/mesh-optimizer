@@ -68,6 +68,7 @@
         <link rel="stylesheet" href="/css/styles.css" />
     </head>
     <body class="app-layout">
+        <a href="#main-content" class="visually-hidden">Skip to main content</a>
         <aside class="sidebar" aria-label="Optimization Controls">
             <!-- Buy License -->
             <div class="sidebar-section">
@@ -154,8 +155,8 @@
 
             <!-- Controls -->
             <div class="mb-10">
-                <label for="modeSelect">Mode</label>
-                <select id="modeSelect" aria-describedby="modeDescription">
+                <label for="modeSelect">Optimization Mode</label>
+                <select id="modeSelect" aria-label="Select optimization mode">
                     <option value="decimate">
                         Decimate (Reduce Poly Count)
                     </option>
@@ -169,7 +170,7 @@
                     <label for="ratio" id="ratioLabel">Target Quality</label>
                     <span id="ratioVal" aria-live="polite">50%</span>
                 </div>
-                <input type="range" id="ratio" min="1" max="100" value="50" aria-valuemin="1" aria-valuemax="100" aria-valuenow="50" aria-describedby="ratioHelp" />
+                <input type="range" id="ratio" min="1" max="100" value="50" aria-valuemin="1" aria-valuemax="100" aria-valuenow="50" aria-label="Target quality percentage" aria-describedby="ratioHelp" />
                 <p id="ratioHelp" class="text-xs text-muted m-0">
                     Lower = Less Detail. Higher = More Detail.
                 </p>
@@ -179,11 +180,11 @@
             <div id="remeshControls" class="flex-column gap-10 d-none" role="group" aria-label="Remesh settings">
                 <div>
                     <label for="targetFaces">Target Faces</label>
-                    <input type="number" id="targetFaces" value="5000" aria-describedby="targetFacesDesc" />
+                    <input type="number" id="targetFaces" value="5000" aria-label="Target number of faces for remesh" />
                 </div>
                 <div>
                     <label for="textureSize">Texture Size (px)</label>
-                    <select id="textureSize">
+                    <select id="textureSize" aria-label="Select texture size in pixels">
                         <option value="1024">1024</option>
                         <option value="2048" selected>2048</option>
                         <option value="4096">4096</option>
@@ -197,7 +198,7 @@
         </aside>
 
         <div class="d-flex flex-column flex-1">
-            <header class="main-header">
+            <header class="main-header" role="banner">
                 <h1>MeshOpt <span class="text-primary">Console</span></h1>
                 <div class="d-flex gap-20 align-center">
                     <a
@@ -212,7 +213,7 @@
 
             <div class="nightmare-banner">
                 <details>
-                    <summary>The "Nightmare" I'm currently...</summary>
+                    <summary aria-label="Expand to read about the problem this tool solves">The "Nightmare" I'm currently...</summary>
                     <div class="nightmare-content">
                         <p>
                             living starts with the handover. A product designer
@@ -442,7 +443,7 @@
                 </div>
             </div>
             <!-- Footer -->
-            <footer class="main-footer">
+            <footer class="main-footer" role="contentinfo" aria-label="Site footer">
                 <p>&copy; 2025 Brian Ginn. All rights reserved.</p>
                 <a href="#" id="tosLink">Terms of Service</a>
                 <a href="#" id="privacyLink">Privacy Policy</a>
@@ -609,7 +610,7 @@
                             <strong>✗ Error:</strong> <span id="contact-error-message"></span>
                         </div>
 
-                        <form id="contact-form">
+                        <form id="contact-form" aria-label="Contact form">
                             <div class="form-group">
                                 <label for="contact-name">Name <span class="required">*</span></label>
                                 <input
@@ -1057,14 +1058,14 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                     <div class="modal-header">
                         <div class="d-flex align-center gap-20">
                             <h2 class="m-0" id="apiCodeModalTitle">Your API Command</h2>
-                            <div class="tabs" style="margin-bottom: 0; border-bottom: none; position: static; padding-top: 0;">
-                                <button class="tab-btn active" onclick="switchApiTab('glb')">GLB</button>
-                                <button class="tab-btn" onclick="switchApiTab('usdz')">USDZ</button>
+                            <div class="tabs" style="margin-bottom: 0; border-bottom: none; position: static; padding-top: 0;" role="tablist" aria-label="Output format selection">
+                                <button class="tab-btn active" onclick="switchApiTab('glb')" role="tab" aria-selected="true" aria-controls="apiCodeContent" id="tab-glb">GLB</button>
+                                <button class="tab-btn" onclick="switchApiTab('usdz')" role="tab" aria-selected="false" aria-controls="apiCodeContent" id="tab-usdz">USDZ</button>
                             </div>
                         </div>
                         <button type="button" class="modal-close" onclick="closeModal('apiCodeModal')" aria-label="Close API code">&times;</button>
                     </div>
-                    <div class="modal-body">
+                    <div class="modal-body" id="apiCodeContent" role="tabpanel" aria-labelledby="tab-glb">
                         <section class="content-section">
                             <p class="text-muted">
                                 This command reflects your current settings. Use it to process assets via the API.
@@ -1808,13 +1809,18 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
             function switchApiTab(format) {
                 currentApiFormat = format;
 
-                // Update Tab UI
+                // Update Tab UI and ARIA attributes
                 document.querySelectorAll('#apiCodeModal .tab-btn').forEach(btn => {
-                    btn.classList.remove('active');
-                    if (btn.textContent.toLowerCase() === format) {
-                        btn.classList.add('active');
-                    }
+                    const isActive = btn.textContent.toLowerCase() === format;
+                    btn.classList.toggle('active', isActive);
+                    btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
                 });
+
+                // Update tabpanel label
+                const tabpanel = document.getElementById('apiCodeContent');
+                if (tabpanel) {
+                    tabpanel.setAttribute('aria-labelledby', `tab-${format}`);
+                }
 
                 generateApiCode();
             }
