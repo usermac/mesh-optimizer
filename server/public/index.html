@@ -383,20 +383,16 @@
                         <!-- Billing Notes -->
                         <div class="fair-use-policy-container" style="margin-top: 20px;"></div>
                     </div>
-                    <div class="modal-footer" style="flex-direction: column; gap: 15px;">
+                    <div class="modal-footer d-flex justify-between align-center"></div>
+                        <button type="button" class="btn-secondary" onclick="closeModal('purchaseModal')" aria-label="Cancel purchase and close">Cancel</button>
                         <!-- Trust Badge -->
-                        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; background: rgba(99, 102, 241, 0.1); border: 1px solid #6366f1; border-radius: 6px; font-size: 0.85rem;">
-                            <span style="font-size: 1.2rem;">🔒</span>
-                            <span style="color: var(--text-muted);">Secure payments powered by</span>
-                            <strong style="color: #6366f1;">Stripe</strong>
+                        <div style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-muted);">
+                            <span style="font-size: 1rem;">🔒</span>
+                            <span>Secured by <strong style="color: #6366f1;">Stripe</strong></span>
                         </div>
-                        <!-- Buttons -->
-                        <div class="d-flex justify-between align-center w-100">
-                            <button type="button" class="btn-secondary" onclick="closeModal('purchaseModal')" aria-label="Cancel purchase and close">Cancel</button>
-                            <button type="button" id="purchasePayBtn" class="btn-primary" aria-label="Proceed to Stripe payment">
-                                Pay with Stripe →
-                            </button>
-                        </div>
+                        <button type="button" id="purchasePayBtn" class="btn-primary" aria-label="Proceed to Stripe payment">
+                            Pay with Stripe →
+                        </button>
                     </div>
                 </div>
             </div>
