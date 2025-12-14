@@ -1082,12 +1082,15 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                                 This command reflects your current settings. Use it to process assets via the API.
                             </p>
                             <div class="highlight-box">
-                                <h4 class="m-0 mb-10">Important: Package as a ZIP</h4>
-                                <p>
-                                    For API submissions, always package your model file (<code>.obj</code>, <code>.fbx</code>, etc.)
-                                    along with its materials (<code>.mtl</code>) and textures (<code>.png</code>, <code>.jpg</code>)
-                                    into a single <code>.zip</code> file. This ensures all assets are processed together correctly.
-                                </p>
+                                <h4 class="m-0 mb-10">File Packaging Guidelines</h4>
+                                <ul class="pl-20 mb-0">
+                                    <li class="mb-5">
+                                        <strong>Use ZIP</strong> for <code>.obj</code> or <code>.fbx</code> files that rely on external textures. Package the model + materials + images together so we can see them.
+                                    </li>
+                                    <li>
+                                        <strong>Direct Upload</strong> works for <code>.glb</code> files since they have textures embedded inside. You don't need to zip these.
+                                    </li>
+                                </ul>
                             </div>
                         </section>
 
