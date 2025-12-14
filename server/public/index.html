@@ -1067,6 +1067,16 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                         <button type="button" class="modal-close" onclick="closeModal('apiCodeModal')" aria-label="Close API code">&times;</button>
                     </div>
                     <div class="modal-body">
+                        <style>
+                            .tabs { display: flex; border-bottom: 1px solid #eee; margin-bottom: 15px; }
+                            .tab-btn { background: none; border: none; padding: 8px 16px; cursor: pointer; font-size: 14px; color: #666; border-bottom: 2px solid transparent; }
+                            .tab-btn.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 600; }
+                        </style>
+                        <div class="tabs">
+                            <button class="tab-btn active" onclick="switchApiTab('glb')">GLB</button>
+                            <button class="tab-btn" onclick="switchApiTab('usdz')">USDZ</button>
+                        </div>
+
                         <section class="content-section">
                             <p class="text-muted">
                                 This command reflects your current settings. Use it to process assets via the API.
@@ -1444,7 +1454,7 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 // Convert 50% -> 0.5
                 const ratioFloat = parseInt(ratioSlider.value) / 100;
                 formData.append("ratio", ratioFloat);
-                formData.append("format", "json");
+                formData.append("format", "both");
 
                 // Remesh params
                 const mode = modeSelect.value;
@@ -1799,6 +1809,22 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 openModal("contactModal", originalTrigger);
             });
 
+            let currentApiFormat = 'glb';
+
+            function switchApiTab(format) {
+                currentApiFormat = format;
+
+                // Update Tab UI
+                document.querySelectorAll('#apiCodeModal .tab-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.textContent.toLowerCase() === format) {
+                        btn.classList.add('active');
+                    }
+                });
+
+                generateApiCode();
+            }
+
             // Generate dynamic API code based on current UI settings
             function generateApiCode() {
                 const apiKey = document.getElementById('apiKey').value || 'YOUR_API_KEY';
@@ -1806,6 +1832,7 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
 
                 let params = [];
                 params.push(`-F 'mode=${mode}'`);
+                params.push(`-F 'format=${currentApiFormat}'`);
 
                 if (mode === 'decimate') {
                     const ratio = document.getElementById('ratio').value;
@@ -1839,7 +1866,7 @@ done`;
             // API Code modal link handlers
             document.getElementById("apiCodeLinkSidebar").addEventListener("click", function(e) {
                 e.preventDefault();
-                generateApiCode();
+                switchApiTab('glb'); // Default to GLB when opening
                 openModal("apiCodeModal", this);
             });
 

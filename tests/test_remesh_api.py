@@ -21,7 +21,7 @@ def test_remesh(file_path):
         "mode": "remesh",
         "faces": "2000",
         "texture_size": "1024",
-        "format": "json",  # Request JSON response
+        "format": "both",  # Request JSON response
     }
     headers = {"Authorization": f"Bearer {API_KEY}"}
 

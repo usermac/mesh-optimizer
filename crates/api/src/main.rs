@@ -776,7 +776,7 @@ async fn optimize_handler(
         } else if name == "format" {
             if let Ok(val) = field.text().await {
                 // Validate format
-                if ["glb", "usdz"].contains(&val.as_str()) {
+                if ["glb", "usdz", "both"].contains(&val.as_str()) {
                     format = val;
                 } else {
                     warn!("Invalid format '{}', defaulting to 'glb'", val);
@@ -1042,7 +1042,7 @@ async fn optimize_handler(
                 .arg("--ratio")
                 .arg(ratio.to_string());
 
-            if format_clone == "json" || format_clone == "usdz" {
+            if format_clone == "both" || format_clone == "usdz" {
                 c.arg("--usdz");
             }
             c
@@ -1237,7 +1237,17 @@ async fn optimize_handler(
         } else {
             batch_dir_clone.join(&output_filename_clone)
         };
-        let output_size = fs::metadata(&output_path).map(|m| m.len()).unwrap_or(0);
+        let mut output_size = fs::metadata(&output_path).map(|m| m.len()).unwrap_or(0);
+
+        if format_clone == "both" {
+            let usdz_path = batch_dir_clone.join(&usdz_filename_clone);
+            let usdz_size = fs::metadata(&usdz_path).map(|m| m.len()).unwrap_or(0);
+            if usdz_size == 0 {
+                output_size = 0; // Force failure if USDZ is missing in 'both' mode
+            } else {
+                output_size += usdz_size;
+            }
+        }
 
         // CRITICAL: Check if output file was actually created
         if output_size == 0 {
