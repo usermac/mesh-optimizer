@@ -1055,15 +1055,16 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
             <div id="apiCodeModal" class="modal-overlay" role="dialog" aria-labelledby="apiCodeModalTitle" aria-modal="true">
                 <div class="modal-window">
                     <div class="modal-header">
-                        <h2 class="m-0" id="apiCodeModalTitle">Your API Command</h2>
+                        <div class="d-flex align-center gap-20">
+                            <h2 class="m-0" id="apiCodeModalTitle">Your API Command</h2>
+                            <div class="tabs" style="margin-bottom: 0; border-bottom: none; position: static; padding-top: 0;">
+                                <button class="tab-btn active" onclick="switchApiTab('glb')">GLB</button>
+                                <button class="tab-btn" onclick="switchApiTab('usdz')">USDZ</button>
+                            </div>
+                        </div>
                         <button type="button" class="modal-close" onclick="closeModal('apiCodeModal')" aria-label="Close API code">&times;</button>
                     </div>
                     <div class="modal-body">
-                        <div class="tabs">
-                            <button class="tab-btn active" onclick="switchApiTab('glb')">GLB</button>
-                            <button class="tab-btn" onclick="switchApiTab('usdz')">USDZ</button>
-                        </div>
-
                         <section class="content-section">
                             <p class="text-muted">
                                 This command reflects your current settings. Use it to process assets via the API.
