@@ -1471,12 +1471,14 @@ async fn optimize_handler(
 struct AdminAddCredits {
     key: String,
     amount: i32,
+    secret: String,
 }
 
 #[derive(Deserialize)]
 struct AdminCreateKey {
     email: String,
     initial_credits: i32,
+    secret: String,
 }
 
 /// Timing-safe comparison for admin secret
@@ -1486,12 +1488,6 @@ fn verify_admin_secret(provided: &str, expected: &str) -> bool {
 }
 
 /// Extract admin secret from X-Admin-Secret header
-fn get_admin_secret_from_header(headers: &HeaderMap) -> Option<String> {
-    headers
-        .get("X-Admin-Secret")
-        .and_then(|v| v.to_str().ok())
-        .map(|s| s.to_string())
-}
 
 /// Simple in-memory rate limiter: returns true if request is allowed
 async fn check_admin_rate_limit(
@@ -1544,8 +1540,12 @@ async fn admin_add_credits(
         .get("X-Forwarded-For")
         .and_then(|v| v.to_str().ok())
         .or_else(|| headers.get("X-Real-IP").and_then(|v| v.to_str().ok()));
-
     let ip_for_limit = client_ip.unwrap_or("unknown");
+
+    info!(
+        "admin_add_credits attempt: key={}, amount={}, ip={}",
+        payload.key, payload.amount, ip_for_limit
+    );
 
     // Rate limit: 5 requests per minute per IP
     if !check_admin_rate_limit(&state.admin_rate_limiter, ip_for_limit, 5, 60).await {
@@ -1553,20 +1553,7 @@ async fn admin_add_credits(
         return Err(StatusCode::TOO_MANY_REQUESTS);
     }
 
-    let provided_secret = match get_admin_secret_from_header(&headers) {
-        Some(s) => s,
-        None => {
-            log_admin_audit(
-                "add_credits",
-                false,
-                "missing X-Admin-Secret header",
-                client_ip,
-            );
-            return Err(StatusCode::UNAUTHORIZED);
-        }
-    };
-
-    if !verify_admin_secret(&provided_secret, &state.admin_secret) {
+    if !verify_admin_secret(&payload.secret, &state.admin_secret) {
         log_admin_audit("add_credits", false, "invalid secret", client_ip);
         return Err(StatusCode::UNAUTHORIZED);
     }
@@ -1584,14 +1571,20 @@ async fn admin_add_credits(
             );
             Ok(Json(json!({ "success": true, "new_balance": new_balance })))
         }
-        Err(_) => {
+        Err(e) => {
+            let error_string = e.to_string();
             log_admin_audit(
                 "add_credits",
                 false,
-                &format!("key={} not found", payload.key),
+                &format!("Error for key {}: {}", payload.key, error_string),
                 client_ip,
             );
-            Err(StatusCode::NOT_FOUND)
+            if error_string.contains("Key not found") {
+                Err(StatusCode::NOT_FOUND)
+            } else {
+                error!("Unexpected error in admin_add_credits: {}", error_string);
+                Err(StatusCode::INTERNAL_SERVER_ERROR)
+            }
         }
     }
 }
@@ -1614,20 +1607,7 @@ async fn admin_create_key(
         return Err(StatusCode::TOO_MANY_REQUESTS);
     }
 
-    let provided_secret = match get_admin_secret_from_header(&headers) {
-        Some(s) => s,
-        None => {
-            log_admin_audit(
-                "create_key",
-                false,
-                "missing X-Admin-Secret header",
-                client_ip,
-            );
-            return Err(StatusCode::UNAUTHORIZED);
-        }
-    };
-
-    if !verify_admin_secret(&provided_secret, &state.admin_secret) {
+    if !verify_admin_secret(&payload.secret, &state.admin_secret) {
         log_admin_audit(
             "create_key",
             false,
