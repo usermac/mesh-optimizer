@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1, shrink-to-fit=no"
+        />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <title>Accessibility Statement | MeshOpt API</title>
+        <meta
+            name="description"
+            content="MeshOpt's commitment to digital accessibility and WCAG 2.1 Level AA compliance."
+        />
+        <meta name="theme-color" content="#000000" />
+        <link rel="icon" type="image/png" href="/favicon.png" />
+        <link
+            rel="canonical"
+            href="https://webdeliveryengine.com/accessibility"
+        />
+        <link rel="stylesheet" href="/css/styles.css" />
+        <style>
+            .accessibility-page {
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 40px 20px;
+                line-height: 1.7;
+            }
+            .accessibility-page h1 {
+                margin-bottom: 10px;
+            }
+            .accessibility-page .last-updated {
+                color: var(--text-muted);
+                font-size: 0.9rem;
+                margin-bottom: 30px;
+            }
+            .accessibility-page h2 {
+                margin-top: 40px;
+                margin-bottom: 15px;
+                color: var(--primary);
+            }
+            .accessibility-page ul,
+            .accessibility-page ol {
+                margin-left: 20px;
+                margin-bottom: 20px;
+            }
+            .accessibility-page li {
+                margin-bottom: 10px;
+            }
+            .accessibility-page .badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                background: var(--primary);
+                color: white;
+                padding: 10px 20px;
+                border-radius: 6px;
+                font-weight: 600;
+                margin: 20px 0;
+                text-decoration: none;
+            }
+            .accessibility-page .badge:hover {
+                background: var(--primary-hover);
+            }
+            .accessibility-page .contact-box {
+                background: rgba(76, 175, 80, 0.1);
+                border-left: 4px solid var(--primary);
+                padding: 20px;
+                margin: 20px 0;
+                border-radius: 4px;
+            }
+            .accessibility-page .back-link-top {
+                display: inline-block;
+                margin-bottom: 20px;
+                color: var(--primary);
+                text-decoration: none;
+                font-weight: 500;
+            }
+            .accessibility-page .back-link-top:hover {
+                text-decoration: underline;
+            }
+        </style>
+    </head>
+    <body>
+        <a href="#main-content" class="visually-hidden">Skip to main content</a>
+
+        <main id="main-content" class="accessibility-page">
+            <a href="/" class="back-link-top">← Back to MeshOpt Console</a>
+
+            <h1>Accessibility Statement</h1>
+            <p class="last-updated">
+                <strong>Last Updated:</strong> December 2025
+            </p>
+
+            <div
+                class="badge"
+                role="img"
+                aria-label="Target compliance: WCAG 2.1 Level AA"
+            >
+                <span style="font-size: 1.5rem">♿</span>
+                <span>WCAG 2.1 Level AA Target</span>
+            </div>
+
+            <section>
+                <h2>Our Commitment</h2>
+                <p>
+                    MeshOpt is committed to ensuring digital accessibility for
+                    people with disabilities. We are continually improving the
+                    user experience for everyone, applying the relevant
+                    accessibility standards, and ensuring our 3D optimization
+                    tools are usable by all.
+                </p>
+                <p>
+                    We believe that technology should empower everyone,
+                    regardless of their abilities. Accessibility is not just a
+                    feature—it's a fundamental requirement.
+                </p>
+            </section>
+
+            <section>
+                <h2>Conformance Status</h2>
+                <p>
+                    The
+                    <a
+                        href="https://www.w3.org/WAI/WCAG21/quickref/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="text-primary"
+                        >Web Content Accessibility Guidelines (WCAG)</a
+                    >
+                    defines requirements for designers and developers to improve
+                    accessibility for people with disabilities. It defines three
+                    levels of conformance: Level A, Level AA, and Level AAA.
+                </p>
+                <p>
+                    <strong
+                        >MeshOpt aims to conform to WCAG 2.1 Level AA.</strong
+                    >
+                    This means we strive to meet all Level A and Level AA
+                    success criteria.
+                </p>
+            </section>
+
+            <section>
+                <h2>Measures We've Implemented</h2>
+                <p>
+                    To ensure accessibility, we have taken the following
+                    measures:
+                </p>
+
+                <h3 style="font-size: 1.1rem; margin-top: 20px">
+                    Semantic HTML & Structure
+                </h3>
+                <ul>
+                    <li>
+                        Proper HTML5 semantic elements
+                        (<code>&lt;header&gt;</code>, <code>&lt;main&gt;</code>,
+                        <code>&lt;footer&gt;</code>, <code>&lt;aside&gt;</code>)
+                    </li>
+                    <li>Logical heading hierarchy (h1 → h2 → h3)</li>
+                    <li>Meaningful page titles and meta descriptions</li>
+                    <li>
+                        Language attribute properly set (<code>lang="en"</code>)
+                    </li>
+                </ul>
+
+                <h3 style="font-size: 1.1rem; margin-top: 20px">
+                    Keyboard Navigation
+                </h3>
+                <ul>
+                    <li>All interactive elements are keyboard accessible</li>
+                    <li>Skip navigation link to jump to main content</li>
+                    <li>Visible focus indicators on all focusable elements</li>
+                    <li>Logical tab order throughout the application</li>
+                    <li>Modal dialogs trap focus appropriately</li>
+                    <li>Escape key closes modal dialogs</li>
+                </ul>
+
+                <h3 style="font-size: 1.1rem; margin-top: 20px">
+                    Screen Reader Support
+                </h3>
+                <ul>
+                    <li>ARIA landmarks for major page regions</li>
+                    <li>
+                        ARIA labels on complex controls and interactive elements
+                    </li>
+                    <li>
+                        Live regions (<code>aria-live</code>) announce dynamic
+                        content changes
+                    </li>
+                    <li>Status messages for processing and file uploads</li>
+                    <li>Proper labeling of all form inputs</li>
+                    <li>Descriptive button and link text</li>
+                </ul>
+
+                <h3 style="font-size: 1.1rem; margin-top: 20px">
+                    Visual Design
+                </h3>
+                <ul>
+                    <li>
+                        Sufficient color contrast ratios (targeting WCAG AA
+                        standards)
+                    </li>
+                    <li>Text remains readable when zoomed to 200%</li>
+                    <li>Information not conveyed by color alone</li>
+                    <li>
+                        Minimum touch target sizes (44x44 pixels) for mobile
+                        users
+                    </li>
+                    <li>
+                        Responsive design works across devices and screen sizes
+                    </li>
+                </ul>
+
+                <h3 style="font-size: 1.1rem; margin-top: 20px">
+                    Forms & Interaction
+                </h3>
+                <ul>
+                    <li>Clear labels associated with all form fields</li>
+                    <li>Required fields clearly indicated</li>
+                    <li>Error messages are descriptive and helpful</li>
+                    <li>Success confirmations announced to screen readers</li>
+                    <li>
+                        Helper text provides additional context where needed
+                    </li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Testing & Validation</h2>
+                <p>We test our application using:</p>
+                <ul>
+                    <li>
+                        <strong>Manual keyboard testing</strong> - Navigating
+                        the entire app without a mouse
+                    </li>
+                    <li>
+                        <strong>Screen readers</strong> - NVDA (Windows), JAWS
+                        (Windows), VoiceOver (macOS/iOS)
+                    </li>
+                    <li>
+                        <strong>Automated tools</strong> - axe DevTools,
+                        Lighthouse, WAVE
+                    </li>
+                    <li>
+                        <strong>Code validation</strong> - W3C HTML and CSS
+                        validators
+                    </li>
+                    <li>
+                        <strong>Browser testing</strong> - Chrome, Firefox,
+                        Safari, Edge (latest versions)
+                    </li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Known Limitations</h2>
+                <p>
+                    Despite our best efforts to ensure full accessibility, some
+                    limitations may exist:
+                </p>
+                <ul>
+                    <li>
+                        The 3D model viewer component relies on WebGL and may
+                        have limited accessibility for screen reader users. We
+                        provide text alternatives where possible.
+                    </li>
+                    <li>
+                        Some third-party libraries (e.g., model-viewer) may have
+                        accessibility limitations outside our direct control.
+                    </li>
+                    <li>
+                        Complex visual information (3D models) may be difficult
+                        to convey to users with visual impairments. We're
+                        exploring alternative representations.
+                    </li>
+                </ul>
+                <p>
+                    We are actively working to address these limitations and
+                    welcome feedback on how we can improve.
+                </p>
+            </section>
+
+            <section>
+                <h2>Feedback & Contact</h2>
+                <div class="contact-box">
+                    <p style="margin-top: 0">
+                        <strong>We welcome your feedback!</strong>
+                    </p>
+                    <p>
+                        If you encounter any accessibility barriers while using
+                        MeshOpt, or have suggestions for improvement, please let
+                        us know. Your feedback helps us improve the experience
+                        for everyone.
+                    </p>
+                    <p style="margin-bottom: 0">
+                        <strong>Contact us:</strong><br />
+                        Via our
+                        <a href="/" class="text-primary"
+                            >Contact Form on the main site</a
+                        ><br />
+                        We aim to respond within 2 business days.
+                    </p>
+                </div>
+            </section>
+
+            <section>
+                <h2>Compatibility</h2>
+                <p>
+                    MeshOpt is designed to be compatible with the following
+                    assistive technologies:
+                </p>
+                <ul>
+                    <li>
+                        Recent versions of screen readers (JAWS, NVDA,
+                        VoiceOver, TalkBack)
+                    </li>
+                    <li>Browser zoom and text resizing</li>
+                    <li>Speech recognition software</li>
+                    <li>Keyboard-only navigation</li>
+                </ul>
+                <p><strong>Supported browsers:</strong></p>
+                <ul>
+                    <li>Chrome (latest 2 versions)</li>
+                    <li>Firefox (latest 2 versions)</li>
+                    <li>Safari (latest 2 versions)</li>
+                    <li>Edge (latest 2 versions)</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Ongoing Improvements</h2>
+                <p>
+                    Accessibility is an ongoing journey, not a destination. We
+                    continuously monitor and improve our application based on:
+                </p>
+                <ul>
+                    <li>User feedback and accessibility reports</li>
+                    <li>Regular accessibility audits</li>
+                    <li>Updates to WCAG guidelines and best practices</li>
+                    <li>Advances in assistive technology</li>
+                    <li>Community standards and recommendations</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Formal Complaints</h2>
+                <p>
+                    If you are not satisfied with our response to your
+                    accessibility feedback, you may escalate your concerns
+                    through our contact form, clearly marking your message as an
+                    "Accessibility Complaint." We take all such complaints
+                    seriously and will respond promptly.
+                </p>
+            </section>
+
+            <section>
+                <h2>Technical Specifications</h2>
+                <p>
+                    Accessibility of MeshOpt relies on the following
+                    technologies to work with the particular combination of web
+                    browser and assistive technologies or plugins installed on
+                    your computer:
+                </p>
+                <ul>
+                    <li>HTML5</li>
+                    <li>CSS3</li>
+                    <li>JavaScript (ES6+)</li>
+                    <li>
+                        WAI-ARIA (Web Accessibility Initiative – Accessible Rich
+                        Internet Applications)
+                    </li>
+                </ul>
+                <p>
+                    These technologies are relied upon for conformance with the
+                    accessibility standards used.
+                </p>
+            </section>
+
+            <section>
+                <h2>Additional Resources</h2>
+                <p>Learn more about web accessibility:</p>
+                <ul>
+                    <li>
+                        <a
+                            href="https://www.w3.org/WAI/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="text-primary"
+                            >W3C Web Accessibility Initiative (WAI)</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="https://www.w3.org/WAI/WCAG21/quickref/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="text-primary"
+                            >WCAG 2.1 Quick Reference</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="https://webaim.org/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="text-primary"
+                            >WebAIM (Web Accessibility In Mind)</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="https://www.a11yproject.com/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="text-primary"
+                            >The A11Y Project</a
+                        >
+                    </li>
+                </ul>
+            </section>
+
+            <footer
+                style="
+                    margin-top: 60px;
+                    padding-top: 30px;
+                    border-top: 1px solid var(--border-dark);
+                    text-align: center;
+                "
+            >
+                <p>
+                    <a href="/" class="text-primary font-bold"
+                        >← Return to MeshOpt Console</a
+                    >
+                </p>
+                <p class="text-muted text-small">
+                    &copy; 2025 Brian Ginn. All rights reserved.
+                </p>
+                <p class="text-muted text-small">
+                    <a href="/" class="text-muted">Home</a> ·
+                    <a href="/#tosLink" class="text-muted">Terms</a> ·
+                    <a href="/#privacyLink" class="text-muted">Privacy</a>
+                </p>
+            </footer>
+        </main>
+    </body>
+</html>
