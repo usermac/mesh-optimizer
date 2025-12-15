@@ -580,9 +580,9 @@ async fn success_page(
             <h1 style="color:#10b981">Payment Successful!</h1>
             <p>Thank you for your purchase!</p>
 
-            <div style="background:#fee2e2; color:#991b1b; padding:20px; border-radius:8px; margin:30px auto; max-width:500px; border-left:4px solid #dc2626;">
-                <strong style="font-size:1.1em;">⚠️ IMPORTANT - SAVE YOUR KEY NOW</strong>
-                <p style="margin-top:10px; margin-bottom:0;">This is the ONLY time you will see your API key. If you lose it, you'll need to contact support.</p>
+            <div style="background:#d1fae5; color:#065f46; padding:20px; border-radius:8px; margin:30px auto; max-width:500px; border-left:4px solid #10b981;">
+                <strong style="font-size:1.1em;">Your API key is saved automatically</strong>
+                <p style="margin-top:10px; margin-bottom:0;">When you return to the dashboard, your key will be stored in your browser. You can also copy it now for your records.</p>
             </div>
 
             <p style="margin-top:30px; margin-bottom:10px; color:#aaa;">Your API Key:</p>
