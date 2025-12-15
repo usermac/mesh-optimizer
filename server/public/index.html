@@ -135,24 +135,26 @@
                     Clear
                 </button>
                 <div class="mb-10">
-                    <label for="mtlInput"
-                        >Material (.mtl)
-                        <span class="text-darker">(Optional)</span></label
-                    >
-                    <input type="file" id="mtlInput" accept=".mtl" aria-label="Material file, optional" />
+                    <label>Material (.mtl) <span class="text-darker">(Optional)</span></label>
+                    <div class="dropzone-mini" id="mtlDropzone" role="button" tabindex="0" aria-label="Upload material file. Drag and drop or click to select.">
+                        <div id="mtlDropText" class="drop-text">Drop .mtl file here or click</div>
+                        <div id="mtlFileInfo" class="file-info" style="display: none;">
+                            <span id="mtlFileName"></span>
+                            <span id="mtlFileSize" class="file-size"></span>
+                        </div>
+                        <input type="file" id="mtlInput" class="d-none" accept=".mtl" aria-label="Material file, optional" />
+                    </div>
                 </div>
                 <div>
-                    <label for="texInput"
-                        >Textures (Max 50)
-                        <span class="text-darker">(Optional)</span></label
-                    >
-                    <input
-                        type="file"
-                        id="texInput"
-                        accept=".png,.jpg,.jpeg"
-                        multiple
-                        aria-label="Texture files, optional, maximum 50 files"
-                    />
+                    <label>Textures (Max 50) <span class="text-darker">(Optional)</span></label>
+                    <div class="dropzone-mini" id="texDropzone" role="button" tabindex="0" aria-label="Upload texture files. Drag and drop or click to select. Maximum 50 files.">
+                        <div id="texDropText" class="drop-text">Drop textures here or click</div>
+                        <div id="texFileInfo" class="file-info" style="display: none;">
+                            <span id="texFileName"></span>
+                            <span id="texFileSize" class="file-size"></span>
+                        </div>
+                        <input type="file" id="texInput" class="d-none" accept=".png,.jpg,.jpeg" multiple aria-label="Texture files, optional, maximum 50 files" />
+                    </div>
                 </div>
             </div>
 
@@ -1454,7 +1456,98 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 .addEventListener("click", () => {
                     document.getElementById("mtlInput").value = "";
                     document.getElementById("texInput").value = "";
+                    // Reset MTL dropzone display
+                    document.getElementById("mtlDropText").style.display = "block";
+                    document.getElementById("mtlFileInfo").style.display = "none";
+                    // Reset textures dropzone display
+                    document.getElementById("texDropText").style.display = "block";
+                    document.getElementById("texFileInfo").style.display = "none";
                 });
+
+            // Mini dropzone setup for MTL
+            const mtlDropzone = document.getElementById("mtlDropzone");
+            const mtlInput = document.getElementById("mtlInput");
+
+            mtlDropzone.addEventListener("click", () => mtlInput.click());
+            mtlDropzone.addEventListener("keydown", (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    mtlInput.click();
+                }
+            });
+            mtlDropzone.addEventListener("dragover", (e) => {
+                e.preventDefault();
+                mtlDropzone.classList.add("dragging");
+            });
+            mtlDropzone.addEventListener("dragleave", () => mtlDropzone.classList.remove("dragging"));
+            mtlDropzone.addEventListener("drop", (e) => {
+                e.preventDefault();
+                mtlDropzone.classList.remove("dragging");
+                const file = e.dataTransfer.files[0];
+                if (file && file.name.toLowerCase().endsWith(".mtl")) {
+                    // Create a DataTransfer to set files on input
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    mtlInput.files = dt.files;
+                    handleMtlFile(file);
+                }
+            });
+            mtlInput.addEventListener("change", (e) => {
+                if (e.target.files[0]) handleMtlFile(e.target.files[0]);
+            });
+
+            function handleMtlFile(file) {
+                const fileSize = formatFileSize(file.size);
+                document.getElementById("mtlDropText").style.display = "none";
+                document.getElementById("mtlFileName").textContent = file.name;
+                document.getElementById("mtlFileSize").textContent = "(" + fileSize.display + ")";
+                document.getElementById("mtlFileInfo").style.display = "block";
+                resetToOptimize();
+            }
+
+            // Mini dropzone setup for Textures
+            const texDropzone = document.getElementById("texDropzone");
+            const texInput = document.getElementById("texInput");
+
+            texDropzone.addEventListener("click", () => texInput.click());
+            texDropzone.addEventListener("keydown", (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    texInput.click();
+                }
+            });
+            texDropzone.addEventListener("dragover", (e) => {
+                e.preventDefault();
+                texDropzone.classList.add("dragging");
+            });
+            texDropzone.addEventListener("dragleave", () => texDropzone.classList.remove("dragging"));
+            texDropzone.addEventListener("drop", (e) => {
+                e.preventDefault();
+                texDropzone.classList.remove("dragging");
+                const files = e.dataTransfer.files;
+                const validFiles = Array.from(files).filter(f =>
+                    /\.(png|jpg|jpeg)$/i.test(f.name)
+                );
+                if (validFiles.length > 0) {
+                    const dt = new DataTransfer();
+                    validFiles.forEach(f => dt.items.add(f));
+                    texInput.files = dt.files;
+                    handleTexFiles(validFiles);
+                }
+            });
+            texInput.addEventListener("change", (e) => {
+                if (e.target.files.length > 0) handleTexFiles(Array.from(e.target.files));
+            });
+
+            function handleTexFiles(files) {
+                const totalSize = files.reduce((sum, f) => sum + f.size, 0);
+                const fileSize = formatFileSize(totalSize);
+                document.getElementById("texDropText").style.display = "none";
+                document.getElementById("texFileName").textContent = files.length + " file" + (files.length > 1 ? "s" : "");
+                document.getElementById("texFileSize").textContent = "(" + fileSize.display + ")";
+                document.getElementById("texFileInfo").style.display = "block";
+                resetToOptimize();
+            }
 
             // Helper function to announce status to screen readers
             function announceStatus(message) {
