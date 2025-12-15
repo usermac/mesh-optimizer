@@ -1138,6 +1138,34 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
             let currentHistoryData = [];
             let filteredHistoryData = [];
 
+            // Format file size with appropriate unit (KB, MB, GB)
+            function formatFileSize(bytes) {
+                if (bytes < 1024) {
+                    return {
+                        display: bytes + " B",
+                        spoken: bytes + " bytes"
+                    };
+                } else if (bytes < 1024 * 1024) {
+                    const kb = (bytes / 1024).toFixed(1);
+                    return {
+                        display: kb + " KB",
+                        spoken: kb + " kilobytes"
+                    };
+                } else if (bytes < 1024 * 1024 * 1024) {
+                    const mb = (bytes / 1024 / 1024).toFixed(2);
+                    return {
+                        display: mb + " MB",
+                        spoken: mb + " megabytes"
+                    };
+                } else {
+                    const gb = (bytes / 1024 / 1024 / 1024).toFixed(2);
+                    return {
+                        display: gb + " GB",
+                        spoken: gb + " gigabytes"
+                    };
+                }
+            }
+
             function renderHistoryTable(dataToRender) {
                 const tbody = document.getElementById("historyTableBody");
                 const searchCount =
@@ -1431,19 +1459,16 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                     document.getElementById("texInput").value = "";
                 }
 
-                const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
+                const fileSize = formatFileSize(file.size);
                 document.getElementById("fileName").textContent =
-                    file.name +
-                    " (" +
-                    fileSizeMB +
-                    " MB)";
+                    file.name + " (" + fileSize.display + ")";
                 document.getElementById("dropText").style.display = "none";
                 resetToOptimize();
                 processBtn.style.background = "#10b981";
 
                 // Announce file selection to screen readers
                 const fileTypeMsg = ext === "zip" ? " ZIP archive containing model and textures." : "";
-                announceStatus("File selected: " + file.name + ", " + fileSizeMB + " megabytes." + fileTypeMsg + " Ready to optimize.");
+                announceStatus("File selected: " + file.name + ", " + fileSize.spoken + "." + fileTypeMsg + " Ready to optimize.");
             }
 
             processBtn.addEventListener("click", async () => {

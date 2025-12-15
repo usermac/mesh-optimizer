@@ -46,8 +46,12 @@ const DB_FILE: &str = "server/database.json";
 const DB_SQLITE_FILE: &str = "server/stats.db";
 const DOWNLOAD_EXPIRES_SECS: u64 = 60 * 60; // 1 hour
 
-// Allowed file extensions for optimization
+// Allowed file extensions for optimization (main model files)
 const ALLOWED_EXTENSIONS: &[&str] = &["glb", "gltf", "obj", "fbx", "zip"];
+// Allowed auxiliary file extensions (materials, textures)
+const ALLOWED_AUXILIARY_EXTENSIONS: &[&str] = &[
+    "mtl", "png", "jpg", "jpeg", "tga", "bmp", "tif", "tiff", "bin",
+];
 
 // --- PRICING CONFIGURATION ---
 const PRICING_FILE: &str = "server/pricing.json";
@@ -660,6 +664,7 @@ async fn optimize_handler(
     let mut input_filepath: Option<PathBuf> = None;
     let mut file_hash = String::new();
     let mut was_zip = false;
+    let mut found_main_model = false; // Track if we've found the main model file
 
     while let Ok(Some(field)) = multipart.next_field().await {
         let name = field.name().unwrap_or_default().to_string();
@@ -667,18 +672,6 @@ async fn optimize_handler(
         if name == "file" {
             if let Some(filename) = field.file_name().map(|s| s.to_string()) {
                 let filepath = batch_dir.join(&filename);
-                input_filepath = Some(filepath.clone());
-
-                // Stream file to disk AND hash it
-                if let Ok(mut file) = tokio::fs::File::create(&filepath).await {
-                    let mut hasher = sha2::Sha256::new();
-                    let mut stream = field;
-                    while let Ok(Some(chunk)) = stream.chunk().await {
-                        let _ = file.write_all(&chunk).await;
-                        sha2::Digest::update(&mut hasher, &chunk);
-                    }
-                    file_hash = hex::encode(sha2::Digest::finalize(hasher));
-                }
 
                 let ext = Path::new(&filename)
                     .extension()
@@ -686,11 +679,15 @@ async fn optimize_handler(
                     .unwrap_or("")
                     .to_lowercase();
 
+                // Check if this is a main model file or an auxiliary file
+                let is_main_model = ALLOWED_EXTENSIONS.contains(&ext.as_str());
+                let is_auxiliary = ALLOWED_AUXILIARY_EXTENSIONS.contains(&ext.as_str());
+
                 // Validate file extension
-                if !ALLOWED_EXTENSIONS.contains(&ext.as_str()) {
+                if !is_main_model && !is_auxiliary {
                     error!(
-                        "Invalid file extension: {} (allowed: {:?})",
-                        ext, ALLOWED_EXTENSIONS
+                        "Invalid file extension: {} (allowed model: {:?}, auxiliary: {:?})",
+                        ext, ALLOWED_EXTENSIONS, ALLOWED_AUXILIARY_EXTENSIONS
                     );
                     let _ = fs::remove_dir_all(&batch_dir);
                     return (
@@ -703,64 +700,87 @@ async fn optimize_handler(
                         .into_response();
                 }
 
-                if ext == "zip" {
-                    let zip_path = filepath.clone();
-                    let target_dir = batch_dir.clone();
+                // Stream file to disk
+                if let Ok(mut file) = tokio::fs::File::create(&filepath).await {
+                    let mut hasher = sha2::Sha256::new();
+                    let mut stream = field;
+                    while let Ok(Some(chunk)) = stream.chunk().await {
+                        let _ = file.write_all(&chunk).await;
+                        sha2::Digest::update(&mut hasher, &chunk);
+                    }
+                    // Only set hash for main model file
+                    if is_main_model && !found_main_model {
+                        file_hash = hex::encode(sha2::Digest::finalize(hasher));
+                        input_filepath = Some(filepath.clone());
+                    }
+                }
 
-                    let found_model = tokio::task::spawn_blocking(move || {
-                        let file = std::fs::File::open(&zip_path).ok()?;
-                        let mut archive = zip::ZipArchive::new(file).ok()?;
-                        let mut candidate = None;
+                // Only process main model file for input tracking
+                if is_main_model && !found_main_model {
+                    found_main_model = true;
 
-                        for i in 0..archive.len() {
-                            let mut file = archive.by_index(i).ok()?;
-                            let outpath = match file.enclosed_name() {
-                                Some(path) => target_dir.join(path),
-                                None => continue,
-                            };
+                    if ext == "zip" {
+                        let zip_path = filepath.clone();
+                        let target_dir = batch_dir.clone();
 
-                            if file.name().ends_with('/') {
-                                std::fs::create_dir_all(&outpath).ok()?;
-                            } else {
-                                if let Some(p) = outpath.parent() {
-                                    if !p.exists() {
-                                        std::fs::create_dir_all(&p).ok()?;
+                        let found_model = tokio::task::spawn_blocking(move || {
+                            let file = std::fs::File::open(&zip_path).ok()?;
+                            let mut archive = zip::ZipArchive::new(file).ok()?;
+                            let mut candidate = None;
+
+                            for i in 0..archive.len() {
+                                let mut file = archive.by_index(i).ok()?;
+                                let outpath = match file.enclosed_name() {
+                                    Some(path) => target_dir.join(path),
+                                    None => continue,
+                                };
+
+                                if file.name().ends_with('/') {
+                                    std::fs::create_dir_all(&outpath).ok()?;
+                                } else {
+                                    if let Some(p) = outpath.parent() {
+                                        if !p.exists() {
+                                            std::fs::create_dir_all(&p).ok()?;
+                                        }
                                     }
-                                }
-                                let mut outfile = std::fs::File::create(&outpath).ok()?;
-                                std::io::copy(&mut file, &mut outfile).ok()?;
+                                    let mut outfile = std::fs::File::create(&outpath).ok()?;
+                                    std::io::copy(&mut file, &mut outfile).ok()?;
 
-                                if candidate.is_none() {
-                                    let fname = outpath.file_name()?.to_string_lossy().to_string();
-                                    let fext = Path::new(&fname)
-                                        .extension()
-                                        .and_then(|s| s.to_str())
-                                        .unwrap_or("")
-                                        .to_lowercase();
-                                    // Ignore hidden files/mac metadata
-                                    if !fname.starts_with('.')
-                                        && !outpath.to_string_lossy().contains("__MACOSX")
-                                    {
-                                        if ["obj", "fbx", "glb", "gltf"].contains(&fext.as_str()) {
-                                            candidate = file
-                                                .enclosed_name()
-                                                .map(|p| p.to_string_lossy().to_string());
+                                    if candidate.is_none() {
+                                        let fname =
+                                            outpath.file_name()?.to_string_lossy().to_string();
+                                        let fext = Path::new(&fname)
+                                            .extension()
+                                            .and_then(|s| s.to_str())
+                                            .unwrap_or("")
+                                            .to_lowercase();
+                                        // Ignore hidden files/mac metadata
+                                        if !fname.starts_with('.')
+                                            && !outpath.to_string_lossy().contains("__MACOSX")
+                                        {
+                                            if ["obj", "fbx", "glb", "gltf"]
+                                                .contains(&fext.as_str())
+                                            {
+                                                candidate = file
+                                                    .enclosed_name()
+                                                    .map(|p| p.to_string_lossy().to_string());
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
-                        candidate
-                    })
-                    .await
-                    .unwrap_or(None);
+                            candidate
+                        })
+                        .await
+                        .unwrap_or(None);
 
-                    if let Some(name) = found_model {
-                        input_filename = Some(name);
-                        was_zip = true;
+                        if let Some(name) = found_model {
+                            input_filename = Some(name);
+                            was_zip = true;
+                        }
+                    } else if ["obj", "fbx", "glb", "gltf"].contains(&ext.as_str()) {
+                        input_filename = Some(filename);
                     }
-                } else if ["obj", "fbx", "glb", "gltf"].contains(&ext.as_str()) {
-                    input_filename = Some(filename);
                 }
             }
         } else if name == "ratio" {
