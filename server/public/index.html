@@ -650,10 +650,10 @@
                                 <label for="contact-category">Category <span class="required">*</span></label>
                                 <select id="contact-category" name="category" required>
                                     <option value="">Select a topic...</option>
-                                    <option value="privacy">Privacy & Data Inquiry</option>
+                                    <option value="key-issue">API Key Issue</option>
                                     <option value="technical">Technical Support</option>
                                     <option value="billing">Billing & Credits</option>
-                                    <option value="account">Account Management</option>
+                                    <option value="privacy">Privacy & Data Inquiry</option>
                                     <option value="feature">Feature Request</option>
                                     <option value="bug">Bug Report</option>
                                     <option value="other">Other</option>
@@ -2135,10 +2135,13 @@ done`;
                 errorAlert.classList.remove("show");
 
                 // Get form data
+                const category = document.getElementById("contact-category");
+                const categoryText = category.options[category.selectedIndex].text;
+                const subjectText = document.getElementById("contact-subject").value;
+
                 const formData = {
-                    name: document.getElementById("contact-name").value,
                     email: document.getElementById("contact-email").value,
-                    subject: document.getElementById("contact-subject").value,
+                    subject: "[" + categoryText + "] " + subjectText,
                     message: document.getElementById("contact-message").value,
                     api_key: document.getElementById("contact-api-key").value || null,
                 };
