@@ -66,6 +66,13 @@ Jobs are queued, processed with semaphore-controlled concurrency, and results ex
 - **Credit System**: API key-based, credits deducted per job, refunded on failure
 - **Admin Endpoints**: Rate-limited (5/min/IP), require `X-Admin-Secret` header with timing-safe comparison
 
+## Frontend UI Patterns (`server/public/index.html`)
+
+- **Dropzones**: Main dropzone for 3D files uses fixed `min-height` to prevent layout shift after file drop. Filename/size displayed inside the dropzone (not below it).
+- **Mini Dropzones**: MTL and texture inputs use `.dropzone-mini` class - same drag/drop + click behavior as main dropzone, but smaller.
+- **OBJ-specific inputs**: The `#objInputs` section (MTL + textures dropzones) only appears when a `.obj` file is dropped. Hidden for GLB, GLTF, FBX, and ZIP files.
+- **Contact Form**: Category dropdown + freeform subject field. Email subject formatted as `[Category Text] User Subject`. Enterprise inquiry option at top of category list.
+
 ## Environment Variables
 
 Required (server fails without):
