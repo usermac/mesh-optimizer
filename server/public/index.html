@@ -100,10 +100,10 @@
             </div>
 
             <!-- Upload -->
-            <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Upload 3D file. Drag and drop or click to select. Supported formats: OBJ, FBX, GLB, GLTF, ZIP">
+            <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Upload 3D file. Drag and drop or click to select. Supported formats: GLB preferred, also OBJ, FBX, GLTF, ZIP">
                 <div id="dropText">
                     Drag 3D file here<br /><span class="text-small text-muted"
-                        >(.obj, .fbx, .glb, .gltf, .zip)</span
+                        >(.glb preferred, .obj, .fbx, .gltf, .zip)</span
                     >
                 </div>
                 <input
@@ -543,13 +543,19 @@
                             <h3>Supported File Formats</h3>
                             <ul>
                                 <li>
-                                    <strong>GLB / GLTF:</strong> The best format. Textures
-                                    are embedded. Just drag and drop.
+                                    <strong>GLB (Recommended):</strong> The best format. All geometry,
+                                    materials, and textures are embedded in a single file. Just drag and drop.
                                 </li>
                                 <li>
-                                    <strong>ZIP (Recommended for OBJ):</strong> Zip your
-                                    <code>.obj</code> + <code>.mtl</code> + textures into one file.
-                                    Easiest way to keep everything organized together.
+                                    <strong>GLTF:</strong> Supported, but note that GLTF files often
+                                    reference external <code>.bin</code> buffer files. If your GLTF
+                                    has external buffers, upload as a ZIP containing the
+                                    <code>.gltf</code> and all <code>.bin</code> files together.
+                                </li>
+                                <li>
+                                    <strong>ZIP (Recommended for OBJ/GLTF):</strong> Zip your
+                                    model file + all associated files (<code>.mtl</code>, <code>.bin</code>, textures)
+                                    into one archive. Easiest way to keep everything organized together.
                                 </li>
                                 <li>
                                     <strong>OBJ:</strong> Supported. After uploading, use the

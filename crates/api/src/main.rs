@@ -850,6 +850,47 @@ async fn optimize_handler(
     let input_path = input_filepath.unwrap();
     let input_size = fs::metadata(&input_path).map(|m| m.len()).unwrap_or(0);
 
+    // Validate GLTF files for external buffer references
+    let input_ext = input_path
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("")
+        .to_lowercase();
+    if input_ext == "gltf" {
+        if let Ok(content) = fs::read_to_string(&input_path) {
+            if let Ok(gltf_json) = serde_json::from_str::<serde_json::Value>(&content) {
+                if let Some(buffers) = gltf_json.get("buffers").and_then(|b| b.as_array()) {
+                    let mut missing_buffers = Vec::new();
+                    for buffer in buffers {
+                        if let Some(uri) = buffer.get("uri").and_then(|u| u.as_str()) {
+                            // Skip data URIs (embedded base64)
+                            if !uri.starts_with("data:") {
+                                // Check if the referenced file exists
+                                let buffer_path = batch_dir.join(uri);
+                                if !buffer_path.exists() {
+                                    missing_buffers.push(uri.to_string());
+                                }
+                            }
+                        }
+                    }
+                    if !missing_buffers.is_empty() {
+                        let _ = fs::remove_dir_all(&batch_dir);
+                        return (
+                            StatusCode::BAD_REQUEST,
+                            format!(
+                                "This GLTF file references external buffers that were not uploaded: {}. \
+                                Please either: (1) Upload a ZIP containing the .gltf and all .bin files, \
+                                or (2) Convert to GLB format which embeds all data in a single file.",
+                                missing_buffers.join(", ")
+                            ),
+                        )
+                            .into_response();
+                    }
+                }
+            }
+        }
+    }
+
     let output_base = Path::new(&input_filename)
         .file_stem()
         .unwrap()
