@@ -484,11 +484,11 @@
                             <p>
                                 <strong>Option 1 (Recommended):</strong> Create a <code>.zip</code> file
                                 containing your <code>model.obj</code>, <code>model.mtl</code>, and all
-                                texture images. Drag the ZIP onto the upload area.
+                                texture images. Drag the ZIP onto the upload area. This keeps everything organized together.
                             </p>
                             <p>
                                 <strong>Option 2:</strong> Drag just the <code>.obj</code> file, then use
-                                the "Material (.mtl)" and "Textures" fields that appear below to add the
+                                the "Material (.mtl)" and "Textures (Max 50)" fields that appear below to add the
                                 additional files separately.
                             </p>
                             <p>
@@ -549,18 +549,21 @@
                                 <li>
                                     <strong>ZIP (Recommended for OBJ):</strong> Zip your
                                     <code>.obj</code> + <code>.mtl</code> + textures into one file.
-                                    Easiest way to keep everything together.
+                                    Easiest way to keep everything organized together.
                                 </li>
                                 <li>
                                     <strong>OBJ:</strong> Supported. After uploading, use the
                                     Material and Textures fields to add <code>.mtl</code> and
-                                    <code>.jpg/.png</code> files separately.
+                                    <code>.jpg/.png</code> files separately (max 50 textures).
                                 </li>
                                 <li>
                                     <strong>FBX:</strong> Supported, but textures may not
                                     transfer if they aren't embedded in the FBX.
                                 </li>
                             </ul>
+                            <p class="text-muted text-small">
+                                Supported texture formats: .png, .jpg, .jpeg, .tga, .bmp, .tif, .tiff
+                            </p>
                         </section>
 
                         <section class="content-section">
@@ -933,13 +936,14 @@
                             <table class="api-table">
                                 <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
                                 <tbody>
-                                    <tr><td><code>file</code></td><td>file</td><td>Yes</td><td>3D model file (.obj, .fbx, .glb, .gltf) or .zip containing model + textures</td></tr>
+                                    <tr><td><code>file</code></td><td>file</td><td>Yes</td><td>3D model file (.obj, .fbx, .glb, .gltf), .zip, or multiple files (model + .mtl + textures). Max 50 texture files.</td></tr>
                                     <tr><td><code>mode</code></td><td>string</td><td>No</td><td><code>decimate</code> (default) or <code>remesh</code></td></tr>
                                     <tr><td><code>ratio</code></td><td>float</td><td>No</td><td>0.0-1.0 quality ratio for decimate mode (default: 0.5)</td></tr>
                                     <tr><td><code>faces</code></td><td>int</td><td>No</td><td>Target face count for remesh mode (default: 5000)</td></tr>
                                     <tr><td><code>texture_size</code></td><td>int</td><td>No</td><td>Texture resolution for remesh: 1024, 2048, 4096 (default: 2048)</td></tr>
                                 </tbody>
                             </table>
+                            <p class="text-muted text-small">Supported auxiliary files: .mtl, .png, .jpg, .jpeg, .tga, .bmp, .tif, .tiff, .bin</p>
 
                             <h4>Response</h4>
                             <pre class="code-block"><code>{
@@ -1049,10 +1053,24 @@
 
                         <section class="content-section">
                             <h3>Quick Start Example</h3>
-                            <pre class="code-block"><code># 1. Submit a job
+                            <pre class="code-block"><code># Option A: Using a ZIP file (simplest approach)
 curl -X POST 'https://webdeliveryengine.com/optimize' \
      -H 'Authorization: Bearer YOUR_API_KEY' \
      -F 'file=@model.zip' \
+     -F 'mode=decimate' \
+     -F 'ratio=0.5'
+
+# Option B: Multi-file upload (OBJ with 6 textures)
+curl -X POST 'https://webdeliveryengine.com/optimize' \
+     -H 'Authorization: Bearer YOUR_API_KEY' \
+     -F 'file=@model.obj' \
+     -F 'file=@model.mtl' \
+     -F 'file=@diffuse.png' \
+     -F 'file=@normal.png' \
+     -F 'file=@roughness.png' \
+     -F 'file=@metallic.png' \
+     -F 'file=@ao.png' \
+     -F 'file=@emissive.png' \
      -F 'mode=decimate' \
      -F 'ratio=0.5'
 
@@ -1062,6 +1080,7 @@ curl 'https://webdeliveryengine.com/job/JOB_ID'
 # 3. Download results when complete
 curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.glb'
 curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></pre>
+                            <p class="text-muted text-small">Tip: ZIP files are often easier to manage and keep your textures organized together.</p>
                         </section>
                     </div>
                 </div>
@@ -1100,14 +1119,17 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                                 <h4 class="m-0 mb-10">File Packaging Guidelines</h4>
                                 <ul class="pl-20 mb-0">
                                     <li class="mb-5">
-                                        <strong>Use ZIP</strong> for <code>.obj</code> or <code>.fbx</code> files that rely on external textures. Package the model + materials + images together so we can see them.
+                                        <strong>ZIP (Recommended)</strong> for <code>.obj</code> or <code>.fbx</code> files with textures. Package the model + materials + images together — keeps everything organized.
+                                    </li>
+                                    <li class="mb-5">
+                                        <strong>Multi-file Upload</strong> also works. Send the model file plus <code>.mtl</code> and texture files (max 50) as separate <code>-F 'file=@...'</code> entries.
                                     </li>
                                     <li>
                                         <strong>Direct Upload</strong> works for <code>.glb</code> files since they have textures embedded inside. You don't need to zip these.
                                     </li>
                                 </ul>
                                 <p class="mt-10 mb-0 text-small">
-                                    <strong>Transaction History</strong>  will record the name of the <em>inner</em> model file found inside your ZIP (e.g., <code>my_model.obj</code>), not the ZIP filename itself.
+                                    <strong>Transaction History</strong> will record the name of the <em>inner</em> model file found inside your ZIP (e.g., <code>my_model.obj</code>), not the ZIP filename itself.
                                 </p>
                             </div>
                         </section>
@@ -1896,9 +1918,32 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                     params.push(`-F 'texture_size=${textureSize}'`);
                 }
 
+                // Build file entries based on what's selected
+                let fileEntries = [];
+                const objInputsVisible = document.getElementById('objInputs').style.display !== 'none';
+
+                if (selectedFile) {
+                    fileEntries.push(`-F 'file=@${selectedFile.name}'`);
+
+                    // Add MTL and texture files if OBJ inputs are visible
+                    if (objInputsVisible) {
+                        const mtlFile = document.getElementById('mtlInput').files[0];
+                        if (mtlFile) {
+                            fileEntries.push(`-F 'file=@${mtlFile.name}'`);
+                        }
+
+                        const texFiles = document.getElementById('texInput').files;
+                        for (let i = 0; i < texFiles.length; i++) {
+                            fileEntries.push(`-F 'file=@${texFiles[i].name}'`);
+                        }
+                    }
+                } else {
+                    fileEntries.push(`-F 'file=@/path/to/your/model.zip'`);
+                }
+
                 const command = `curl -X POST 'https://webdeliveryengine.com/optimize' \\
      -H 'Authorization: Bearer ${apiKey}' \\
-     -F 'file=@/path/to/your/model.zip' \\
+     ${fileEntries.join(' \\\n     ')} \\
      ${params.join(' \\\n     ')}`;
 
                 document.getElementById('apiCodeBlock').querySelector('code').textContent = command;
