@@ -412,6 +412,22 @@ a.back-link:hover {
     text-align: center;
     cursor: pointer;
     transition: 0.2s;
+    min-height: 70px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.dropzone .file-info {
+    color: var(--success);
+    font-size: 0.85rem;
+    word-break: break-word;
+}
+
+.dropzone .file-info .file-size {
+    color: var(--text-muted);
+    font-size: 0.8rem;
 }
 
 .dropzone:hover {

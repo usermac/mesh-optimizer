@@ -106,6 +106,10 @@
                         >(.glb preferred, .obj, .fbx, .gltf, .zip)</span
                     >
                 </div>
+                <div id="fileInfo" class="file-info" style="display: none;" aria-live="polite" aria-atomic="true">
+                    <span id="fileName"></span>
+                    <span id="fileSize" class="file-size"></span>
+                </div>
                 <input
                     type="file"
                     id="fileInput"
@@ -117,7 +121,6 @@
             <div id="zipNotice" class="text-muted text-small mt-10" style="display: none;">
                 <em>ZIP detected. Make sure your model and textures are inside.</em>
             </div>
-            <div id="fileName" class="text-success text-small" aria-live="polite" aria-atomic="true"></div>
 
             <div
                 id="objInputs"
@@ -1488,9 +1491,10 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 }
 
                 const fileSize = formatFileSize(file.size);
-                document.getElementById("fileName").textContent =
-                    file.name + " (" + fileSize.display + ")";
                 document.getElementById("dropText").style.display = "none";
+                document.getElementById("fileName").textContent = file.name;
+                document.getElementById("fileSize").textContent = "(" + fileSize.display + ")";
+                document.getElementById("fileInfo").style.display = "block";
                 resetToOptimize();
                 processBtn.style.background = "#10b981";
 
