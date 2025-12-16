@@ -842,7 +842,7 @@
                             <p><strong>Credit System:</strong> The Service operates on a prepaid credit system. Credits are purchased through Stripe and deducted when optimization jobs are processed.</p>
                             <p><strong>Credit Expiration:</strong> Purchased credits <strong>never expire</strong>.</p>
                             <p><strong>Pricing:</strong> Credit costs for different operations (Decimate, Remesh) are displayed in the application before purchase and before processing.</p>
-                            <p><strong>Free Re-optimization:</strong> Re-processing the same file with different settings within <span id="tos-free-reopt-hours">48</span> hours of the original paid job is free.</p>
+                            <p><strong>Free Re-optimization:</strong> Re-processing the same file with different settings within <span id="tos-free-reopt-hours">24</span> hours of the original paid job is free.</p>
                         </section>
 
                         <section class="content-section">
@@ -1022,21 +1022,7 @@
                             <p class="text-muted">Get current pricing and configuration. <strong>No authentication required.</strong></p>
 
                             <h4>Response</h4>
-                            <pre class="code-block"><code>{
-  "pricing": {
-    "base_rate_usd_per_credit": 0.5,
-    "min_purchase_usd": 10,
-    "max_purchase_usd": 500,
-    "default_purchase_usd": 50,
-    "tiers": [
-      { "name": "Pro Tier", "min_spend_usd": 50, "bonus_percent": 10 },
-      { "name": "Studio Tier", "min_spend_usd": 200, "bonus_percent": 20 }
-    ],
-    "free_reoptimization_hours": 24
-  },
-  "cost_decimate": 1,
-  "cost_remesh": 2
-}</code></pre>
+                            <pre class="code-block"><code id="docs-config-response">Loading...</code></pre>
                         </section>
 
                         <section class="content-section">
@@ -2081,6 +2067,25 @@ done`;
                 }
                 if (pricingConfig.cost_remesh !== undefined) {
                     document.getElementById("docs-cost-remesh").innerText = pricingConfig.cost_remesh;
+                }
+
+                // Populate GET /config example response dynamically
+                if (pricingConfig && pricingConfig.pricing) {
+                    var configResponse = {
+                        pricing: {
+                            base_rate_usd_per_credit: pricingConfig.pricing.base_rate_usd_per_credit,
+                            min_purchase_usd: pricingConfig.pricing.min_purchase_usd,
+                            max_purchase_usd: pricingConfig.pricing.max_purchase_usd,
+                            default_purchase_usd: pricingConfig.pricing.default_purchase_usd,
+                            tiers: pricingConfig.pricing.tiers.map(function(t) {
+                                return { name: t.name, min_spend_usd: t.min_spend_usd, bonus_percent: t.bonus_percent };
+                            }),
+                            free_reoptimization_hours: pricingConfig.pricing.free_reoptimization_hours
+                        },
+                        cost_decimate: pricingConfig.cost_decimate,
+                        cost_remesh: pricingConfig.cost_remesh
+                    };
+                    document.getElementById("docs-config-response").textContent = JSON.stringify(configResponse, null, 2);
                 }
 
                 openModal("apiDocsModal", this);
