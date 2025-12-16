@@ -942,8 +942,18 @@
                         </div>
 
                         <section class="content-section">
+                            <h3>Workflow Overview</h3>
+                            <p class="text-muted">The API uses an asynchronous 3-step workflow:</p>
+                            <ol>
+                                <li><strong>Submit:</strong> POST your model to <code>/optimize</code> and receive a job ID</li>
+                                <li><strong>Poll:</strong> Check <code>/job/:id</code> until status is <code>Completed</code> or <code>Failed</code></li>
+                                <li><strong>Download:</strong> Fetch your optimized files from the URLs in the response (expires after 1 hour)</li>
+                            </ol>
+                        </section>
+
+                        <section class="content-section">
                             <h3>POST /optimize</h3>
-                            <p class="text-muted">Process a 3D model. Returns a job ID for polling. <strong>Requires authentication.</strong></p>
+                            <p class="text-muted">Submit a 3D model for processing. Returns a job ID for polling. <strong>Requires authentication.</strong></p>
 
                             <h4>Request (multipart/form-data)</h4>
                             <table class="api-table">
@@ -954,16 +964,27 @@
                                     <tr><td><code>ratio</code></td><td>float</td><td>No</td><td>0.0-1.0 quality ratio for decimate mode (default: 0.5)</td></tr>
                                     <tr><td><code>faces</code></td><td>int</td><td>No</td><td>Target face count for remesh mode (default: 5000)</td></tr>
                                     <tr><td><code>texture_size</code></td><td>int</td><td>No</td><td>Texture resolution for remesh: 1024, 2048, 4096 (default: 2048)</td></tr>
+                                    <tr><td><code>format</code></td><td>string</td><td>No</td><td>Output format: <code>glb</code>, <code>usdz</code>, or <code>both</code> (default: <code>glb</code>)</td></tr>
                                 </tbody>
                             </table>
                             <p class="text-muted text-small">Supported auxiliary files: .mtl, .png, .jpg, .jpeg, .tga, .bmp, .tif, .tiff, .bin</p>
 
-                            <h4>Response</h4>
+                            <h4>Response (Success - 200)</h4>
                             <pre class="code-block"><code>{
   "jobId": "1734012345678",
   "status": "processing"
 }</code></pre>
                             <p class="text-muted text-small">Header <code>X-Credits-Remaining</code> contains your updated balance.</p>
+
+                            <h4>Error Responses</h4>
+                            <table class="api-table">
+                                <thead><tr><th>Status</th><th>Meaning</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>400</code></td><td>Bad request (no valid 3D model, missing external buffers, etc.)</td></tr>
+                                    <tr><td><code>401</code></td><td>Unauthorized (invalid or missing API key)</td></tr>
+                                    <tr><td><code>402</code></td><td>Payment required (insufficient credits)</td></tr>
+                                </tbody>
+                            </table>
                         </section>
 
                         <section class="content-section">
