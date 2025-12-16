@@ -595,15 +595,51 @@ async fn success_page(
 
 // --- OPTIMIZATION HANDLER ---
 
+// Easter egg: funny status messages shown while processing
+const PROCESSING_MESSAGES: &[&str] = &[
+    "Reticulating Splines...",
+    "Calibrating Flux Capacitors...",
+    "Reversing the Polarity...",
+    "Consulting the Oracle...",
+    "Warming Up the Hamsters...",
+    "Bribing the Render Fairies...",
+    "Untangling Normals...",
+    "Herding Wayward UVs...",
+    "Applying Digital Elbow Grease...",
+    "Teaching Triangles Manners...",
+    "Make it so...",
+    "Energizing Vertices...",
+];
+
+fn get_processing_message() -> &'static str {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let secs = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    PROCESSING_MESSAGES[(secs % PROCESSING_MESSAGES.len() as u64) as usize]
+}
+
 async fn job_status_handler(
     State(state): State<AppState>,
     AxumPath(id): AxumPath<String>,
 ) -> Json<serde_json::Value> {
+    // Helper to format status response, with easter egg for Processing
+    let format_status = |status: &JobStatus| -> serde_json::Value {
+        match status {
+            JobStatus::Processing => json!({
+                "status": "Processing",
+                "message": get_processing_message()
+            }),
+            _ => json!({ "status": status }),
+        }
+    };
+
     // Check in-memory cache first
     {
         let jobs = state.jobs.read().await;
         if let Some(status) = jobs.get(&id) {
-            return Json(json!({ "status": status }));
+            return Json(format_status(status));
         }
     }
 
@@ -614,7 +650,7 @@ async fn job_status_handler(
             let mut jobs = state.jobs.write().await;
             jobs.insert(id, status.clone());
         }
-        return Json(json!({ "status": status }));
+        return Json(format_status(&status));
     }
 
     Json(json!({ "error": "Job not found" }))
