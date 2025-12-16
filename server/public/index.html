@@ -947,7 +947,7 @@
                             <ol>
                                 <li><strong>Submit:</strong> POST your model to <code>/optimize</code> and receive a job ID</li>
                                 <li><strong>Poll:</strong> Check <code>/job/:id</code> until status is <code>Completed</code> or <code>Failed</code></li>
-                                <li><strong>Download:</strong> Fetch your optimized files from the URLs in the response (expires after 1 hour)</li>
+                                <li><strong>Download:</strong> Fetch your optimized files from the URLs in the response (expires 1 hour after completion)</li>
                             </ol>
                         </section>
 
@@ -965,6 +965,7 @@
                                     <tr><td><code>faces</code></td><td>int</td><td>No</td><td>Target face count for remesh mode (default: 5000)</td></tr>
                                     <tr><td><code>texture_size</code></td><td>int</td><td>No</td><td>Texture resolution for remesh: 1024, 2048, 4096 (default: 2048)</td></tr>
                                     <tr><td><code>format</code></td><td>string</td><td>No</td><td>Output format: <code>glb</code>, <code>usdz</code>, or <code>both</code> (default: <code>glb</code>)</td></tr>
+                                    <tr><td><code>callback_url</code></td><td>string</td><td>No</td><td>HTTPS URL to receive webhook on job completion/failure</td></tr>
                                 </tbody>
                             </table>
                             <p class="text-muted text-small">Supported auxiliary files: .mtl, .png, .jpg, .jpeg, .tga, .bmp, .tif, .tiff, .bin</p>
@@ -1000,7 +1001,8 @@
     "Completed": {
       "output_size": 245678,
       "glb_url": "/download/1734012345678/model_opt.glb",
-      "usdz_url": "/download/1734012345678/model_opt.usdz"
+      "usdz_url": "/download/1734012345678/model_opt.usdz",
+      "expires_at": "2024-12-16T15:30:00Z"
     }
   }
 }</code></pre>
@@ -1011,6 +1013,25 @@
     "Failed": { "error": "Timeout" }
   }
 }</code></pre>
+                        </section>
+
+                        <section class="content-section">
+                            <h3>Webhooks</h3>
+                            <p class="text-muted">If you provide a <code>callback_url</code> when submitting a job, we'll POST the result to your endpoint when the job completes or fails. This is ideal for batch processing where polling many jobs is impractical.</p>
+
+                            <h4>Webhook Payload</h4>
+                            <pre class="code-block"><code>{
+  "jobId": "1734012345678",
+  "status": {
+    "Completed": {
+      "output_size": 245678,
+      "glb_url": "/download/1734012345678/model_opt.glb",
+      "usdz_url": "/download/1734012345678/model_opt.usdz",
+      "expires_at": "2024-12-16T15:30:00Z"
+    }
+  }
+}</code></pre>
+                            <p class="text-muted text-small">Your endpoint should respond with 2xx within 10 seconds. Failed webhooks are not retried.</p>
                         </section>
 
                         <section class="content-section">

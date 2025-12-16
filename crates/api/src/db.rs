@@ -62,7 +62,7 @@ pub enum JobStatus {
         output_size: u64,
         glb_url: String,
         usdz_url: String,
-        expires_in_secs: u64,
+        expires_at: String, // ISO 8601 timestamp
     },
     Failed {
         error: String,

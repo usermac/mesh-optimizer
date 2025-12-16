@@ -654,6 +654,7 @@ async fn optimize_handler(
     let mut mode = "decimate".to_string();
     let mut faces = 5000;
     let mut texture_size = 2048;
+    let mut callback_url: Option<String> = None;
     let mut input_filepath: Option<PathBuf> = None;
     let mut file_hash = String::new();
     let mut was_zip = false;
@@ -827,6 +828,15 @@ async fn optimize_handler(
                             parsed, valid_sizes
                         );
                     }
+                }
+            }
+        } else if name == "callback_url" {
+            if let Ok(val) = field.text().await {
+                // Validate URL format
+                if val.starts_with("https://") {
+                    callback_url = Some(val);
+                } else {
+                    warn!("Invalid callback_url '{}' - must be HTTPS", val);
                 }
             }
         }
@@ -1030,6 +1040,7 @@ async fn optimize_handler(
     let file_mode_hash_clone = file_mode_hash.clone();
     let format_clone = format.clone();
     let mode_clone = mode.clone();
+    let callback_url_clone = callback_url.clone();
 
     // Slot Cost Logic
     let slot_cost_decimate = std::env::var("SLOT_COST_DECIMATE")
@@ -1042,6 +1053,30 @@ async fn optimize_handler(
         .unwrap_or(5);
 
     tokio::spawn(async move {
+        // Helper to send webhook callback
+        let send_webhook = |job_id: &str, status: &JobStatus, callback: &Option<String>| {
+            let job_id = job_id.to_string();
+            let status = status.clone();
+            let callback = callback.clone();
+            async move {
+                if let Some(url) = callback {
+                    let payload = serde_json::json!({
+                        "jobId": job_id,
+                        "status": status
+                    });
+                    if let Err(e) = reqwest::Client::new()
+                        .post(&url)
+                        .json(&payload)
+                        .timeout(std::time::Duration::from_secs(10))
+                        .send()
+                        .await
+                    {
+                        warn!("Webhook callback failed for job {}: {}", job_id, e);
+                    }
+                }
+            }
+        };
+
         // Determine resource cost (Weighted Semaphore)
         let required_permits: u32 = if mode_clone == "remesh" {
             slot_cost_remesh
@@ -1119,6 +1154,7 @@ async fn optimize_handler(
                     .db
                     .save_job(&batch_id_clone, &failed_status)
                     .await;
+                send_webhook(&batch_id_clone, &failed_status, &callback_url_clone).await;
                 return;
             }
         };
@@ -1157,6 +1193,7 @@ async fn optimize_handler(
                     .db
                     .save_job(&batch_id_clone, &failed_status)
                     .await;
+                send_webhook(&batch_id_clone, &failed_status, &callback_url_clone).await;
                 error!("Execution failed: {:?}", e);
                 // Refund Credit (only if we charged them)
                 if deducted {
@@ -1200,6 +1237,7 @@ async fn optimize_handler(
                     .db
                     .save_job(&batch_id_clone, &failed_status)
                     .await;
+                send_webhook(&batch_id_clone, &failed_status, &callback_url_clone).await;
                 error!("Execution timed out");
                 // Refund Credit (only if we charged them)
                 if deducted {
@@ -1278,6 +1316,7 @@ async fn optimize_handler(
                 .db
                 .save_job(&batch_id_clone, &failed_status)
                 .await;
+            send_webhook(&batch_id_clone, &failed_status, &callback_url_clone).await;
             return;
         }
 
@@ -1321,6 +1360,7 @@ async fn optimize_handler(
                         .db
                         .save_job(&batch_id_clone, &failed_status)
                         .await;
+                    send_webhook(&batch_id_clone, &failed_status, &callback_url_clone).await;
                     return;
                 }
             };
@@ -1360,6 +1400,7 @@ async fn optimize_handler(
                             .db
                             .save_job(&batch_id_clone, &failed_status)
                             .await;
+                        send_webhook(&batch_id_clone, &failed_status, &callback_url_clone).await;
                         return;
                     }
                 }
@@ -1376,6 +1417,7 @@ async fn optimize_handler(
                         .db
                         .save_job(&batch_id_clone, &failed_status)
                         .await;
+                    send_webhook(&batch_id_clone, &failed_status, &callback_url_clone).await;
                     return;
                 }
             }
@@ -1456,6 +1498,7 @@ async fn optimize_handler(
                 .db
                 .save_job(&batch_id_clone, &failed_status)
                 .await;
+            send_webhook(&batch_id_clone, &failed_status, &callback_url_clone).await;
             return;
         }
 
@@ -1489,11 +1532,13 @@ async fn optimize_handler(
             batch_id_clone, output_size
         );
 
+        let expires_at =
+            chrono::Utc::now() + chrono::Duration::seconds(DOWNLOAD_EXPIRES_SECS as i64);
         let completed_status = JobStatus::Completed {
             output_size,
             glb_url,
             usdz_url,
-            expires_in_secs: DOWNLOAD_EXPIRES_SECS,
+            expires_at: expires_at.to_rfc3339(),
         };
         {
             let mut jobs = state_clone.jobs.write().await;
@@ -1503,6 +1548,9 @@ async fn optimize_handler(
             .db
             .save_job(&batch_id_clone, &completed_status)
             .await;
+
+        // Send webhook callback if configured
+        send_webhook(&batch_id_clone, &completed_status, &callback_url_clone).await;
     });
 
     let mut response = Json(json!({
