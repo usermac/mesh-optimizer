@@ -51,7 +51,7 @@ a.visually-hidden:focus {
     --success: #10b981;
     --success-bg: #064e3b;
     --error: #ef4444;
-    --overlay-bg: rgba(0, 0, 0, 0.8);
+    --overlay-bg: rgba(0, 0, 0, 0.4);
     --input-bg: #222;
     --input-border: #444;
     /* Focus ring color */
