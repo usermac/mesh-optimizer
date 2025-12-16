@@ -199,7 +199,10 @@
 
             <button id="processBtn" disabled aria-describedby="processStatus">OPTIMIZE MESH</button>
             <span id="processStatus" class="visually-hidden" aria-live="polite"></span>
-            <a href="#" id="apiCodeLinkSidebar" class="text-center text-muted text-small d-block mt-5">Get API Code</a>
+            <div class="d-flex justify-center gap-20 mt-5">
+                <a href="#" id="apiCodeLinkSidebar" class="text-muted text-small">Get API Code</a>
+                <a href="#" id="batchScriptLinkSidebar" class="text-muted text-small">Batch Script</a>
+            </div>
 
             <!-- Fair Use Policy -->
             <div class="fair-use-policy-container" style="margin-top: 15px; padding: 0 10px;"></div>
@@ -1188,10 +1191,6 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                                 To process multiple files, wrap this command in a loop. Here's an example for <code>bash</code>:
                             </p>
                             <pre id="batchCodeBlock" class="code-block code-block-small"><code></code></pre>
-                            <p class="text-muted mt-10">
-                                Need a complete solution with progress tracking and automatic downloads?
-                                <a href="#" id="openBatchScriptGenerator" class="text-link">Generate a complete batch script →</a>
-                            </p>
                         </section>
                     </div>
                 </div>
@@ -1199,7 +1198,7 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
 
             <!-- Batch Script Generator Modal -->
             <div id="batchScriptModal" class="modal-overlay" role="dialog" aria-labelledby="batchScriptModalTitle" aria-modal="true">
-                <div class="modal-window" style="max-width: 700px; margin-left: auto; margin-right: 40px;">
+                <div class="modal-window">
                     <div class="modal-header">
                         <h2 class="m-0" id="batchScriptModalTitle">Batch Script Generator</h2>
                         <button type="button" class="modal-close" onclick="closeModal('batchScriptModal')" aria-label="Close batch script generator">&times;</button>
@@ -2201,9 +2200,9 @@ done`;
 
             function getBatchSettings() {
                 const mode = document.getElementById('modeSelect').value;
-                const ratio = document.getElementById('ratioSlider').value;
-                const faces = document.getElementById('facesSlider').value;
-                const textureSize = document.getElementById('textureSizeSlider').value;
+                const ratio = document.getElementById('ratio').value;
+                const faces = document.getElementById('targetFaces').value;
+                const textureSize = document.getElementById('textureSize').value;
                 const apiKey = localStorage.getItem('meshopt_api_key') || 'YOUR_API_KEY';
                 return { mode, ratio, faces, textureSize, apiKey };
             }
@@ -2432,7 +2431,7 @@ if __name__ == "__main__":
             }
 
             // Open batch script modal
-            document.getElementById('openBatchScriptGenerator').addEventListener('click', function(e) {
+            document.getElementById('batchScriptLinkSidebar').addEventListener('click', function(e) {
                 e.preventDefault();
                 updateBatchSettingsSummary();
                 updateBatchScript();
