@@ -1764,7 +1764,7 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                     while (true) {
                         await new Promise((r) => setTimeout(r, 1000));
                         const pollRes = await fetch(
-                            `/job/${jobId}?t=${Date.now()}`,
+                            `/job/${jobId}?t=${Date.now()}&mode=${mode}`,
                         );
                         if (!pollRes.ok)
                             throw new Error("Failed to poll job status");

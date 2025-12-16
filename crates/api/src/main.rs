@@ -82,6 +82,47 @@ fn load_pricing_config() -> Result<PricingConfig, String> {
     serde_json::from_str(&content).map_err(|e| format!("Failed to parse {}: {}", PRICING_FILE, e))
 }
 
+// Easter egg: load funny processing messages from JSON file
+const PROCESSING_MESSAGES_FILE: &str = "server/processing_messages.json";
+const DEFAULT_PROCESSING_MESSAGE: &str = "Processing...";
+
+#[derive(Clone, Default)]
+struct ProcessingMessages {
+    decimate: Vec<String>,
+    remesh: Vec<String>,
+}
+
+fn load_processing_messages() -> ProcessingMessages {
+    match fs::read_to_string(PROCESSING_MESSAGES_FILE) {
+        Ok(content) => match serde_json::from_str::<HashMap<String, Vec<String>>>(&content) {
+            Ok(map) => {
+                let decimate = map.get("decimate").cloned().unwrap_or_default();
+                let remesh = map.get("remesh").cloned().unwrap_or_default();
+                info!(
+                    "Loaded processing messages: {} decimate, {} remesh",
+                    decimate.len(),
+                    remesh.len()
+                );
+                ProcessingMessages { decimate, remesh }
+            }
+            Err(e) => {
+                warn!(
+                    "Failed to parse {}: {}, using default",
+                    PROCESSING_MESSAGES_FILE, e
+                );
+                ProcessingMessages::default()
+            }
+        },
+        Err(e) => {
+            warn!(
+                "Failed to read {}: {}, using default",
+                PROCESSING_MESSAGES_FILE, e
+            );
+            ProcessingMessages::default()
+        }
+    }
+}
+
 #[derive(Clone)]
 struct AppState {
     db: db::Database,
@@ -92,6 +133,7 @@ struct AppState {
     jobs: Arc<RwLock<HashMap<String, JobStatus>>>,
     worker_semaphore: Arc<Semaphore>,
     admin_rate_limiter: Arc<RwLock<HashMap<String, Vec<std::time::Instant>>>>,
+    processing_messages: Arc<ProcessingMessages>,
 }
 
 #[derive(Clone)]
@@ -216,6 +258,7 @@ async fn main() -> Result<()> {
         jobs: Arc::new(RwLock::new(recovered_jobs)),
         worker_semaphore: Arc::new(Semaphore::new(worker_slots)),
         admin_rate_limiter: Arc::new(RwLock::new(HashMap::new())),
+        processing_messages: Arc::new(load_processing_messages()),
     };
 
     // 4. Start Cleanup Task
@@ -595,23 +638,10 @@ async fn success_page(
 
 // --- OPTIMIZATION HANDLER ---
 
-// Easter egg: funny status messages shown while processing
-const PROCESSING_MESSAGES: &[&str] = &[
-    "Reticulating Splines...",
-    "Calibrating Flux Capacitors...",
-    "Reversing the Polarity...",
-    "Polishing the Utah Teapot...",
-    "Warming Up the Hamsters...",
-    "Bribing the Render Fairies...",
-    "Untangling Normals...",
-    "Herding Wayward UVs...",
-    "Applying Digital Elbow Grease...",
-    "Teaching Triangles Manners...",
-    "Make it so...",
-    "Energizing Vertices...",
-];
-
-fn get_processing_message(job_id: &str) -> &'static str {
+fn get_processing_message(messages: &[String], job_id: &str) -> String {
+    if messages.is_empty() {
+        return DEFAULT_PROCESSING_MESSAGE.to_string();
+    }
     use std::time::{SystemTime, UNIX_EPOCH};
     let secs = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -619,20 +649,32 @@ fn get_processing_message(job_id: &str) -> &'static str {
         .as_secs();
     // Hash job_id to get a starting offset so different jobs show different messages
     let offset: u64 = job_id.bytes().map(|b| b as u64).sum();
-    let index = (secs + offset) % PROCESSING_MESSAGES.len() as u64;
-    PROCESSING_MESSAGES[index as usize]
+    let index = (secs + offset) % messages.len() as u64;
+    messages[index as usize].clone()
+}
+
+#[derive(Deserialize)]
+struct JobStatusQuery {
+    mode: Option<String>,
 }
 
 async fn job_status_handler(
     State(state): State<AppState>,
     AxumPath(id): AxumPath<String>,
+    Query(query): Query<JobStatusQuery>,
 ) -> Json<serde_json::Value> {
+    // Select messages based on mode (default to decimate)
+    let messages = match query.mode.as_deref() {
+        Some("remesh") => &state.processing_messages.remesh,
+        _ => &state.processing_messages.decimate,
+    };
+
     // Helper to format status response, with easter egg for Processing
-    let format_status = |status: &JobStatus, job_id: &str| -> serde_json::Value {
+    let format_status = |status: &JobStatus, job_id: &str, msgs: &[String]| -> serde_json::Value {
         match status {
             JobStatus::Processing => json!({
                 "status": "Processing",
-                "message": get_processing_message(job_id)
+                "message": get_processing_message(msgs, job_id)
             }),
             _ => json!({ "status": status }),
         }
@@ -642,7 +684,7 @@ async fn job_status_handler(
     {
         let jobs = state.jobs.read().await;
         if let Some(status) = jobs.get(&id) {
-            return Json(format_status(status, &id));
+            return Json(format_status(status, &id, messages));
         }
     }
 
@@ -653,7 +695,7 @@ async fn job_status_handler(
             let mut jobs = state.jobs.write().await;
             jobs.insert(id.clone(), status.clone());
         }
-        return Json(format_status(&status, &id));
+        return Json(format_status(&status, &id, messages));
     }
 
     Json(json!({ "error": "Job not found" }))
