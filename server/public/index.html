@@ -1135,8 +1135,9 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                         <div class="d-flex align-center gap-20">
                             <h2 class="m-0" id="apiCodeModalTitle">Your API Command</h2>
                             <div class="tabs" style="margin-bottom: 0; border-bottom: none; position: static; padding-top: 0;" role="tablist" aria-label="Output format selection">
-                                <button class="tab-btn active" onclick="switchApiTab('glb')" role="tab" aria-selected="true" aria-controls="apiCodeContent" id="tab-glb">GLB</button>
+                                <button class="tab-btn" onclick="switchApiTab('glb')" role="tab" aria-selected="false" aria-controls="apiCodeContent" id="tab-glb">GLB</button>
                                 <button class="tab-btn" onclick="switchApiTab('usdz')" role="tab" aria-selected="false" aria-controls="apiCodeContent" id="tab-usdz">USDZ</button>
+                                <button class="tab-btn active" onclick="switchApiTab('both')" role="tab" aria-selected="true" aria-controls="apiCodeContent" id="tab-both">Both</button>
                             </div>
                         </div>
                         <button type="button" class="modal-close" onclick="closeModal('apiCodeModal')" aria-label="Close API code">&times;</button>
@@ -1200,7 +1201,14 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
             <div id="batchScriptModal" class="modal-overlay" role="dialog" aria-labelledby="batchScriptModalTitle" aria-modal="true">
                 <div class="modal-window">
                     <div class="modal-header">
-                        <h2 class="m-0" id="batchScriptModalTitle">Batch Script Generator</h2>
+                        <div class="d-flex align-center gap-20">
+                            <h2 class="m-0" id="batchScriptModalTitle">Batch Script Generator</h2>
+                            <div class="tabs" style="margin-bottom: 0; border-bottom: none; position: static; padding-top: 0;" role="tablist" aria-label="Output format selection">
+                                <button class="tab-btn" onclick="switchBatchFormat('glb')" role="tab" aria-selected="false" aria-controls="batchScriptOutput" id="tab-batch-format-glb">GLB</button>
+                                <button class="tab-btn" onclick="switchBatchFormat('usdz')" role="tab" aria-selected="false" aria-controls="batchScriptOutput" id="tab-batch-format-usdz">USDZ</button>
+                                <button class="tab-btn active" onclick="switchBatchFormat('both')" role="tab" aria-selected="true" aria-controls="batchScriptOutput" id="tab-batch-format-both">Both</button>
+                            </div>
+                        </div>
                         <button type="button" class="modal-close" onclick="closeModal('batchScriptModal')" aria-label="Close batch script generator">&times;</button>
                     </div>
                     <div class="modal-body">
@@ -2058,14 +2066,14 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 openModal("contactModal", originalTrigger);
             });
 
-            let currentApiFormat = 'glb';
+            let currentApiFormat = 'both';
 
             function switchApiTab(format) {
                 currentApiFormat = format;
 
                 // Update Tab UI and ARIA attributes
-                document.querySelectorAll('#apiCodeModal .tab-btn').forEach(btn => {
-                    const isActive = btn.textContent.toLowerCase() === format;
+                document.querySelectorAll('#apiCodeModal .modal-header .tab-btn').forEach(btn => {
+                    const isActive = btn.id === 'tab-' + format;
                     btn.classList.toggle('active', isActive);
                     btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
                 });
@@ -2143,7 +2151,7 @@ done`;
             // API Code modal link handlers
             document.getElementById("apiCodeLinkSidebar").addEventListener("click", function(e) {
                 e.preventDefault();
-                switchApiTab('glb'); // Default to GLB when opening
+                switchApiTab('both'); // Default to Both when opening
                 openModal("apiCodeModal", this);
             });
 
@@ -2197,6 +2205,7 @@ done`;
 
             // --- Batch Script Generator ---
             let currentBatchScriptLang = 'bash';
+            let currentBatchFormat = 'both';
 
             function getBatchSettings() {
                 const mode = document.getElementById('modeSelect').value;
@@ -2204,27 +2213,65 @@ done`;
                 const faces = document.getElementById('targetFaces').value;
                 const textureSize = document.getElementById('textureSize').value;
                 const apiKey = localStorage.getItem('meshopt_api_key') || 'YOUR_API_KEY';
-                return { mode, ratio, faces, textureSize, apiKey };
+                const format = currentBatchFormat;
+                return { mode, ratio, faces, textureSize, apiKey, format };
             }
 
             function updateBatchSettingsSummary() {
                 const s = getBatchSettings();
+                const formatLabel = s.format === 'both' ? 'GLB + USDZ' : s.format.toUpperCase();
                 let summary = '';
                 if (s.mode === 'decimate') {
-                    summary = `<strong>Mode:</strong> Decimate @ ${s.ratio}% &nbsp;|&nbsp; <strong>Format:</strong> GLB + USDZ`;
+                    summary = `<strong>Mode:</strong> Decimate @ ${s.ratio}% &nbsp;|&nbsp; <strong>Format:</strong> ${formatLabel}`;
                 } else {
-                    summary = `<strong>Mode:</strong> Remesh @ ${s.faces.toLocaleString()} faces, ${s.textureSize}px textures &nbsp;|&nbsp; <strong>Format:</strong> GLB + USDZ`;
+                    summary = `<strong>Mode:</strong> Remesh @ ${s.faces.toLocaleString()} faces, ${s.textureSize}px textures &nbsp;|&nbsp; <strong>Format:</strong> ${formatLabel}`;
                 }
                 document.getElementById('batchSettingsSummary').innerHTML = summary;
+            }
+
+            function switchBatchFormat(format) {
+                currentBatchFormat = format;
+
+                document.querySelectorAll('#batchScriptModal .modal-header .tab-btn').forEach(btn => {
+                    const isActive = btn.id === 'tab-batch-format-' + format;
+                    btn.classList.toggle('active', isActive);
+                    btn.setAttribute('aria-selected', isActive);
+                });
+
+                updateBatchSettingsSummary();
+                updateBatchScript();
             }
 
             function generateBashScript(files, settings) {
                 const fileArray = files.filter(f => f.trim()).map(f => `"${f.trim()}"`).join('\n  ');
                 if (!fileArray) return 'Paste file paths above to generate script...';
 
+                const formatLabel = settings.format === 'both' ? 'GLB + USDZ' : settings.format.toUpperCase();
+
+                // Generate download commands based on format
+                let downloadCommands;
+                if (settings.format === 'glb') {
+                    downloadCommands = `glb_url=$(echo "$status" | grep -o '"glb_url":"[^"]*"' | cut -d'"' -f4)
+
+      base="\${JOBS[$jobId]%.*}"
+      curl -s -o "$OUTPUT_DIR/\${base}_opt.glb" "$BASE_URL$glb_url"`;
+                } else if (settings.format === 'usdz') {
+                    downloadCommands = `usdz_url=$(echo "$status" | grep -o '"usdz_url":"[^"]*"' | cut -d'"' -f4)
+
+      base="\${JOBS[$jobId]%.*}"
+      curl -s -o "$OUTPUT_DIR/\${base}_opt.usdz" "$BASE_URL$usdz_url"`;
+                } else {
+                    downloadCommands = `glb_url=$(echo "$status" | grep -o '"glb_url":"[^"]*"' | cut -d'"' -f4)
+      usdz_url=$(echo "$status" | grep -o '"usdz_url":"[^"]*"' | cut -d'"' -f4)
+
+      base="\${JOBS[$jobId]%.*}"
+      curl -s -o "$OUTPUT_DIR/\${base}_opt.glb" "$BASE_URL$glb_url"
+      curl -s -o "$OUTPUT_DIR/\${base}_opt.usdz" "$BASE_URL$usdz_url"`;
+                }
+
                 return `#!/bin/bash
 # Batch Mesh Optimizer Script
-# Generated with settings: ${settings.mode === 'decimate' ? 'Decimate @ ' + settings.ratio + '%' : 'Remesh @ ' + settings.faces + ' faces'}
+# Generated with settings: ${settings.mode === 'decimate' ? 'Decimate @ ' + settings.ratio + '%' : 'Remesh @ ' + settings.faces + ' faces'}, Format: ${formatLabel}
 
 API_KEY="${settings.apiKey}"
 BASE_URL="https://webdeliveryengine.com"
@@ -2254,7 +2301,7 @@ for file in "\${FILES[@]}"; do
     -F "file=@$file" \\
     -F "mode=${settings.mode}" \\
     ${settings.mode === 'decimate' ? `-F "ratio=${settings.ratio / 100}"` : `-F "faces=${settings.faces}" -F "texture_size=${settings.textureSize}"`} \\
-    -F "format=both")
+    -F "format=${settings.format}")
 
   jobId=$(echo "$response" | grep -o '"jobId":"[^"]*"' | cut -d'"' -f4)
 
@@ -2278,12 +2325,7 @@ while [[ \${#JOBS[@]} -gt 0 ]]; do
     status=$(curl -s "$BASE_URL/job/$jobId")
 
     if echo "$status" | grep -q '"Completed"'; then
-      glb_url=$(echo "$status" | grep -o '"glb_url":"[^"]*"' | cut -d'"' -f4)
-      usdz_url=$(echo "$status" | grep -o '"usdz_url":"[^"]*"' | cut -d'"' -f4)
-
-      base="\${JOBS[$jobId]%.*}"
-      curl -s -o "$OUTPUT_DIR/\${base}_opt.glb" "$BASE_URL$glb_url"
-      curl -s -o "$OUTPUT_DIR/\${base}_opt.usdz" "$BASE_URL$usdz_url"
+      ${downloadCommands}
 
       ((completed++))
       echo "[$completed/$total] Downloaded: \${JOBS[$jobId]}"
@@ -2307,10 +2349,32 @@ echo "Batch complete! Files saved to $OUTPUT_DIR/"`;
                 const fileList = files.filter(f => f.trim()).map(f => `    "${f.trim()}",`).join('\n');
                 if (!fileList) return 'Paste file paths above to generate script...';
 
+                const formatLabel = settings.format === 'both' ? 'GLB + USDZ' : settings.format.toUpperCase();
+
+                // Generate download commands based on format
+                let downloadCommands;
+                if (settings.format === 'glb') {
+                    downloadCommands = `# Download GLB
+                glb = requests.get(f"{BASE_URL}{data['glb_url']}")
+                (OUTPUT_DIR / f"{base}_opt.glb").write_bytes(glb.content)`;
+                } else if (settings.format === 'usdz') {
+                    downloadCommands = `# Download USDZ
+                usdz = requests.get(f"{BASE_URL}{data['usdz_url']}")
+                (OUTPUT_DIR / f"{base}_opt.usdz").write_bytes(usdz.content)`;
+                } else {
+                    downloadCommands = `# Download GLB
+                glb = requests.get(f"{BASE_URL}{data['glb_url']}")
+                (OUTPUT_DIR / f"{base}_opt.glb").write_bytes(glb.content)
+
+                # Download USDZ
+                usdz = requests.get(f"{BASE_URL}{data['usdz_url']}")
+                (OUTPUT_DIR / f"{base}_opt.usdz").write_bytes(usdz.content)`;
+                }
+
                 return `#!/usr/bin/env python3
 """
 Batch Mesh Optimizer Script
-Generated with settings: ${settings.mode === 'decimate' ? 'Decimate @ ' + settings.ratio + '%' : 'Remesh @ ' + settings.faces + ' faces'}
+Generated with settings: ${settings.mode === 'decimate' ? 'Decimate @ ' + settings.ratio + '%' : 'Remesh @ ' + settings.faces + ' faces'}, Format: ${formatLabel}
 """
 
 import os
@@ -2350,7 +2414,7 @@ def main():
                     "mode": "${settings.mode}",
                     ${settings.mode === 'decimate' ? `"ratio": "${settings.ratio / 100}",` : `"faces": "${settings.faces}",
                     "texture_size": "${settings.textureSize}",`}
-                    "format": "both"
+                    "format": "${settings.format}"
                 }
             )
 
@@ -2379,13 +2443,7 @@ def main():
                 data = status["Completed"]
                 base = Path(jobs[job_id]).stem
 
-                # Download GLB
-                glb = requests.get(f"{BASE_URL}{data['glb_url']}")
-                (OUTPUT_DIR / f"{base}_opt.glb").write_bytes(glb.content)
-
-                # Download USDZ
-                usdz = requests.get(f"{BASE_URL}{data['usdz_url']}")
-                (OUTPUT_DIR / f"{base}_opt.usdz").write_bytes(usdz.content)
+${downloadCommands}
 
                 completed += 1
                 print(f"[{completed}/{total}] Downloaded: {jobs[job_id]}")
