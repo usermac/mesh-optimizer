@@ -600,7 +600,7 @@ const PROCESSING_MESSAGES: &[&str] = &[
     "Reticulating Splines...",
     "Calibrating Flux Capacitors...",
     "Reversing the Polarity...",
-    "Consulting the Oracle...",
+    "Polishing the Utah Teapot...",
     "Warming Up the Hamsters...",
     "Bribing the Render Fairies...",
     "Untangling Normals...",
