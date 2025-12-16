@@ -526,7 +526,7 @@
                                     <h4>Premium Remesh (Bake)</h4>
                                     <p>
                                         <strong>Cost:</strong>
-                                        <span id="help-cost-remesh">5</span>
+                                        <span id="help-cost-remesh">2</span>
                                         <span id="help-label-remesh">Credits</span>
                                     </p>
                                     <p>
@@ -1034,7 +1034,7 @@
     "free_reoptimization_hours": 24
   },
   "cost_decimate": 1,
-  "cost_remesh": 5
+  "cost_remesh": 2
 }</code></pre>
                         </section>
 
@@ -1056,7 +1056,7 @@
                             <h3>Billing Notes</h3>
                             <ul>
                                 <li><strong>Decimate</strong> costs <span id="docs-cost-decimate">1</span> credit per job</li>
-                                <li><strong>Remesh</strong> costs <span id="docs-cost-remesh">5</span> credits per job</li>
+                                <li><strong>Remesh</strong> costs <span id="docs-cost-remesh">2</span> credits per job</li>
                                 <li><strong>Auto-refunds:</strong> Failed jobs are automatically refunded</li>
                                 <li><strong>Credits never expire</strong></li>
                             </ul>
@@ -1316,7 +1316,7 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
 
             let selectedFile = null;
             let currentBlobUrl = null;
-            let pricingConfig = { cost_decimate: 1, cost_remesh: 5 };
+            let pricingConfig = { cost_decimate: 1, cost_remesh: 2 };
 
             function updateFairUseDisplay(hours) {
                 const containers = document.querySelectorAll(".fair-use-policy-container");
@@ -2237,7 +2237,7 @@ done`;
 
                 // Update use-case indicators
                 const costDecimate = pricingConfig.cost_decimate || 1;
-                const costRemesh = pricingConfig.cost_remesh || 5;
+                const costRemesh = pricingConfig.cost_remesh || 2;
 
                 // Calculate effective cost per credit based on tier (not affected by rounding)
                 // effectiveRate = baseRate / (1 + bonusPercent/100)

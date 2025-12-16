@@ -71,6 +71,8 @@ struct PricingConfig {
     default_purchase_usd: u32,
     tiers: Vec<PricingTier>,
     free_reoptimization_hours: u32,
+    cost_decimate: i32,
+    cost_remesh: i32,
 }
 
 /// Load pricing config fresh from disk (enables hot reloading without restart)
@@ -323,15 +325,6 @@ async fn get_config() -> Result<Json<serde_json::Value>, StatusCode> {
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
-    let cost_decimate = std::env::var("COST_DECIMATE")
-        .ok()
-        .and_then(|v| v.parse::<i32>().ok())
-        .unwrap_or(1);
-    let cost_remesh = std::env::var("COST_REMESH")
-        .ok()
-        .and_then(|v| v.parse::<i32>().ok())
-        .unwrap_or(5);
-
     Ok(Json(json!({
         "pricing": {
             "base_rate_usd_per_credit": pricing.base_rate_usd_per_credit,
@@ -341,8 +334,8 @@ async fn get_config() -> Result<Json<serde_json::Value>, StatusCode> {
             "tiers": pricing.tiers,
             "free_reoptimization_hours": pricing.free_reoptimization_hours
         },
-        "cost_decimate": cost_decimate,
-        "cost_remesh": cost_remesh
+        "cost_decimate": pricing.cost_decimate,
+        "cost_remesh": pricing.cost_remesh
     })))
 }
 
@@ -903,7 +896,9 @@ async fn optimize_handler(
     // Combine file hash with mode so that decimate and remesh are tracked separately
     // This prevents gaming: decimate (1 credit) then remesh (free) on same file
     let file_mode_hash = format!("{}:{}", file_hash, mode);
-    let free_reoptimization_hours = load_pricing_config()
+    let pricing_config = load_pricing_config();
+    let free_reoptimization_hours = pricing_config
+        .as_ref()
         .map(|p| p.free_reoptimization_hours)
         .unwrap_or(24);
     let should_charge = state
@@ -912,15 +907,12 @@ async fn optimize_handler(
         .await;
     let mut deducted = false;
 
-    // Pricing Logic
-    let cost_decimate = std::env::var("COST_DECIMATE")
-        .ok()
-        .and_then(|v| v.parse::<i32>().ok())
+    // Pricing Logic - read from pricing.json
+    let cost_decimate = pricing_config
+        .as_ref()
+        .map(|p| p.cost_decimate)
         .unwrap_or(1);
-    let cost_remesh = std::env::var("COST_REMESH")
-        .ok()
-        .and_then(|v| v.parse::<i32>().ok())
-        .unwrap_or(5);
+    let cost_remesh = pricing_config.as_ref().map(|p| p.cost_remesh).unwrap_or(2);
 
     let required_credits = if mode == "remesh" {
         cost_remesh

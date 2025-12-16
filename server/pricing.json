@@ -31,5 +31,7 @@
       "bonus_percent": 25
     }
   ],
-  "free_reoptimization_hours": 24
+  "free_reoptimization_hours": 24,
+  "cost_decimate": 1,
+  "cost_remesh": 2
 }
