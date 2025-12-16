@@ -1410,7 +1410,7 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                         <p class="m-0 mb-5"><strong class="text-primary">Why MeshOpt?</strong></p>
                         <ul class="m-0" style="padding-left: 1.2em; line-height: 1.6;">
                             <li><strong>Free re-optimization</strong> — Same file, different settings? Free for <span class="text-primary">${hours} hours</span></li>
-                            <li><strong>Dual output</strong> — Get GLB + USDZ in every job</li>
+                            <li><strong>Dual output</strong> — Get GLB + USDZ in every job/API pickable</li>
                             <li><strong>Auto-refunds</strong> — Failed jobs refunded automatically</li>
                             <li><strong>Credits never expire</strong></li>
                         </ul>
@@ -1774,7 +1774,8 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                         const status = pollData.status;
 
                         if (status === "Processing" || status === "Queued") {
-                            const msg = pollData.message || "Still processing. Please wait.";
+                            const msg = pollData.message || "Processing...";
+                            loader.innerHTML = msg;
                             announceStatus(msg);
                             continue;
                         } else if (status && status.Completed) {

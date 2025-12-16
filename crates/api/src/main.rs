@@ -611,13 +611,16 @@ const PROCESSING_MESSAGES: &[&str] = &[
     "Energizing Vertices...",
 ];
 
-fn get_processing_message() -> &'static str {
+fn get_processing_message(job_id: &str) -> &'static str {
     use std::time::{SystemTime, UNIX_EPOCH};
     let secs = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
         .as_secs();
-    PROCESSING_MESSAGES[(secs % PROCESSING_MESSAGES.len() as u64) as usize]
+    // Hash job_id to get a starting offset so different jobs show different messages
+    let offset: u64 = job_id.bytes().map(|b| b as u64).sum();
+    let index = (secs + offset) % PROCESSING_MESSAGES.len() as u64;
+    PROCESSING_MESSAGES[index as usize]
 }
 
 async fn job_status_handler(
@@ -625,11 +628,11 @@ async fn job_status_handler(
     AxumPath(id): AxumPath<String>,
 ) -> Json<serde_json::Value> {
     // Helper to format status response, with easter egg for Processing
-    let format_status = |status: &JobStatus| -> serde_json::Value {
+    let format_status = |status: &JobStatus, job_id: &str| -> serde_json::Value {
         match status {
             JobStatus::Processing => json!({
                 "status": "Processing",
-                "message": get_processing_message()
+                "message": get_processing_message(job_id)
             }),
             _ => json!({ "status": status }),
         }
@@ -639,7 +642,7 @@ async fn job_status_handler(
     {
         let jobs = state.jobs.read().await;
         if let Some(status) = jobs.get(&id) {
-            return Json(format_status(status));
+            return Json(format_status(status, &id));
         }
     }
 
@@ -648,9 +651,9 @@ async fn job_status_handler(
         // Cache it in memory for future lookups
         {
             let mut jobs = state.jobs.write().await;
-            jobs.insert(id, status.clone());
+            jobs.insert(id.clone(), status.clone());
         }
-        return Json(format_status(&status));
+        return Json(format_status(&status, &id));
     }
 
     Json(json!({ "error": "Job not found" }))
