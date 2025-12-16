@@ -2217,7 +2217,7 @@ done`;
                 const ratio = document.getElementById('ratio').value;
                 const faces = document.getElementById('targetFaces').value;
                 const textureSize = document.getElementById('textureSize').value;
-                const apiKey = localStorage.getItem('meshopt_api_key') || 'YOUR_API_KEY';
+                const apiKey = document.getElementById('apiKey').value || 'YOUR_API_KEY';
                 const format = currentBatchFormat;
                 return { mode, ratio, faces, textureSize, apiKey, format };
             }
