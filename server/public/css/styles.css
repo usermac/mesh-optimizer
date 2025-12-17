@@ -1263,3 +1263,27 @@ button[type="reset"]:hover {
     font-weight: 600;
     box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
 }
+
+/* API Key Warning Banner */
+.api-key-warning {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid #ef4444;
+    border-radius: 8px;
+    color: #fca5a5;
+    font-size: 0.875rem;
+}
+
+.api-key-warning-icon {
+    font-size: 1.25rem;
+    color: #ef4444;
+    flex-shrink: 0;
+}
+
+.api-key-warning strong {
+    color: #ef4444;
+}
