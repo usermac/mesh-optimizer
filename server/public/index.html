@@ -171,14 +171,33 @@
 
             <!-- Decimate Controls -->
             <div id="decimateControls" class="slider-group" role="group" aria-labelledby="ratioLabel">
-                <div class="slider-header">
-                    <label for="ratio" id="ratioLabel">Target Quality</label>
-                    <span id="ratioVal" aria-live="polite">50%</span>
+                <!-- Percentage Mode (default) -->
+                <div id="percentageMode">
+                    <div class="slider-header">
+                        <label for="ratio" id="ratioLabel">Target Quality</label>
+                        <span id="ratioVal" aria-live="polite">50%</span>
+                    </div>
+                    <input type="range" id="ratio" min="1" max="100" value="50" aria-valuemin="1" aria-valuemax="100" aria-valuenow="50" aria-label="Target quality percentage" aria-describedby="ratioHelp" />
+                    <p id="ratioHelp" class="text-xs text-muted m-0">
+                        Lower = Less Detail. Higher = More Detail.
+                    </p>
                 </div>
-                <input type="range" id="ratio" min="1" max="100" value="50" aria-valuemin="1" aria-valuemax="100" aria-valuenow="50" aria-label="Target quality percentage" aria-describedby="ratioHelp" />
-                <p id="ratioHelp" class="text-xs text-muted m-0">
-                    Lower = Less Detail. Higher = More Detail.
-                </p>
+                <!-- Face Count Mode (shown when checkbox is checked) -->
+                <div id="faceCountMode" style="display: none;">
+                    <div class="mb-10">
+                        <label for="decimateTargetFaces">Target Faces</label>
+                        <input type="number" id="decimateTargetFaces" value="5000" min="100" aria-label="Target number of faces for decimation" />
+                    </div>
+                    <p id="originalFaceCount" class="text-xs text-muted m-0" style="display: none;">
+                        Original: <span id="originalFaceCountValue">--</span> faces
+                    </p>
+                </div>
+                <!-- Toggle between modes -->
+                <div class="d-flex align-center gap-10 mt-10">
+                    <input type="checkbox" id="useFaceCount" aria-label="Use exact face count instead of percentage" />
+                    <label for="useFaceCount" class="text-small text-muted m-0" style="cursor: pointer;">Use exact face count</label>
+                    <span id="faceCountLoading" class="text-small text-muted" style="display: none;">(Analyzing...)</span>
+                </div>
             </div>
 
             <!-- Remesh Controls -->
@@ -967,7 +986,9 @@
                                 <tbody>
                                     <tr><td><code>file</code></td><td>file</td><td>Yes</td><td>3D model file (.obj, .fbx, .glb, .gltf), .zip, or multiple files (model + .mtl + textures). Max 50 texture files.</td></tr>
                                     <tr><td><code>mode</code></td><td>string</td><td>No</td><td><code>decimate</code> (default) or <code>remesh</code></td></tr>
-                                    <tr><td><code>ratio</code></td><td>float</td><td>No</td><td>0.0-1.0 quality ratio for decimate mode (default: 0.5)</td></tr>
+                                    <tr><td><code>target_percentage</code></td><td>float</td><td>No</td><td>Target quality as percentage (1-100) for decimate mode. E.g., 50 = keep 50% of faces.</td></tr>
+                                    <tr><td><code>target_faces</code></td><td>int</td><td>No</td><td>Exact target face count for decimate mode. Alternative to target_percentage.</td></tr>
+                                    <tr><td><code>ratio</code></td><td>float</td><td>No</td><td><em>(Legacy)</em> 0.0-1.0 quality ratio for decimate mode. Use target_percentage instead.</td></tr>
                                     <tr><td><code>faces</code></td><td>int</td><td>No</td><td>Target face count for remesh mode (default: 5000)</td></tr>
                                     <tr><td><code>texture_size</code></td><td>int</td><td>No</td><td>Texture resolution for remesh: 1024, 2048, 4096 (default: 2048)</td></tr>
                                     <tr><td><code>format</code></td><td>string</td><td>No</td><td>Output format: <code>glb</code>, <code>usdz</code>, or <code>both</code> (default: <code>glb</code>)</td></tr>
@@ -1103,7 +1124,7 @@ curl -X POST 'https://webdeliveryengine.com/optimize' \
      -H 'Authorization: Bearer YOUR_API_KEY' \
      -F 'file=@model.zip' \
      -F 'mode=decimate' \
-     -F 'ratio=0.5'
+     -F 'target_percentage=50'
 
 # Option B: Multi-file upload (OBJ with 6 textures)
 curl -X POST 'https://webdeliveryengine.com/optimize' \
@@ -1117,7 +1138,14 @@ curl -X POST 'https://webdeliveryengine.com/optimize' \
      -F 'file=@ao.png' \
      -F 'file=@emissive.png' \
      -F 'mode=decimate' \
-     -F 'ratio=0.5'
+     -F 'target_percentage=50'
+
+# Option C: Using exact face count target
+curl -X POST 'https://webdeliveryengine.com/optimize' \
+     -H 'Authorization: Bearer YOUR_API_KEY' \
+     -F 'file=@model.glb' \
+     -F 'mode=decimate' \
+     -F 'target_faces=25000'
 
 # 2. Poll for completion (replace JOB_ID)
 curl 'https://webdeliveryengine.com/job/JOB_ID'
@@ -1567,6 +1595,129 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 resetToOptimize();
             });
 
+            // Face count mode toggle for decimate
+            let parsedFaceCount = null; // Cached face count from parsing
+            const useFaceCountCheckbox = document.getElementById("useFaceCount");
+            const percentageMode = document.getElementById("percentageMode");
+            const faceCountMode = document.getElementById("faceCountMode");
+            const faceCountLoading = document.getElementById("faceCountLoading");
+            const originalFaceCountEl = document.getElementById("originalFaceCount");
+            const originalFaceCountValue = document.getElementById("originalFaceCountValue");
+            const decimateTargetFaces = document.getElementById("decimateTargetFaces");
+
+            useFaceCountCheckbox.addEventListener("change", async (e) => {
+                if (e.target.checked) {
+                    // Switch to face count mode
+                    percentageMode.style.display = "none";
+                    faceCountMode.style.display = "block";
+
+                    // Parse the file to get face count if we haven't already
+                    if (selectedFile && parsedFaceCount === null) {
+                        await parseFileFaceCount(selectedFile);
+                    }
+                } else {
+                    // Switch back to percentage mode
+                    percentageMode.style.display = "block";
+                    faceCountMode.style.display = "none";
+                }
+                resetToOptimize();
+            });
+
+            decimateTargetFaces.addEventListener("input", resetToOptimize);
+
+            // Parse GLB/GLTF to get face count
+            async function parseFileFaceCount(file) {
+                const ext = file.name.split(".").pop().toLowerCase();
+
+                // Only parse GLB and GLTF for now (OBJ would need different parsing)
+                if (ext !== "glb" && ext !== "gltf") {
+                    originalFaceCountEl.style.display = "none";
+                    return;
+                }
+
+                faceCountLoading.style.display = "inline";
+
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+
+                    if (ext === "glb") {
+                        parsedFaceCount = parseGLBFaceCount(arrayBuffer);
+                    } else if (ext === "gltf") {
+                        // For GLTF, parse JSON and sum up accessor counts
+                        const text = new TextDecoder().decode(arrayBuffer);
+                        const gltf = JSON.parse(text);
+                        parsedFaceCount = parseGLTFFaceCount(gltf);
+                    }
+
+                    if (parsedFaceCount !== null) {
+                        originalFaceCountValue.textContent = parsedFaceCount.toLocaleString();
+                        originalFaceCountEl.style.display = "block";
+
+                        // Set default target to 50% of original
+                        const defaultTarget = Math.round(parsedFaceCount * 0.5);
+                        decimateTargetFaces.value = defaultTarget;
+                    }
+                } catch (err) {
+                    console.error("Failed to parse face count:", err);
+                    originalFaceCountEl.style.display = "none";
+                } finally {
+                    faceCountLoading.style.display = "none";
+                }
+            }
+
+            // Parse GLB binary to extract face count
+            function parseGLBFaceCount(arrayBuffer) {
+                const dataView = new DataView(arrayBuffer);
+
+                // GLB header: magic (4), version (4), length (4)
+                const magic = dataView.getUint32(0, true);
+                if (magic !== 0x46546C67) { // "glTF" in little-endian
+                    throw new Error("Not a valid GLB file");
+                }
+
+                // First chunk header: length (4), type (4)
+                const jsonChunkLength = dataView.getUint32(12, true);
+                const jsonChunkType = dataView.getUint32(16, true);
+
+                if (jsonChunkType !== 0x4E4F534A) { // "JSON" in little-endian
+                    throw new Error("First chunk is not JSON");
+                }
+
+                // Extract JSON
+                const jsonBytes = new Uint8Array(arrayBuffer, 20, jsonChunkLength);
+                const jsonText = new TextDecoder().decode(jsonBytes);
+                const gltf = JSON.parse(jsonText);
+
+                return parseGLTFFaceCount(gltf);
+            }
+
+            // Parse GLTF JSON to count faces from accessors
+            function parseGLTFFaceCount(gltf) {
+                let totalFaces = 0;
+
+                if (!gltf.meshes) return null;
+
+                for (const mesh of gltf.meshes) {
+                    if (!mesh.primitives) continue;
+
+                    for (const primitive of mesh.primitives) {
+                        // mode 4 = TRIANGLES (default if not specified)
+                        const mode = primitive.mode !== undefined ? primitive.mode : 4;
+
+                        if (mode === 4 && primitive.indices !== undefined) {
+                            // Get the accessor for indices
+                            const accessor = gltf.accessors[primitive.indices];
+                            if (accessor) {
+                                // Each face has 3 indices
+                                totalFaces += Math.floor(accessor.count / 3);
+                            }
+                        }
+                    }
+                }
+
+                return totalFaces > 0 ? totalFaces : null;
+            }
+
             document
                 .getElementById("mtlInput")
                 .addEventListener("change", resetToOptimize);
@@ -1756,6 +1907,11 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 if (!file) return;
                 selectedFile = file;
 
+                // Reset face count parsing state for new file
+                parsedFaceCount = null;
+                originalFaceCountEl.style.display = "none";
+                originalFaceCountValue.textContent = "--";
+
                 // Show/Hide Optional Inputs and ZIP notice based on extension
                 const ext = file.name.split(".").pop().toLowerCase();
                 const objInputs = document.getElementById("objInputs");
@@ -1776,6 +1932,11 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                     // Clear optional inputs if switching away from OBJ
                     document.getElementById("mtlInput").value = "";
                     document.getElementById("texInput").value = "";
+                }
+
+                // If face count mode is active, parse the new file
+                if (useFaceCountCheckbox.checked && (ext === "glb" || ext === "gltf")) {
+                    parseFileFaceCount(file);
                 }
 
                 const fileSize = formatFileSize(file.size);
@@ -1817,14 +1978,12 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                     }
                 }
 
-                // Convert 50% -> 0.5
-                const ratioFloat = parseInt(ratioSlider.value) / 100;
-                formData.append("ratio", ratioFloat);
                 formData.append("format", "both");
 
-                // Remesh params
+                // Mode-specific params
                 const mode = modeSelect.value;
                 formData.append("mode", mode);
+
                 if (mode === "remesh") {
                     formData.append(
                         "faces",
@@ -1834,6 +1993,14 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                         "texture_size",
                         document.getElementById("textureSize").value,
                     );
+                } else {
+                    // Decimate mode: send either target_faces or target_percentage based on checkbox
+                    if (useFaceCountCheckbox.checked) {
+                        formData.append("target_faces", decimateTargetFaces.value);
+                    } else {
+                        // Send as percentage (1-100), server will convert
+                        formData.append("target_percentage", ratioSlider.value);
+                    }
                 }
 
                 try {
@@ -2298,8 +2465,10 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 const apiKey = document.getElementById('apiKey').value || 'YOUR_API_KEY';
                 const mode = document.getElementById('modeSelect').value;
                 const ratio = document.getElementById('ratio').value;
-                const targetFaces = document.getElementById('targetFaces').value;
+                const targetFaces = document.getElementById('targetFaces').value; // For remesh
+                const decimateTargetFacesVal = document.getElementById('decimateTargetFaces').value; // For decimate face count mode
                 const textureSize = document.getElementById('textureSize').value;
+                const useFaceCountMode = document.getElementById('useFaceCount').checked;
 
                 // Build file list
                 let files = [];
@@ -2328,7 +2497,11 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                     params.push(`-F 'mode=${mode}'`);
                     params.push(`-F 'format=${currentApiFormat}'`);
                     if (mode === 'decimate') {
-                        params.push(`-F 'ratio=${(ratio / 100).toFixed(2)}'`);
+                        if (useFaceCountMode) {
+                            params.push(`-F 'target_faces=${decimateTargetFacesVal}'`);
+                        } else {
+                            params.push(`-F 'target_percentage=${ratio}'`);
+                        }
                     } else {
                         params.push(`-F 'target_faces=${targetFaces}'`);
                         params.push(`-F 'texture_size=${textureSize}'`);
@@ -2344,9 +2517,16 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                     const filesCode = files.length === 1
                         ? `("file", open("${files[0]}", "rb"))`
                         : files.map(f => `("file", open("${f}", "rb"))`).join(',\n        ');
-                    const dataCode = mode === 'decimate'
-                        ? `"mode": "${mode}",\n        "ratio": "${(ratio / 100).toFixed(2)}",\n        "format": "${currentApiFormat}"`
-                        : `"mode": "${mode}",\n        "target_faces": "${targetFaces}",\n        "texture_size": "${textureSize}",\n        "format": "${currentApiFormat}"`;
+                    let dataCode;
+                    if (mode === 'decimate') {
+                        if (useFaceCountMode) {
+                            dataCode = `"mode": "${mode}",\n        "target_faces": "${decimateTargetFacesVal}",\n        "format": "${currentApiFormat}"`;
+                        } else {
+                            dataCode = `"mode": "${mode}",\n        "target_percentage": "${ratio}",\n        "format": "${currentApiFormat}"`;
+                        }
+                    } else {
+                        dataCode = `"mode": "${mode}",\n        "target_faces": "${targetFaces}",\n        "texture_size": "${textureSize}",\n        "format": "${currentApiFormat}"`;
+                    }
 
                     command = `import requests
 
@@ -2364,14 +2544,30 @@ response = requests.post(
 print(response.json())`;
 
                 } else if (currentApiLang === 'powershell') {
-                    const dataParams = mode === 'decimate'
-                        ? `"mode", "${mode}",
-            "ratio", "${(ratio / 100).toFixed(2)}",
-            "format", "${currentApiFormat}"`
-                        : `"mode", "${mode}",
-            "target_faces", "${targetFaces}",
-            "texture_size", "${textureSize}",
-            "format", "${currentApiFormat}"`;
+                    // Build the decimation parameter section based on mode
+                    let decimateParamSection;
+                    if (mode === 'decimate') {
+                        if (useFaceCountMode) {
+                            decimateParamSection = `"Content-Disposition: form-data; name=\`"target_faces\`"",
+    "",
+    "${decimateTargetFacesVal}",
+    "--$boundary",`;
+                        } else {
+                            decimateParamSection = `"Content-Disposition: form-data; name=\`"target_percentage\`"",
+    "",
+    "${ratio}",
+    "--$boundary",`;
+                        }
+                    } else {
+                        decimateParamSection = `"Content-Disposition: form-data; name=\`"target_faces\`"",
+    "",
+    "${targetFaces}",
+    "--$boundary",
+    "Content-Disposition: form-data; name=\`"texture_size\`"",
+    "",
+    "${textureSize}",
+    "--$boundary",`;
+                    }
 
                     command = `# PowerShell API Request
 $FilePath = "${files[0]}"
@@ -2391,17 +2587,7 @@ $bodyLines = @(
     "",
     "${mode}",
     "--$boundary",
-    ${mode === 'decimate' ? `"Content-Disposition: form-data; name=\`"ratio\`"",
-    "",
-    "${(ratio / 100).toFixed(2)}",
-    "--$boundary",` : `"Content-Disposition: form-data; name=\`"target_faces\`"",
-    "",
-    "${targetFaces}",
-    "--$boundary",
-    "Content-Disposition: form-data; name=\`"texture_size\`"",
-    "",
-    "${textureSize}",
-    "--$boundary",`}
+    ${decimateParamSection}
     "Content-Disposition: form-data; name=\`"format\`"",
     "",
     "${currentApiFormat}",
@@ -2425,7 +2611,11 @@ $response | ConvertTo-Json`;
                     params.push(`-F 'mode=${mode}'`);
                     params.push(`-F 'format=${currentApiFormat}'`);
                     if (mode === 'decimate') {
-                        params.push(`-F 'ratio=${(ratio / 100).toFixed(2)}'`);
+                        if (useFaceCountMode) {
+                            params.push(`-F 'target_faces=${decimateTargetFacesVal}'`);
+                        } else {
+                            params.push(`-F 'target_percentage=${ratio}'`);
+                        }
                     } else {
                         params.push(`-F 'target_faces=${targetFaces}'`);
                         params.push(`-F 'texture_size=${textureSize}'`);
@@ -2439,9 +2629,16 @@ $response | ConvertTo-Json`;
 done`;
 
                 } else if (currentApiBatchLang === 'python') {
-                    const dataCode = mode === 'decimate'
-                        ? `"mode": "${mode}", "ratio": "${(ratio / 100).toFixed(2)}", "format": "${currentApiFormat}"`
-                        : `"mode": "${mode}", "target_faces": "${targetFaces}", "texture_size": "${textureSize}", "format": "${currentApiFormat}"`;
+                    let dataCode;
+                    if (mode === 'decimate') {
+                        if (useFaceCountMode) {
+                            dataCode = `"mode": "${mode}", "target_faces": "${decimateTargetFacesVal}", "format": "${currentApiFormat}"`;
+                        } else {
+                            dataCode = `"mode": "${mode}", "target_percentage": "${ratio}", "format": "${currentApiFormat}"`;
+                        }
+                    } else {
+                        dataCode = `"mode": "${mode}", "target_faces": "${targetFaces}", "texture_size": "${textureSize}", "format": "${currentApiFormat}"`;
+                    }
 
                     batchCommand = `import requests
 from pathlib import Path
@@ -2459,6 +2656,31 @@ for f in Path(".").glob("*.zip"):
     print(f"{f.name}: {response.json()}")`;
 
                 } else if (currentApiBatchLang === 'powershell') {
+                    // Build the decimation parameter section for batch based on mode
+                    let batchDecimateParamSection;
+                    if (mode === 'decimate') {
+                        if (useFaceCountMode) {
+                            batchDecimateParamSection = `"Content-Disposition: form-data; name=\`"target_faces\`"",
+        "",
+        "${decimateTargetFacesVal}",
+        "--$boundary",`;
+                        } else {
+                            batchDecimateParamSection = `"Content-Disposition: form-data; name=\`"target_percentage\`"",
+        "",
+        "${ratio}",
+        "--$boundary",`;
+                        }
+                    } else {
+                        batchDecimateParamSection = `"Content-Disposition: form-data; name=\`"target_faces\`"",
+        "",
+        "${targetFaces}",
+        "--$boundary",
+        "Content-Disposition: form-data; name=\`"texture_size\`"",
+        "",
+        "${textureSize}",
+        "--$boundary",`;
+                    }
+
                     batchCommand = `$ApiKey = "${apiKey}"
 
 Get-ChildItem -Filter "*.zip" | ForEach-Object {
@@ -2479,17 +2701,7 @@ Get-ChildItem -Filter "*.zip" | ForEach-Object {
         "",
         "${mode}",
         "--$boundary",
-        ${mode === 'decimate' ? `"Content-Disposition: form-data; name=\`"ratio\`"",
-        "",
-        "${(ratio / 100).toFixed(2)}",
-        "--$boundary",` : `"Content-Disposition: form-data; name=\`"target_faces\`"",
-        "",
-        "${targetFaces}",
-        "--$boundary",
-        "Content-Disposition: form-data; name=\`"texture_size\`"",
-        "",
-        "${textureSize}",
-        "--$boundary",`}
+        ${batchDecimateParamSection}
         "Content-Disposition: form-data; name=\`"format\`"",
         "",
         "${currentApiFormat}",
@@ -2571,11 +2783,13 @@ Get-ChildItem -Filter "*.zip" | ForEach-Object {
             function getBatchSettings() {
                 const mode = document.getElementById('modeSelect').value;
                 const ratio = document.getElementById('ratio').value;
-                const faces = document.getElementById('targetFaces').value;
+                const decimateTargetFacesVal = document.getElementById('decimateTargetFaces').value;
+                const useFaceCountMode = document.getElementById('useFaceCount').checked;
+                const faces = document.getElementById('targetFaces').value; // For remesh
                 const textureSize = document.getElementById('textureSize').value;
                 const apiKey = document.getElementById('apiKey').value || 'YOUR_API_KEY';
                 const format = currentBatchFormat;
-                return { mode, ratio, faces, textureSize, apiKey, format };
+                return { mode, ratio, decimateTargetFaces: decimateTargetFacesVal, useFaceCountMode, faces, textureSize, apiKey, format };
             }
 
             function updateBatchSettingsSummary() {
@@ -2583,9 +2797,13 @@ Get-ChildItem -Filter "*.zip" | ForEach-Object {
                 const formatLabel = s.format === 'both' ? 'GLB + USDZ' : s.format.toUpperCase();
                 let summary = '';
                 if (s.mode === 'decimate') {
-                    summary = `<strong>Mode:</strong> Decimate @ ${s.ratio}% &nbsp;|&nbsp; <strong>Format:</strong> ${formatLabel}`;
+                    if (s.useFaceCountMode) {
+                        summary = `<strong>Mode:</strong> Decimate @ ${parseInt(s.decimateTargetFaces).toLocaleString()} faces &nbsp;|&nbsp; <strong>Format:</strong> ${formatLabel}`;
+                    } else {
+                        summary = `<strong>Mode:</strong> Decimate @ ${s.ratio}% &nbsp;|&nbsp; <strong>Format:</strong> ${formatLabel}`;
+                    }
                 } else {
-                    summary = `<strong>Mode:</strong> Remesh @ ${s.faces.toLocaleString()} faces, ${s.textureSize}px textures &nbsp;|&nbsp; <strong>Format:</strong> ${formatLabel}`;
+                    summary = `<strong>Mode:</strong> Remesh @ ${parseInt(s.faces).toLocaleString()} faces, ${s.textureSize}px textures &nbsp;|&nbsp; <strong>Format:</strong> ${formatLabel}`;
                 }
                 document.getElementById('batchSettingsSummary').innerHTML = summary;
             }
@@ -2630,9 +2848,25 @@ Get-ChildItem -Filter "*.zip" | ForEach-Object {
       curl -s -o "$OUTPUT_DIR/\${base}_opt.usdz" "$BASE_URL$usdz_url"`;
                 }
 
+                // Build the decimate parameter for bash script
+                let bashDecimateParam;
+                let settingsComment;
+                if (settings.mode === 'decimate') {
+                    if (settings.useFaceCountMode) {
+                        bashDecimateParam = `-F "target_faces=${settings.decimateTargetFaces}"`;
+                        settingsComment = `Decimate @ ${settings.decimateTargetFaces} faces`;
+                    } else {
+                        bashDecimateParam = `-F "target_percentage=${settings.ratio}"`;
+                        settingsComment = `Decimate @ ${settings.ratio}%`;
+                    }
+                } else {
+                    bashDecimateParam = `-F "faces=${settings.faces}" -F "texture_size=${settings.textureSize}"`;
+                    settingsComment = `Remesh @ ${settings.faces} faces`;
+                }
+
                 return `#!/bin/bash
 # Batch Mesh Optimizer Script
-# Generated with settings: ${settings.mode === 'decimate' ? 'Decimate @ ' + settings.ratio + '%' : 'Remesh @ ' + settings.faces + ' faces'}, Format: ${formatLabel}
+# Generated with settings: ${settingsComment}, Format: ${formatLabel}
 
 API_KEY="${settings.apiKey}"
 BASE_URL="https://webdeliveryengine.com"
@@ -2661,7 +2895,7 @@ for file in "\${FILES[@]}"; do
     -H "Authorization: Bearer $API_KEY" \\
     -F "file=@$file" \\
     -F "mode=${settings.mode}" \\
-    ${settings.mode === 'decimate' ? `-F "ratio=${settings.ratio / 100}"` : `-F "faces=${settings.faces}" -F "texture_size=${settings.textureSize}"`} \\
+    ${bashDecimateParam} \\
     -F "format=${settings.format}")
 
   jobId=$(echo "$response" | grep -o '"jobId":"[^"]*"' | cut -d'"' -f4)
@@ -2732,10 +2966,27 @@ echo "Batch complete! Files saved to $OUTPUT_DIR/"`;
                 (OUTPUT_DIR / f"{base}_opt.usdz").write_bytes(usdz.content)`;
                 }
 
+                // Build the decimate parameter for Python script
+                let pythonDecimateData;
+                let settingsComment;
+                if (settings.mode === 'decimate') {
+                    if (settings.useFaceCountMode) {
+                        pythonDecimateData = `"target_faces": "${settings.decimateTargetFaces}",`;
+                        settingsComment = `Decimate @ ${settings.decimateTargetFaces} faces`;
+                    } else {
+                        pythonDecimateData = `"target_percentage": "${settings.ratio}",`;
+                        settingsComment = `Decimate @ ${settings.ratio}%`;
+                    }
+                } else {
+                    pythonDecimateData = `"faces": "${settings.faces}",
+                    "texture_size": "${settings.textureSize}",`;
+                    settingsComment = `Remesh @ ${settings.faces} faces`;
+                }
+
                 return `#!/usr/bin/env python3
 """
 Batch Mesh Optimizer Script
-Generated with settings: ${settings.mode === 'decimate' ? 'Decimate @ ' + settings.ratio + '%' : 'Remesh @ ' + settings.faces + ' faces'}, Format: ${formatLabel}
+Generated with settings: ${settingsComment}, Format: ${formatLabel}
 """
 
 import os
@@ -2773,8 +3024,7 @@ def main():
                 files={"file": (path.name, f)},
                 data={
                     "mode": "${settings.mode}",
-                    ${settings.mode === 'decimate' ? `"ratio": "${settings.ratio / 100}",` : `"faces": "${settings.faces}",
-                    "texture_size": "${settings.textureSize}",`}
+                    ${pythonDecimateData}
                     "format": "${settings.format}"
                 }
             )
@@ -2853,8 +3103,37 @@ if __name__ == "__main__":
                 Invoke-WebRequest -Uri "$BaseUrl$usdzUrl" -OutFile $usdzPath`;
                 }
 
+                // Build the decimate parameter for PowerShell script
+                let psDecimateSection;
+                let settingsComment;
+                if (settings.mode === 'decimate') {
+                    if (settings.useFaceCountMode) {
+                        psDecimateSection = `"Content-Disposition: form-data; name=\`"target_faces\`"",
+            "",
+            "${settings.decimateTargetFaces}",
+            "--$boundary",`;
+                        settingsComment = `Decimate @ ${settings.decimateTargetFaces} faces`;
+                    } else {
+                        psDecimateSection = `"Content-Disposition: form-data; name=\`"target_percentage\`"",
+            "",
+            "${settings.ratio}",
+            "--$boundary",`;
+                        settingsComment = `Decimate @ ${settings.ratio}%`;
+                    }
+                } else {
+                    psDecimateSection = `"Content-Disposition: form-data; name=\`"faces\`"",
+            "",
+            "${settings.faces}",
+            "--$boundary",
+            "Content-Disposition: form-data; name=\`"texture_size\`"",
+            "",
+            "${settings.textureSize}",
+            "--$boundary",`;
+                    settingsComment = `Remesh @ ${settings.faces} faces`;
+                }
+
                 return `# Batch Mesh Optimizer Script (PowerShell)
-# Generated with settings: ${settings.mode === 'decimate' ? 'Decimate @ ' + settings.ratio + '%' : 'Remesh @ ' + settings.faces + ' faces'}, Format: ${formatLabel}
+# Generated with settings: ${settingsComment}, Format: ${formatLabel}
 #
 # EXECUTION POLICY NOTE:
 # PowerShell's default execution policy may block this script. Options to run it:
@@ -2913,17 +3192,7 @@ foreach ($file in $Files) {
             "",
             "${settings.mode}",
             "--$boundary",
-            ${settings.mode === 'decimate' ? `"Content-Disposition: form-data; name=\`"ratio\`"",
-            "",
-            "${settings.ratio / 100}",
-            "--$boundary",` : `"Content-Disposition: form-data; name=\`"faces\`"",
-            "",
-            "${settings.faces}",
-            "--$boundary",
-            "Content-Disposition: form-data; name=\`"texture_size\`"",
-            "",
-            "${settings.textureSize}",
-            "--$boundary",`}
+            ${psDecimateSection}
             "Content-Disposition: form-data; name=\`"format\`"",
             "",
             "${settings.format}",

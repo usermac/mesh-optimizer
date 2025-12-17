@@ -19,8 +19,17 @@ struct Args {
     #[arg(short, long)]
     output: PathBuf,
 
+    /// Quality ratio (0.0-1.0). Lower values = more reduction.
     #[arg(long, default_value_t = 0.5)]
     ratio: f32,
+
+    /// Target face count. If provided, ratio is calculated from original face count.
+    #[arg(long)]
+    target_faces: Option<i32>,
+
+    /// Target percentage (1-100). If provided, ratio is calculated as percentage/100.
+    #[arg(long)]
+    target_percentage: Option<f32>,
 
     #[arg(long, default_value_t = false)]
     usdz: bool,
@@ -116,7 +125,27 @@ fn main() -> Result<()> {
 
     // 3. Optimize (Decimate)
     println!("SIMPLIFICATION_START");
-    let target_count = (indices.len() as f32 * args.ratio) as usize;
+
+    // Calculate target_count based on priority: target_faces > target_percentage > ratio
+    let original_face_count = indices.len() / 3; // Each face has 3 indices
+    let target_count = if let Some(tf) = args.target_faces {
+        // User specified exact face count - convert to index count
+        let target_indices = (tf as usize) * 3;
+        println!(
+            "TARGET_MODE: face_count={} (original: {} faces)",
+            tf, original_face_count
+        );
+        target_indices.min(indices.len()) // Don't exceed original
+    } else if let Some(tp) = args.target_percentage {
+        // User specified percentage (1-100)
+        let ratio = tp / 100.0;
+        println!("TARGET_MODE: percentage={}% (ratio: {:.3})", tp, ratio);
+        (indices.len() as f32 * ratio) as usize
+    } else {
+        // Default: use ratio directly
+        println!("TARGET_MODE: ratio={:.3}", args.ratio);
+        (indices.len() as f32 * args.ratio) as usize
+    };
 
     let vertex_data_u8 = bytemuck::cast_slice(&vertices);
     let stride = std::mem::size_of::<Vertex>();

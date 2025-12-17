@@ -767,9 +767,11 @@ async fn optimize_handler(
 
     let mut input_filename: Option<String> = None;
     let mut ratio = 0.5;
+    let mut target_percentage: Option<f32> = None; // New: percentage-based targeting for decimate
+    let mut target_faces: Option<i32> = None; // New: explicit face count for decimate
     let mut format = "glb".to_string();
     let mut mode = "decimate".to_string();
-    let mut faces = 5000;
+    let mut faces = 5000; // Used for remesh mode
     let mut texture_size = 2048;
     let mut callback_url: Option<String> = None;
     let mut input_filepath: Option<PathBuf> = None;
@@ -930,6 +932,28 @@ async fn optimize_handler(
                     if parsed != faces {
                         warn!("Faces {} clamped to {}", parsed, faces);
                     }
+                }
+            }
+        } else if name == "target_percentage" {
+            // New: Accept target as percentage (1-100) for decimate mode
+            if let Ok(val) = field.text().await {
+                if let Ok(parsed) = val.parse::<f32>() {
+                    let clamped = parsed.clamp(1.0, 100.0);
+                    if parsed != clamped {
+                        warn!("target_percentage {} clamped to {}", parsed, clamped);
+                    }
+                    target_percentage = Some(clamped);
+                }
+            }
+        } else if name == "target_faces" {
+            // New: Accept explicit face count for decimate mode
+            if let Ok(val) = field.text().await {
+                if let Ok(parsed) = val.parse::<i32>() {
+                    let clamped = parsed.clamp(100, 10_000_000);
+                    if parsed != clamped {
+                        warn!("target_faces {} clamped to {}", parsed, clamped);
+                    }
+                    target_faces = Some(clamped);
                 }
             }
         } else if name == "texture_size" {
@@ -1158,6 +1182,8 @@ async fn optimize_handler(
     let format_clone = format.clone();
     let mode_clone = mode.clone();
     let callback_url_clone = callback_url.clone();
+    let target_percentage_clone = target_percentage;
+    let target_faces_clone = target_faces;
 
     // Slot Cost Logic
     let slot_cost_decimate = std::env::var("SLOT_COST_DECIMATE")
@@ -1243,9 +1269,17 @@ async fn optimize_handler(
             c.arg("--input")
                 .arg(&input_filename_clone)
                 .arg("--output")
-                .arg(&output_filename_clone)
-                .arg("--ratio")
-                .arg(ratio.to_string());
+                .arg(&output_filename_clone);
+
+            // Priority: target_faces > target_percentage > ratio
+            // Worker will handle calculating ratio from these if needed
+            if let Some(tf) = target_faces_clone {
+                c.arg("--target-faces").arg(tf.to_string());
+            } else if let Some(tp) = target_percentage_clone {
+                c.arg("--target-percentage").arg(tp.to_string());
+            } else {
+                c.arg("--ratio").arg(ratio.to_string());
+            }
 
             c
         };
