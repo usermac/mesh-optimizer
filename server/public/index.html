@@ -1182,19 +1182,41 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
 
                         <section class="content-section">
                             <div class="d-flex justify-between align-center mb-10">
-                                <h3 class="m-0">cURL Command</h3>
+                                <div class="d-flex align-center gap-10">
+                                    <h3 class="m-0">API Command</h3>
+                                    <div class="tabs" style="margin-bottom: 0; border-bottom: none;" role="tablist" aria-label="API command language selection">
+                                        <button class="tab-btn active" onclick="switchApiLangTab('curl')" role="tab" aria-selected="true" id="tab-api-curl">cURL</button>
+                                        <button class="tab-btn" onclick="switchApiLangTab('python')" role="tab" aria-selected="false" id="tab-api-python">Python</button>
+                                        <button class="tab-btn" onclick="switchApiLangTab('powershell')" role="tab" aria-selected="false" id="tab-api-powershell">PowerShell</button>
+                                    </div>
+                                </div>
                                 <button id="copyApiCodeBtn" class="btn-sm">Copy</button>
                             </div>
                             <pre id="apiCodeBlock" class="code-block"><code></code></pre>
                             <p id="apiCodeCopyFeedback" class="text-success text-small m-0 mt-10" style="display: none;">Copied to clipboard!</p>
+                            <div id="apiPowershellNotice" class="highlight-box mt-10" style="display: none; background: rgba(0, 120, 212, 0.1); border-color: #0078d4;">
+                                <p class="m-0 text-small"><strong style="color: #0078d4;">PowerShell Note:</strong> Save as <code>.ps1</code> and run with <code>powershell -ExecutionPolicy Bypass -File script.ps1</code></p>
+                            </div>
                         </section>
 
                         <section class="content-section">
-                            <h3>Pro Tip: Batch Processing</h3>
-                            <p class="text-muted">
-                                To process multiple files, wrap this command in a loop. Here's an example for <code>bash</code>:
+                            <div class="d-flex justify-between align-center mb-10">
+                                <div class="d-flex align-center gap-10">
+                                    <h3 class="m-0">Batch Example</h3>
+                                    <div class="tabs" style="margin-bottom: 0; border-bottom: none;" role="tablist" aria-label="Batch example language selection">
+                                        <button class="tab-btn active" onclick="switchApiBatchLangTab('bash')" role="tab" aria-selected="true" id="tab-api-batch-bash">Bash</button>
+                                        <button class="tab-btn" onclick="switchApiBatchLangTab('python')" role="tab" aria-selected="false" id="tab-api-batch-python">Python</button>
+                                        <button class="tab-btn" onclick="switchApiBatchLangTab('powershell')" role="tab" aria-selected="false" id="tab-api-batch-powershell">PowerShell</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="text-muted text-small m-0 mb-10">
+                                Process multiple files by wrapping the API call in a loop:
                             </p>
                             <pre id="batchCodeBlock" class="code-block code-block-small"><code></code></pre>
+                            <div id="apiBatchPowershellNotice" class="highlight-box mt-10" style="display: none; background: rgba(0, 120, 212, 0.1); border-color: #0078d4;">
+                                <p class="m-0 text-small"><strong style="color: #0078d4;">PowerShell Note:</strong> Run with <code>powershell -ExecutionPolicy Bypass -File script.ps1</code></p>
+                            </div>
                         </section>
                     </div>
                 </div>
@@ -2082,6 +2104,8 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
             });
 
             let currentApiFormat = 'both';
+            let currentApiLang = 'curl';
+            let currentApiBatchLang = 'bash';
 
             function switchApiTab(format) {
                 currentApiFormat = format;
@@ -2102,63 +2126,254 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 generateApiCode();
             }
 
+            function switchApiLangTab(lang) {
+                currentApiLang = lang;
+
+                document.querySelectorAll('#apiCodeModal #tab-api-curl, #apiCodeModal #tab-api-python, #apiCodeModal #tab-api-powershell').forEach(btn => {
+                    const isActive = btn.id === 'tab-api-' + lang;
+                    btn.classList.toggle('active', isActive);
+                    btn.setAttribute('aria-selected', isActive);
+                });
+
+                // Show/hide PowerShell notice
+                const psNotice = document.getElementById('apiPowershellNotice');
+                if (psNotice) {
+                    psNotice.style.display = lang === 'powershell' ? 'block' : 'none';
+                }
+
+                generateApiCode();
+            }
+
+            function switchApiBatchLangTab(lang) {
+                currentApiBatchLang = lang;
+
+                document.querySelectorAll('#apiCodeModal #tab-api-batch-bash, #apiCodeModal #tab-api-batch-python, #apiCodeModal #tab-api-batch-powershell').forEach(btn => {
+                    const isActive = btn.id === 'tab-api-batch-' + lang;
+                    btn.classList.toggle('active', isActive);
+                    btn.setAttribute('aria-selected', isActive);
+                });
+
+                // Show/hide PowerShell notice
+                const psNotice = document.getElementById('apiBatchPowershellNotice');
+                if (psNotice) {
+                    psNotice.style.display = lang === 'powershell' ? 'block' : 'none';
+                }
+
+                generateApiCode();
+            }
+
             // Generate dynamic API code based on current UI settings
             function generateApiCode() {
                 const apiKey = document.getElementById('apiKey').value || 'YOUR_API_KEY';
                 const mode = document.getElementById('modeSelect').value;
+                const ratio = document.getElementById('ratio').value;
+                const targetFaces = document.getElementById('targetFaces').value;
+                const textureSize = document.getElementById('textureSize').value;
 
-                let params = [];
-                params.push(`-F 'mode=${mode}'`);
-                params.push(`-F 'format=${currentApiFormat}'`);
-
-                if (mode === 'decimate') {
-                    const ratio = document.getElementById('ratio').value;
-                    // Convert 1-100 slider to 0.01-1.0 ratio
-                    params.push(`-F 'ratio=${(ratio / 100).toFixed(2)}'`);
-                } else if (mode === 'remesh') {
-                    const targetFaces = document.getElementById('targetFaces').value;
-                    const textureSize = document.getElementById('textureSize').value;
-                    params.push(`-F 'target_faces=${targetFaces}'`);
-                    params.push(`-F 'texture_size=${textureSize}'`);
-                }
-
-                // Build file entries based on what's selected
-                let fileEntries = [];
+                // Build file list
+                let files = [];
                 const objInputsVisible = document.getElementById('objInputs').style.display !== 'none';
 
                 if (selectedFile) {
-                    fileEntries.push(`-F 'file=@${selectedFile.name}'`);
-
-                    // Add MTL and texture files if OBJ inputs are visible
+                    files.push(selectedFile.name);
                     if (objInputsVisible) {
                         const mtlFile = document.getElementById('mtlInput').files[0];
-                        if (mtlFile) {
-                            fileEntries.push(`-F 'file=@${mtlFile.name}'`);
-                        }
-
+                        if (mtlFile) files.push(mtlFile.name);
                         const texFiles = document.getElementById('texInput').files;
                         for (let i = 0; i < texFiles.length; i++) {
-                            fileEntries.push(`-F 'file=@${texFiles[i].name}'`);
+                            files.push(texFiles[i].name);
                         }
                     }
                 } else {
-                    fileEntries.push(`-F 'file=@/path/to/your/model.zip'`);
+                    files.push('/path/to/your/model.zip');
                 }
 
-                const command = `curl -X POST 'https://webdeliveryengine.com/optimize' \\
+                let command = '';
+                let batchCommand = '';
+
+                // Generate main API command based on selected language
+                if (currentApiLang === 'curl') {
+                    let params = [];
+                    params.push(`-F 'mode=${mode}'`);
+                    params.push(`-F 'format=${currentApiFormat}'`);
+                    if (mode === 'decimate') {
+                        params.push(`-F 'ratio=${(ratio / 100).toFixed(2)}'`);
+                    } else {
+                        params.push(`-F 'target_faces=${targetFaces}'`);
+                        params.push(`-F 'texture_size=${textureSize}'`);
+                    }
+                    const fileEntries = files.map(f => `-F 'file=@${f}'`);
+
+                    command = `curl -X POST 'https://webdeliveryengine.com/optimize' \\
      -H 'Authorization: Bearer ${apiKey}' \\
      ${fileEntries.join(' \\\n     ')} \\
      ${params.join(' \\\n     ')}`;
 
+                } else if (currentApiLang === 'python') {
+                    const filesCode = files.length === 1
+                        ? `("file", open("${files[0]}", "rb"))`
+                        : files.map(f => `("file", open("${f}", "rb"))`).join(',\n        ');
+                    const dataCode = mode === 'decimate'
+                        ? `"mode": "${mode}",\n        "ratio": "${(ratio / 100).toFixed(2)}",\n        "format": "${currentApiFormat}"`
+                        : `"mode": "${mode}",\n        "target_faces": "${targetFaces}",\n        "texture_size": "${textureSize}",\n        "format": "${currentApiFormat}"`;
+
+                    command = `import requests
+
+response = requests.post(
+    "https://webdeliveryengine.com/optimize",
+    headers={"Authorization": "Bearer ${apiKey}"},
+    files=[
+        ${filesCode}
+    ],
+    data={
+        ${dataCode}
+    }
+)
+
+print(response.json())`;
+
+                } else if (currentApiLang === 'powershell') {
+                    const dataParams = mode === 'decimate'
+                        ? `"mode", "${mode}",
+            "ratio", "${(ratio / 100).toFixed(2)}",
+            "format", "${currentApiFormat}"`
+                        : `"mode", "${mode}",
+            "target_faces", "${targetFaces}",
+            "texture_size", "${textureSize}",
+            "format", "${currentApiFormat}"`;
+
+                    command = `# PowerShell API Request
+$FilePath = "${files[0]}"
+$FileName = Split-Path $FilePath -Leaf
+
+$fileBytes = [System.IO.File]::ReadAllBytes($FilePath)
+$boundary = [System.Guid]::NewGuid().ToString()
+
+$bodyLines = @(
+    "--$boundary",
+    "Content-Disposition: form-data; name=\`"file\`"; filename=\`"$FileName\`"",
+    "Content-Type: application/octet-stream",
+    "",
+    [System.Text.Encoding]::GetEncoding("ISO-8859-1").GetString($fileBytes),
+    "--$boundary",
+    "Content-Disposition: form-data; name=\`"mode\`"",
+    "",
+    "${mode}",
+    "--$boundary",
+    ${mode === 'decimate' ? `"Content-Disposition: form-data; name=\`"ratio\`"",
+    "",
+    "${(ratio / 100).toFixed(2)}",
+    "--$boundary",` : `"Content-Disposition: form-data; name=\`"target_faces\`"",
+    "",
+    "${targetFaces}",
+    "--$boundary",
+    "Content-Disposition: form-data; name=\`"texture_size\`"",
+    "",
+    "${textureSize}",
+    "--$boundary",`}
+    "Content-Disposition: form-data; name=\`"format\`"",
+    "",
+    "${currentApiFormat}",
+    "--$boundary--"
+) -join "\\r\\n"
+
+$response = Invoke-RestMethod -Uri "https://webdeliveryengine.com/optimize" \\
+    -Method Post \\
+    -Headers @{ "Authorization" = "Bearer ${apiKey}" } \\
+    -ContentType "multipart/form-data; boundary=$boundary" \\
+    -Body $bodyLines
+
+$response | ConvertTo-Json`;
+                }
+
                 document.getElementById('apiCodeBlock').querySelector('code').textContent = command;
 
-                // Also update the batch example
-                const batchCommand = `for f in *.zip; do
+                // Generate batch example based on selected language
+                if (currentApiBatchLang === 'bash') {
+                    let params = [];
+                    params.push(`-F 'mode=${mode}'`);
+                    params.push(`-F 'format=${currentApiFormat}'`);
+                    if (mode === 'decimate') {
+                        params.push(`-F 'ratio=${(ratio / 100).toFixed(2)}'`);
+                    } else {
+                        params.push(`-F 'target_faces=${targetFaces}'`);
+                        params.push(`-F 'texture_size=${textureSize}'`);
+                    }
+
+                    batchCommand = `for f in *.zip; do
   curl -X POST 'https://webdeliveryengine.com/optimize' \\
        -H 'Authorization: Bearer ${apiKey}' \\
-       -F "file=@\$f" \\
+       -F "file=@$f" \\
        ${params.join(' \\\n       ')}
 done`;
+
+                } else if (currentApiBatchLang === 'python') {
+                    const dataCode = mode === 'decimate'
+                        ? `"mode": "${mode}", "ratio": "${(ratio / 100).toFixed(2)}", "format": "${currentApiFormat}"`
+                        : `"mode": "${mode}", "target_faces": "${targetFaces}", "texture_size": "${textureSize}", "format": "${currentApiFormat}"`;
+
+                    batchCommand = `import requests
+from pathlib import Path
+
+API_KEY = "${apiKey}"
+
+for f in Path(".").glob("*.zip"):
+    with open(f, "rb") as file:
+        response = requests.post(
+            "https://webdeliveryengine.com/optimize",
+            headers={"Authorization": f"Bearer {API_KEY}"},
+            files=[("file", file)],
+            data={${dataCode}}
+        )
+    print(f"{f.name}: {response.json()}")`;
+
+                } else if (currentApiBatchLang === 'powershell') {
+                    batchCommand = `$ApiKey = "${apiKey}"
+
+Get-ChildItem -Filter "*.zip" | ForEach-Object {
+    $FilePath = $_.FullName
+    $FileName = $_.Name
+
+    $fileBytes = [System.IO.File]::ReadAllBytes($FilePath)
+    $boundary = [System.Guid]::NewGuid().ToString()
+
+    $bodyLines = @(
+        "--$boundary",
+        "Content-Disposition: form-data; name=\`"file\`"; filename=\`"$FileName\`"",
+        "Content-Type: application/octet-stream",
+        "",
+        [System.Text.Encoding]::GetEncoding("ISO-8859-1").GetString($fileBytes),
+        "--$boundary",
+        "Content-Disposition: form-data; name=\`"mode\`"",
+        "",
+        "${mode}",
+        "--$boundary",
+        ${mode === 'decimate' ? `"Content-Disposition: form-data; name=\`"ratio\`"",
+        "",
+        "${(ratio / 100).toFixed(2)}",
+        "--$boundary",` : `"Content-Disposition: form-data; name=\`"target_faces\`"",
+        "",
+        "${targetFaces}",
+        "--$boundary",
+        "Content-Disposition: form-data; name=\`"texture_size\`"",
+        "",
+        "${textureSize}",
+        "--$boundary",`}
+        "Content-Disposition: form-data; name=\`"format\`"",
+        "",
+        "${currentApiFormat}",
+        "--$boundary--"
+    ) -join "\\r\\n"
+
+    $response = Invoke-RestMethod -Uri "https://webdeliveryengine.com/optimize" \\
+        -Method Post \\
+        -Headers @{ "Authorization" = "Bearer $ApiKey" } \\
+        -ContentType "multipart/form-data; boundary=$boundary" \\
+        -Body $bodyLines
+
+    Write-Host "$FileName :" ($response | ConvertTo-Json -Compress)
+}`;
+                }
 
                 document.getElementById('batchCodeBlock').querySelector('code').textContent = batchCommand;
             }
