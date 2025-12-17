@@ -677,6 +677,41 @@ async fn job_status_handler(
                 "status": "Processing",
                 "message": get_processing_message(msgs, job_id)
             }),
+            JobStatus::Completed {
+                output_size,
+                glb_url,
+                usdz_url,
+                expires_at,
+            } => {
+                let base = "https://webdeliveryengine.com";
+                let full_glb = format!("{}{}", base, glb_url);
+                let full_usdz = format!("{}{}", base, usdz_url);
+                let glb_filename = glb_url.split('/').last().unwrap_or("model.glb");
+                let usdz_filename = usdz_url.split('/').last().unwrap_or("model.usdz");
+                json!({
+                    "status": "Completed",
+                    "output_size": output_size,
+                    "glb_url": full_glb,
+                    "usdz_url": full_usdz,
+                    "expires_at": expires_at,
+                    "download_commands": {
+                        "curl": format!(
+                            "curl -O {}\ncurl -O {}",
+                            full_glb, full_usdz
+                        ),
+                        "python": format!(
+                            "import urllib.request\nurllib.request.urlretrieve('{}', '{}')\nurllib.request.urlretrieve('{}', '{}')",
+                            full_glb, glb_filename,
+                            full_usdz, usdz_filename
+                        ),
+                        "powershell": format!(
+                            "Invoke-WebRequest -Uri '{}' -OutFile '{}'\nInvoke-WebRequest -Uri '{}' -OutFile '{}'",
+                            full_glb, glb_filename,
+                            full_usdz, usdz_filename
+                        )
+                    }
+                })
+            }
             _ => json!({ "status": status }),
         }
     };
