@@ -691,8 +691,8 @@ async fn job_status_handler(
                 json!({
                     "status": "Completed",
                     "output_size": output_size,
-                    "glb_url": full_glb,
-                    "usdz_url": full_usdz,
+                    "glb_url": glb_url,
+                    "usdz_url": usdz_url,
                     "expires_at": expires_at,
                     "download_commands": {
                         "curl": format!(
