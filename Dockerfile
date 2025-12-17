@@ -71,10 +71,7 @@ ENV XDG_CONFIG_HOME=/config
 RUN echo "{" > /etc/caddy/Caddyfile && \
     echo "    email {\$ACME_EMAIL}" >> /etc/caddy/Caddyfile && \
     echo "}" >> /etc/caddy/Caddyfile && \
-    echo "webdeliveryengine.com {" >> /etc/caddy/Caddyfile && \
-    echo "    redir https://www.webdeliveryengine.com{uri} permanent" >> /etc/caddy/Caddyfile && \
-    echo "}" >> /etc/caddy/Caddyfile && \
-    echo "www.webdeliveryengine.com {" >> /etc/caddy/Caddyfile && \
+    echo "webdeliveryengine.com, www.webdeliveryengine.com {" >> /etc/caddy/Caddyfile && \
     echo "    reverse_proxy localhost:3000" >> /etc/caddy/Caddyfile && \
     echo "}" >> /etc/caddy/Caddyfile
 
