@@ -1881,7 +1881,7 @@ async fn history_handler(
 
 #[derive(Debug, Deserialize)]
 struct ContactForm {
-    name: String,
+    name: Option<String>,
     email: String,
     subject: String,
     message: String,
@@ -1912,6 +1912,8 @@ async fn contact_handler(
         .map(|k| format!(r#"<p><strong>API Key:</strong> {}</p>"#, k))
         .unwrap_or_default();
 
+    let display_name = form.name.as_deref().unwrap_or("(not provided)");
+
     let html_body = format!(
         r#"
         <h2>New Support Request</h2>
@@ -1922,10 +1924,10 @@ async fn contact_handler(
         <h3>Message:</h3>
         <p style="white-space: pre-wrap;">{}</p>
         "#,
-        form.name, form.email, subject_label, api_key_section, form.message
+        display_name, form.email, subject_label, api_key_section, form.message
     );
 
-    let email_subject = format!("[Mesh Optimizer] {}: {}", subject_label, form.name);
+    let email_subject = format!("[Mesh Optimizer] {}: {}", subject_label, display_name);
 
     // Build Resend API request
     let client = reqwest::Client::new();
@@ -1950,7 +1952,7 @@ async fn contact_handler(
         })?;
 
     if res.status().is_success() {
-        info!("Support email sent from {} <{}>", form.name, form.email);
+        info!("Support email sent from {} <{}>", display_name, form.email);
         Ok(Json(
             json!({ "success": true, "message": "Message sent successfully" }),
         ))

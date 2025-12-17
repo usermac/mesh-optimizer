@@ -461,7 +461,7 @@
             </div>
             <!-- Footer -->
             <footer class="main-footer" role="contentinfo" aria-label="Site footer">
-                <p>&copy; 2025 Brian Ginn. All rights reserved.</p>
+                <p id="copyrightText" style="cursor: pointer;" title="Click for a surprise">&copy; 2025 Brian Ginn. All rights reserved.</p>
                 <a href="#" id="tosLink">Terms of Service</a>
                 <a href="#" id="privacyLink">Privacy Policy</a>
                 <a href="#" id="apiDocsLinkFooter">API Docs</a>
@@ -1293,6 +1293,70 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                     </div>
                 </div>
             </div>
+
+            <!-- Founder's Story Modal (Easter Egg) -->
+            <div id="founderModal" class="modal-overlay" role="dialog" aria-labelledby="founderModalTitle" aria-modal="true">
+                <div class="modal-window">
+                    <div class="modal-header">
+                        <h2 class="m-0" id="founderModalTitle">Founder's Story</h2>
+                        <button type="button" class="modal-close" onclick="closeModal('founderModal')" aria-label="Close founder's story">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <section class="content-section">
+                            <p style="font-size: 1.1rem; line-height: 1.7;">
+                                I was supposed to code a 3D printer project for myself while on a working vacation in NH in early Dec 2025. I told an LLM about my upcoming needs, but it misunderstood me. Instead, it told me about 3D Mesh, which actually sounded interesting. So, I built that instead.
+                            </p>
+                            <p style="font-size: 1.1rem; line-height: 1.7;">
+                                I'm not steeped in this 3D world, but I can code. I thought, "I may be able to help you."
+                            </p>
+                            <p style="font-size: 1.1rem; line-height: 1.7;">
+                                Let me know in the email form below if I succeeded.
+                            </p>
+                            <p style="font-size: 1.1rem; line-height: 1.7; text-align: right; font-style: italic;">
+                                — Brian Ginn
+                            </p>
+                        </section>
+
+                        <hr style="border: none; border-top: 1px solid var(--border); margin: 20px 0;">
+
+                        <div id="founder-success-alert" class="alert success" role="alert">
+                            <strong>&#10003; Message sent!</strong> Thanks for the feedback.
+                        </div>
+
+                        <div id="founder-error-alert" class="alert error" role="alert">
+                            <strong>&#10007; Error:</strong> <span id="founder-error-message"></span>
+                        </div>
+
+                        <form id="founder-form" aria-label="Founder feedback form">
+                            <div class="form-group">
+                                <label for="founder-email">Email <span class="required">*</span></label>
+                                <input
+                                    type="email"
+                                    id="founder-email"
+                                    name="email"
+                                    required
+                                    placeholder="your.email@example.com"
+                                />
+                            </div>
+
+                            <div class="form-group">
+                                <label for="founder-message">Your Feedback <span class="required">*</span></label>
+                                <textarea
+                                    id="founder-message"
+                                    name="message"
+                                    required
+                                    placeholder="Did this tool help you? What could be better?"
+                                    rows="4"
+                                ></textarea>
+                            </div>
+
+                            <div class="button-group">
+                                <button type="submit" id="founder-submit-btn">Send Feedback</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <script>
@@ -2073,7 +2137,7 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
             // Close any open modal on ESC key
             document.addEventListener("keydown", function (e) {
                 if (e.key === "Escape") {
-                    const modals = ["purchaseModal", "historyModal", "helpModal", "contactModal", "privacyModal", "apiCodeModal", "tosModal", "apiDocsModal", "batchScriptModal"];
+                    const modals = ["purchaseModal", "historyModal", "helpModal", "contactModal", "privacyModal", "apiCodeModal", "tosModal", "apiDocsModal", "batchScriptModal", "founderModal"];
                     modals.forEach(function(modalId) {
                         const modal = document.getElementById(modalId);
                         if (modal && modal.style.display === "flex") {
@@ -2111,6 +2175,63 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 closeModal("tosModal");
                 modalTriggerElement = originalTrigger;
                 openModal("contactModal", originalTrigger);
+            });
+
+            // Founder's Story Easter Egg - click on copyright text
+            document.getElementById("copyrightText").addEventListener("click", function(e) {
+                e.preventDefault();
+                openModal("founderModal", this);
+            });
+
+            // Founder's Story form submission
+            document.getElementById("founder-form").addEventListener("submit", async function(e) {
+                e.preventDefault();
+
+                const submitBtn = document.getElementById("founder-submit-btn");
+                const successAlert = document.getElementById("founder-success-alert");
+                const errorAlert = document.getElementById("founder-error-alert");
+                const errorMessage = document.getElementById("founder-error-message");
+
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = "Sending...";
+
+                successAlert.classList.remove("show");
+                errorAlert.classList.remove("show");
+
+                const formData = {
+                    email: document.getElementById("founder-email").value,
+                    subject: "Founder's Story reply",
+                    message: document.getElementById("founder-message").value,
+                    api_key: null,
+                };
+
+                try {
+                    const response = await fetch("/contact", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify(formData),
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        successAlert.classList.add("show");
+                        document.getElementById("founder-form").reset();
+                        successAlert.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                    } else {
+                        errorMessage.textContent = data.error || "Unable to send message";
+                        errorAlert.classList.add("show");
+                    }
+                } catch (err) {
+                    errorMessage.textContent = "Network error. Please try again later.";
+                    errorAlert.classList.add("show");
+                    console.error("Founder form error:", err);
+                }
+
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = "Send Feedback";
             });
 
             let currentApiFormat = 'both';
@@ -2939,7 +3060,7 @@ Write-Host "Batch complete! Files saved to $OutputDir"`;
             });
 
             // Close modal when clicking outside the modal window
-            ["helpModal", "contactModal", "privacyModal", "historyModal", "apiCodeModal", "tosModal", "apiDocsModal", "batchScriptModal"].forEach(function(modalId) {
+            ["helpModal", "contactModal", "privacyModal", "historyModal", "apiCodeModal", "tosModal", "apiDocsModal", "batchScriptModal", "founderModal"].forEach(function(modalId) {
                 document.getElementById(modalId).addEventListener("click", function(e) {
                     if (e.target === this) {
                         closeModal(modalId);
