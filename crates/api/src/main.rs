@@ -11,6 +11,7 @@ use axum::{
     routing::{get, post},
     Extension, Json, Router,
 };
+use fbxcel_dom;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sha2::Digest;
