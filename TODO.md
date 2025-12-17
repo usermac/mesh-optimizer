@@ -126,6 +126,136 @@
 
 ---
 
+---
+
+## Launch Operations Playbook
+
+### What You Have Now
+
+**Admin Endpoints (require `X-Admin-Secret` header + `secret` in body):**
+- `POST /admin/add-credits` - Add/remove credits from existing key
+- `POST /admin/create-key` - Create new API key with initial credits
+
+**Database Structure:**
+- `database.json` (encrypted) - Keys, emails, Stripe customer IDs, credit balances, active status
+- `stats.db` (SQLite) - Transaction history, job logs
+
+**Key Facts:**
+- Each API key has an `active: bool` field (can be used for banning)
+- Keys are tied to email addresses
+- One email can technically have multiple keys (via multiple Stripe purchases)
+- Credits live on the KEY, not the email
+
+---
+
+### Common Operations
+
+#### 1. Give Free Credits to Discord Users
+
+**Option A: They already have a key** (bought before)
+```bash
+curl -X POST https://webdeliveryengine.com/admin/add-credits \
+  -H "Content-Type: application/json" \
+  -d '{"key": "sk_their_key", "amount": 50, "secret": "YOUR_ADMIN_SECRET"}'
+```
+
+**Option B: Create a fresh key with free credits** (new user, no payment)
+```bash
+curl -X POST https://webdeliveryengine.com/admin/create-key \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "initial_credits": 50, "secret": "YOUR_ADMIN_SECRET"}'
+```
+Returns: `{"success": true, "api_key": "sk_...", "credits": 50}`
+
+Give them that key. They paste it in the UI and go.
+
+#### 2. Ban a Key
+
+**Not yet implemented.** Need to add endpoint. Workaround:
+```bash
+# SSH into server, manually edit database after decryption
+# Or: set credits to -99999 so they can't do anything
+curl -X POST https://webdeliveryengine.com/admin/add-credits \
+  -H "Content-Type: application/json" \
+  -d '{"key": "sk_bad_actor", "amount": -99999, "secret": "YOUR_ADMIN_SECRET"}'
+```
+
+**TODO:** Add `POST /admin/ban-key` endpoint that sets `active: false`
+
+#### 3. User Has Two Keys (Consolidate?)
+
+This happens if they:
+- Bought twice without entering existing key
+- Used different emails
+
+**Current behavior:** Each key is independent. Credits don't merge.
+
+**Options:**
+1. Tell them to use whichever key has more credits
+2. Manually add credits to one key, zero out the other
+3. **TODO:** Build a key merge feature (complex - need to update transaction history)
+
+#### 4. User Lost Their Key
+
+They need to prove ownership:
+1. Ask for their email
+2. SSH into server, grep the decrypted database for their email
+3. Find their key, send it to them securely
+
+**TODO:** Add `POST /admin/lookup-key-by-email` endpoint
+
+#### 5. Check a User's Balance/Status
+
+**Not yet implemented as endpoint.** Workaround:
+```bash
+# User can check via API:
+curl -H "Authorization: Bearer sk_their_key" https://webdeliveryengine.com/credits
+```
+
+**TODO:** Add `POST /admin/get-key-info` endpoint for admin to look up any key
+
+---
+
+### Discord Promo: Self-Service Free Key Page
+
+**Your idea:** Secret standalone HTML page for instant key generation.
+
+**Pros:**
+- Zero friction for Discord users
+- No email back-and-forth
+
+**Cons:**
+- Can be abused (bots, multiple signups)
+- No email = can't contact users later
+- Hard to track who got promo credits
+
+**Recommendation:** Require email, but make it instant.
+
+**Implementation Plan:**
+1. Create `/promo.html` (or `/discord.html`) - hidden, not linked anywhere
+2. Simple form: just email input
+3. On submit, hits a new endpoint `POST /promo/claim`
+4. Backend checks:
+   - Email not already used for promo (prevent duplicates)
+   - Optional: rate limit by IP
+5. Creates key with X free credits, returns it immediately
+6. Logs promo claims for tracking
+
+**Simpler alternative:** Just use `/admin/create-key` yourself for each Discord user who DMs you. Manual but controlled.
+
+---
+
+### Admin Endpoints TODO
+
+- [ ] `POST /admin/ban-key` - Set key `active: false`
+- [ ] `POST /admin/unban-key` - Set key `active: true`  
+- [ ] `POST /admin/lookup-key-by-email` - Find key(s) for an email
+- [ ] `POST /admin/get-key-info` - Get full info for a key (email, credits, created, active)
+- [ ] `POST /admin/list-keys` - List all keys (paginated) for admin dashboard
+- [ ] `POST /promo/claim` - Self-service promo key generation (with email)
+
+---
+
 ## Quick Commands
 
 ### Add to ship.sh
