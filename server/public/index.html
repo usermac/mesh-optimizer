@@ -205,6 +205,9 @@
                 <div>
                     <label for="targetFaces">Target Faces</label>
                     <input type="number" id="targetFaces" value="5000" aria-label="Target number of faces for remesh" />
+                    <p id="remeshOriginalFaceCount" class="text-xs text-muted m-0" style="display: none;">
+                        Original: <span id="remeshOriginalFaceCountValue">--</span> faces
+                    </p>
                 </div>
                 <div>
                     <label for="textureSize">Texture Size (px)</label>
@@ -1604,6 +1607,8 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
             const originalFaceCountEl = document.getElementById("originalFaceCount");
             const originalFaceCountValue = document.getElementById("originalFaceCountValue");
             const decimateTargetFaces = document.getElementById("decimateTargetFaces");
+            const remeshOriginalFaceCountEl = document.getElementById("remeshOriginalFaceCount");
+            const remeshOriginalFaceCountValue = document.getElementById("remeshOriginalFaceCountValue");
 
             useFaceCountCheckbox.addEventListener("change", async (e) => {
                 if (e.target.checked) {
@@ -1632,6 +1637,7 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 // Only parse GLB and GLTF for now (OBJ would need different parsing)
                 if (ext !== "glb" && ext !== "gltf") {
                     originalFaceCountEl.style.display = "none";
+                    remeshOriginalFaceCountEl.style.display = "none";
                     return;
                 }
 
@@ -1650,8 +1656,15 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                     }
 
                     if (parsedFaceCount !== null) {
-                        originalFaceCountValue.textContent = parsedFaceCount.toLocaleString();
+                        const formattedCount = parsedFaceCount.toLocaleString();
+
+                        // Update decimate mode display
+                        originalFaceCountValue.textContent = formattedCount;
                         originalFaceCountEl.style.display = "block";
+
+                        // Update remesh mode display
+                        remeshOriginalFaceCountValue.textContent = formattedCount;
+                        remeshOriginalFaceCountEl.style.display = "block";
 
                         // Set default target to 50% of original
                         const defaultTarget = Math.round(parsedFaceCount * 0.5);
@@ -1660,6 +1673,7 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 } catch (err) {
                     console.error("Failed to parse face count:", err);
                     originalFaceCountEl.style.display = "none";
+                    remeshOriginalFaceCountEl.style.display = "none";
                 } finally {
                     faceCountLoading.style.display = "none";
                 }
@@ -1934,9 +1948,15 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                     document.getElementById("texInput").value = "";
                 }
 
-                // If face count mode is active, parse the new file
-                if (useFaceCountCheckbox.checked && (ext === "glb" || ext === "gltf")) {
+                // Parse face count for GLB/GLTF files (shown in both decimate and remesh modes)
+                if (ext === "glb" || ext === "gltf") {
+                    parsedFaceCount = null; // Reset cached count for new file
                     parseFileFaceCount(file);
+                } else {
+                    // Hide face count displays for non-parseable files
+                    parsedFaceCount = null;
+                    originalFaceCountEl.style.display = "none";
+                    remeshOriginalFaceCountEl.style.display = "none";
                 }
 
                 const fileSize = formatFileSize(file.size);
