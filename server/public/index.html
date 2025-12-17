@@ -217,6 +217,12 @@
                         <option value="4096">4096</option>
                     </select>
                 </div>
+                <!-- Toggle to show original face count -->
+                <div class="d-flex align-center gap-10">
+                    <input type="checkbox" id="remeshShowFaceCount" aria-label="Show original face count" />
+                    <label for="remeshShowFaceCount" class="text-small text-muted m-0" style="cursor: pointer;">Show original face count</label>
+                    <span id="remeshFaceCountLoading" class="text-small text-muted" style="display: none;">(Analyzing...)</span>
+                </div>
             </div>
 
             <button id="processBtn" disabled aria-describedby="processStatus">OPTIMIZE MESH</button>
@@ -1609,23 +1615,49 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
             const decimateTargetFaces = document.getElementById("decimateTargetFaces");
             const remeshOriginalFaceCountEl = document.getElementById("remeshOriginalFaceCount");
             const remeshOriginalFaceCountValue = document.getElementById("remeshOriginalFaceCountValue");
+            const remeshShowFaceCountCheckbox = document.getElementById("remeshShowFaceCount");
+            const remeshFaceCountLoading = document.getElementById("remeshFaceCountLoading");
 
-            useFaceCountCheckbox.addEventListener("change", async (e) => {
-                if (e.target.checked) {
-                    // Switch to face count mode
-                    percentageMode.style.display = "none";
-                    faceCountMode.style.display = "block";
+            // Shared function to handle checkbox state change
+            async function handleFaceCountCheckboxChange(checked, source) {
+                // Sync both checkboxes
+                useFaceCountCheckbox.checked = checked;
+                remeshShowFaceCountCheckbox.checked = checked;
 
+                if (checked) {
                     // Parse the file to get face count if we haven't already
                     if (selectedFile && parsedFaceCount === null) {
                         await parseFileFaceCount(selectedFile);
+                    } else if (parsedFaceCount !== null) {
+                        // Already have the count, just show it
+                        const formattedCount = parsedFaceCount.toLocaleString();
+                        originalFaceCountValue.textContent = formattedCount;
+                        originalFaceCountEl.style.display = "block";
+                        remeshOriginalFaceCountValue.textContent = formattedCount;
+                        remeshOriginalFaceCountEl.style.display = "block";
                     }
+
+                    // Decimate-specific: switch to face count input mode
+                    percentageMode.style.display = "none";
+                    faceCountMode.style.display = "block";
                 } else {
-                    // Switch back to percentage mode
+                    // Hide face count displays
+                    originalFaceCountEl.style.display = "none";
+                    remeshOriginalFaceCountEl.style.display = "none";
+
+                    // Decimate-specific: switch back to percentage mode
                     percentageMode.style.display = "block";
                     faceCountMode.style.display = "none";
                 }
                 resetToOptimize();
+            }
+
+            useFaceCountCheckbox.addEventListener("change", (e) => {
+                handleFaceCountCheckboxChange(e.target.checked, "decimate");
+            });
+
+            remeshShowFaceCountCheckbox.addEventListener("change", (e) => {
+                handleFaceCountCheckboxChange(e.target.checked, "remesh");
             });
 
             decimateTargetFaces.addEventListener("input", resetToOptimize);
@@ -1642,6 +1674,7 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 }
 
                 faceCountLoading.style.display = "inline";
+                remeshFaceCountLoading.style.display = "inline";
 
                 try {
                     const arrayBuffer = await file.arrayBuffer();
@@ -1676,6 +1709,7 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                     remeshOriginalFaceCountEl.style.display = "none";
                 } finally {
                     faceCountLoading.style.display = "none";
+                    remeshFaceCountLoading.style.display = "none";
                 }
             }
 
@@ -1948,15 +1982,14 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                     document.getElementById("texInput").value = "";
                 }
 
-                // Parse face count for GLB/GLTF files (shown in both decimate and remesh modes)
-                if (ext === "glb" || ext === "gltf") {
-                    parsedFaceCount = null; // Reset cached count for new file
+                // Reset face count state for new file
+                parsedFaceCount = null;
+                originalFaceCountEl.style.display = "none";
+                remeshOriginalFaceCountEl.style.display = "none";
+
+                // If checkbox is checked, parse the new file
+                if ((useFaceCountCheckbox.checked || remeshShowFaceCountCheckbox.checked) && (ext === "glb" || ext === "gltf")) {
                     parseFileFaceCount(file);
-                } else {
-                    // Hide face count displays for non-parseable files
-                    parsedFaceCount = null;
-                    originalFaceCountEl.style.display = "none";
-                    remeshOriginalFaceCountEl.style.display = "none";
                 }
 
                 const fileSize = formatFileSize(file.size);
