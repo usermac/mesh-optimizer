@@ -648,8 +648,9 @@ fn get_processing_message(messages: &[String], job_id: &str) -> String {
         .unwrap_or_default()
         .as_secs();
     // Hash job_id to get a starting offset so different jobs show different messages
+    // Divide by 2 so messages change every 2 seconds instead of every second
     let offset: u64 = job_id.bytes().map(|b| b as u64).sum();
-    let index = (secs + offset) % messages.len() as u64;
+    let index = ((secs / 2) + offset) % messages.len() as u64;
     messages[index as usize].clone()
 }
 

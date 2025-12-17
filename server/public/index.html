@@ -1237,12 +1237,23 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                                 <div class="tabs" style="margin-bottom: 0; border-bottom: none;" role="tablist" aria-label="Script language selection">
                                     <button class="tab-btn active" onclick="switchBatchScriptTab('bash')" role="tab" aria-selected="true" id="tab-batch-bash">Bash</button>
                                     <button class="tab-btn" onclick="switchBatchScriptTab('python')" role="tab" aria-selected="false" id="tab-batch-python">Python</button>
+                                    <button class="tab-btn" onclick="switchBatchScriptTab('powershell')" role="tab" aria-selected="false" id="tab-batch-powershell">PowerShell</button>
                                 </div>
                                 <button id="copyBatchScriptBtn" class="btn-sm">Copy</button>
                             </div>
                             <pre id="batchScriptOutput" class="code-block" style="max-height: 350px; overflow-y: auto;"><code>Paste file paths above to generate script...</code></pre>
                             <p id="batchScriptCopyFeedback" class="text-success text-small m-0 mt-10" style="display: none;">Copied to clipboard!</p>
                         </section>
+
+                        <div id="powershellNotice" class="highlight-box" style="display: none; background: rgba(0, 120, 212, 0.1); border-color: #0078d4;">
+                            <h4 class="m-0 mb-10" style="color: #0078d4;">Windows PowerShell Note</h4>
+                            <p class="m-0 mb-10 text-small">PowerShell's default execution policy may block unsigned scripts. To run this script, use one of these methods:</p>
+                            <ul class="pl-20 m-0 text-small">
+                                <li class="mb-5"><strong>One-time bypass:</strong> <code>powershell -ExecutionPolicy Bypass -File script.ps1</code></li>
+                                <li class="mb-5"><strong>Current session:</strong> <code>Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass</code></li>
+                                <li><strong>Current user (permanent):</strong> <code>Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned</code></li>
+                            </ul>
+                        </div>
 
                         <p class="text-muted text-small m-0">
                             Run this script from your terminal. Optimized files will be saved to <code>./output/</code>
@@ -1407,7 +1418,6 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 const containers = document.querySelectorAll(".fair-use-policy-container");
                 const html = `
                     <div class="text-small text-muted text-left">
-                        <p class="m-0 mb-5"><strong class="text-primary">Why MeshOpt?</strong></p>
                         <ul class="m-0" style="padding-left: 1.2em; line-height: 1.6;">
                             <li><strong>Free re-optimization</strong> — Same file, different settings? Free for <span class="text-primary">${hours} hours</span></li>
                             <li><strong>Dual output</strong> — Get GLB + USDZ in every job/API pickable</li>
@@ -2467,6 +2477,172 @@ if __name__ == "__main__":
     main()`;
             }
 
+            function generatePowerShellScript(files, settings) {
+                const fileList = files.filter(f => f.trim()).map(f => `    "${f.trim()}"`).join(',\n');
+                if (!fileList) return 'Paste file paths above to generate script...';
+
+                const formatLabel = settings.format === 'both' ? 'GLB + USDZ' : settings.format.toUpperCase();
+
+                // Generate download commands based on format
+                let downloadCommands;
+                if (settings.format === 'glb') {
+                    downloadCommands = `# Download GLB
+                $glbUrl = $data.glb_url
+                $outPath = Join-Path $OutputDir "$base_opt.glb"
+                Invoke-WebRequest -Uri "$BaseUrl$glbUrl" -OutFile $outPath`;
+                } else if (settings.format === 'usdz') {
+                    downloadCommands = `# Download USDZ
+                $usdzUrl = $data.usdz_url
+                $outPath = Join-Path $OutputDir "$base_opt.usdz"
+                Invoke-WebRequest -Uri "$BaseUrl$usdzUrl" -OutFile $outPath`;
+                } else {
+                    downloadCommands = `# Download GLB
+                $glbUrl = $data.glb_url
+                $glbPath = Join-Path $OutputDir "$base_opt.glb"
+                Invoke-WebRequest -Uri "$BaseUrl$glbUrl" -OutFile $glbPath
+
+                # Download USDZ
+                $usdzUrl = $data.usdz_url
+                $usdzPath = Join-Path $OutputDir "$base_opt.usdz"
+                Invoke-WebRequest -Uri "$BaseUrl$usdzUrl" -OutFile $usdzPath`;
+                }
+
+                return `# Batch Mesh Optimizer Script (PowerShell)
+# Generated with settings: ${settings.mode === 'decimate' ? 'Decimate @ ' + settings.ratio + '%' : 'Remesh @ ' + settings.faces + ' faces'}, Format: ${formatLabel}
+#
+# EXECUTION POLICY NOTE:
+# PowerShell's default execution policy may block this script. Options to run it:
+#
+#   1. One-time bypass (recommended):
+#      powershell -ExecutionPolicy Bypass -File script.ps1
+#
+#   2. Set for current session only:
+#      Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+#
+#   3. Set permanently for current user:
+#      Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+#
+# Requires: PowerShell 5.1+ (Windows) or PowerShell Core 7+ (cross-platform)
+
+$ApiKey = "${settings.apiKey}"
+$BaseUrl = "https://webdeliveryengine.com"
+$OutputDir = ".\\output"
+
+# Create output directory
+if (-not (Test-Path $OutputDir)) {
+    New-Item -ItemType Directory -Path $OutputDir | Out-Null
+}
+
+$Files = @(
+${fileList}
+)
+
+$Jobs = @{}  # jobId -> original filename
+
+Write-Host "Starting batch processing of $($Files.Count) files..."
+
+# Submit all jobs
+foreach ($file in $Files) {
+    if (-not (Test-Path $file)) {
+        Write-Host "SKIP: $file (not found)"
+        continue
+    }
+
+    $filename = Split-Path $file -Leaf
+    Write-Host "Uploading: $filename"
+
+    try {
+        $fileBytes = [System.IO.File]::ReadAllBytes($file)
+        $boundary = [System.Guid]::NewGuid().ToString()
+
+        # Build multipart form data
+        $bodyLines = @(
+            "--$boundary",
+            "Content-Disposition: form-data; name=\`"file\`"; filename=\`"$filename\`"",
+            "Content-Type: application/octet-stream",
+            "",
+            [System.Text.Encoding]::GetEncoding("ISO-8859-1").GetString($fileBytes),
+            "--$boundary",
+            "Content-Disposition: form-data; name=\`"mode\`"",
+            "",
+            "${settings.mode}",
+            "--$boundary",
+            ${settings.mode === 'decimate' ? `"Content-Disposition: form-data; name=\`"ratio\`"",
+            "",
+            "${settings.ratio / 100}",
+            "--$boundary",` : `"Content-Disposition: form-data; name=\`"faces\`"",
+            "",
+            "${settings.faces}",
+            "--$boundary",
+            "Content-Disposition: form-data; name=\`"texture_size\`"",
+            "",
+            "${settings.textureSize}",
+            "--$boundary",`}
+            "Content-Disposition: form-data; name=\`"format\`"",
+            "",
+            "${settings.format}",
+            "--$boundary--"
+        ) -join "\\r\\n"
+
+        $response = Invoke-RestMethod -Uri "$BaseUrl/optimize" -Method Post \\
+            -Headers @{ "Authorization" = "Bearer $ApiKey" } \\
+            -ContentType "multipart/form-data; boundary=$boundary" \\
+            -Body $bodyLines
+
+        if ($response.jobId) {
+            $Jobs[$response.jobId] = $filename
+            Write-Host "  Queued: $($response.jobId)"
+        } else {
+            Write-Host "  FAILED: $($response | ConvertTo-Json -Compress)"
+        }
+    } catch {
+        Write-Host "  FAILED: $($_.Exception.Message)"
+    }
+}
+
+Write-Host ""
+Write-Host "All jobs submitted. Polling for results..."
+
+# Poll and download
+$completed = 0
+$total = $Jobs.Count
+
+while ($Jobs.Count -gt 0) {
+    $jobIds = @($Jobs.Keys)
+
+    foreach ($jobId in $jobIds) {
+        try {
+            $status = Invoke-RestMethod -Uri "$BaseUrl/job/$jobId"
+
+            if ($status.status.Completed) {
+                $data = $status.status.Completed
+                $base = [System.IO.Path]::GetFileNameWithoutExtension($Jobs[$jobId])
+
+${downloadCommands}
+
+                $completed++
+                Write-Host "[$completed/$total] Downloaded: $($Jobs[$jobId])"
+                $Jobs.Remove($jobId)
+            }
+            elseif ($status.status.Failed) {
+                $error = $status.status.Failed.error
+                Write-Host "FAILED: $($Jobs[$jobId]) - $error"
+                $Jobs.Remove($jobId)
+            }
+        } catch {
+            # Job still processing or temporary error, continue polling
+        }
+    }
+
+    if ($Jobs.Count -gt 0) {
+        Start-Sleep -Seconds 2
+    }
+}
+
+Write-Host ""
+Write-Host "Batch complete! Files saved to $OutputDir"`;
+            }
+
             function updateBatchScript() {
                 const fileList = document.getElementById('batchFileList').value.split('\n');
                 const settings = getBatchSettings();
@@ -2474,8 +2650,10 @@ if __name__ == "__main__":
                 let script;
                 if (currentBatchScriptLang === 'bash') {
                     script = generateBashScript(fileList, settings);
-                } else {
+                } else if (currentBatchScriptLang === 'python') {
                     script = generatePythonScript(fileList, settings);
+                } else {
+                    script = generatePowerShellScript(fileList, settings);
                 }
 
                 document.getElementById('batchScriptOutput').querySelector('code').textContent = script;
@@ -2489,6 +2667,12 @@ if __name__ == "__main__":
                     btn.classList.toggle('active', isActive);
                     btn.setAttribute('aria-selected', isActive);
                 });
+
+                // Show/hide PowerShell-specific notice
+                const psNotice = document.getElementById('powershellNotice');
+                if (psNotice) {
+                    psNotice.style.display = lang === 'powershell' ? 'block' : 'none';
+                }
 
                 updateBatchScript();
             }

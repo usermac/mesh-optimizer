@@ -57,6 +57,7 @@ COPY --from=builder /usr/src/app/target/release/mesh-api /usr/local/bin/mesh-api
 # Copy static assets (Code expects them at ./server/public)
 COPY server/public ./server/public
 COPY server/pricing.json ./server/pricing.json
+COPY server/processing_messages.json ./server/processing_messages.json
 COPY scripts ./scripts
 
 # Ensure directory for DB mount exists
