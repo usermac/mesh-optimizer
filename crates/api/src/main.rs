@@ -715,7 +715,7 @@ async fn optimize_handler(
         .to_string();
 
     let start_time = std::time::Instant::now();
-    let batch_id = uuid::Uuid::new_v4().to_string();
+    let batch_id = uuid::Uuid::new_v4().simple().to_string();
     let batch_dir = Path::new(UPLOAD_DIR).join(&batch_id);
 
     if let Err(e) = fs::create_dir_all(&batch_dir) {
