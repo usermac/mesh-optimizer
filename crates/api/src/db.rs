@@ -360,6 +360,22 @@ impl Database {
         stripe_customer_id: String,
         initial_credits: i32,
     ) -> Result<String> {
+        self.create_key_with_description(
+            email,
+            stripe_customer_id,
+            initial_credits,
+            "Initial Purchase",
+        )
+        .await
+    }
+
+    pub async fn create_key_with_description(
+        &self,
+        email: String,
+        stripe_customer_id: String,
+        initial_credits: i32,
+        description: &str,
+    ) -> Result<String> {
         let new_key = format!("sk_{}", Uuid::new_v4().simple());
 
         let now = std::time::SystemTime::now()
@@ -392,7 +408,7 @@ impl Database {
 
         self.persist().await?;
 
-        self.record_transaction(&new_key, initial_credits, "Initial Purchase", None)
+        self.record_transaction(&new_key, initial_credits, description, None)
             .await?;
 
         Ok(new_key)
@@ -412,8 +428,17 @@ impl Database {
     }
 
     pub async fn add_credits(&self, key: &str, amount: i32) -> Result<i32> {
-        // Just a wrapper around the ledger now
-        self.record_transaction(key, amount, "admin_add", None)
+        self.add_credits_with_description(key, amount, "admin_add")
+            .await
+    }
+
+    pub async fn add_credits_with_description(
+        &self,
+        key: &str,
+        amount: i32,
+        description: &str,
+    ) -> Result<i32> {
+        self.record_transaction(key, amount, description, None)
             .await
     }
 

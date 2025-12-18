@@ -11,7 +11,6 @@ use axum::{
     routing::{get, post},
     Extension, Json, Router,
 };
-use fbxcel_dom;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sha2::Digest;
@@ -296,6 +295,7 @@ async fn main() -> Result<()> {
         // Admin Routes
         .route("/admin/add-credits", post(admin_add_credits))
         .route("/admin/create-key", post(admin_create_key))
+        .route("/admin/grant-credits", post(admin_grant_credits))
         // Static Files
         .nest_service("/", ServeDir::new("server/public")) // Assuming public dir is here
         .nest_service("/download", ServeDir::new(UPLOAD_DIR))
@@ -1889,11 +1889,72 @@ async fn admin_create_key(
                 ),
                 client_ip,
             );
+
+            // Send welcome email with API key
+            let email_html = format!(
+                r#"
+                <html><body style="font-family:sans-serif; background:#111; color:white; padding:40px;">
+                    <div style="max-width:600px; margin:0 auto;">
+                        <h1 style="color:#10b981;">Welcome to Mesh Optimizer!</h1>
+                        <p>Your account has been created with <strong>{} credits</strong>.</p>
+
+                        <div style="background:#1f2937; padding:20px; border-radius:8px; margin:30px 0; border-left:4px solid #3b82f6;">
+                            <p style="margin:0 0 10px 0; color:#9ca3af;">Your API Key:</p>
+                            <code style="font-size:16px; color:#3b82f6; word-break:break-all;">{}</code>
+                        </div>
+
+                        <p>Use this key in the API Key field on the dashboard to optimize your 3D models.</p>
+                        <p style="margin-top:30px;">
+                            <a href="https://webdeliveryengine.com" style="background:#3b82f6; color:white; padding:12px 24px; text-decoration:none; border-radius:6px;">Go to Dashboard</a>
+                        </p>
+
+                        <p style="color:#6b7280; font-size:14px; margin-top:40px;">
+                            Questions? Reply to this email or visit our support page.
+                        </p>
+                    </div>
+                </body></html>
+                "#,
+                payload.initial_credits, new_key
+            );
+
+            let client = reqwest::Client::new();
+            let email_result = client
+                .post("https://api.resend.com/emails")
+                .header("Authorization", format!("Bearer {}", state.resend_api_key))
+                .json(&json!({
+                    "from": "Mesh Optimizer <support@webdeliveryengine.com>",
+                    "to": [payload.email.clone()],
+                    "subject": "Your Mesh Optimizer API Key",
+                    "html": email_html
+                }))
+                .send()
+                .await;
+
+            let email_sent = match email_result {
+                Ok(res) if res.status().is_success() => {
+                    info!("Welcome email sent to {}", payload.email);
+                    true
+                }
+                Ok(res) => {
+                    error!(
+                        "Failed to send welcome email to {}: status {}",
+                        payload.email,
+                        res.status()
+                    );
+                    false
+                }
+                Err(e) => {
+                    error!("Failed to send welcome email to {}: {}", payload.email, e);
+                    false
+                }
+            };
+
             Ok(Json(json!({
                 "success": true,
                 "key": new_key,
                 "email": payload.email,
-                "initial_credits": payload.initial_credits
+                "initial_credits": payload.initial_credits,
+                "email_sent": email_sent
             })))
         }
         Err(e) => {
@@ -1905,6 +1966,212 @@ async fn admin_create_key(
             );
             error!("Failed to create key: {:?}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+/// Smart endpoint: creates key if email is new, adds credits if email exists
+async fn admin_grant_credits(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(payload): Json<AdminCreateKey>,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    let client_ip = headers
+        .get("X-Forwarded-For")
+        .and_then(|v| v.to_str().ok())
+        .or_else(|| headers.get("X-Real-IP").and_then(|v| v.to_str().ok()));
+
+    let ip_for_limit = client_ip.unwrap_or("unknown");
+
+    // Rate limit: 5 requests per minute per IP
+    if !check_admin_rate_limit(&state.admin_rate_limiter, ip_for_limit, 5, 60).await {
+        log_admin_audit("grant_credits", false, "rate limited", client_ip);
+        return Err(StatusCode::TOO_MANY_REQUESTS);
+    }
+
+    if !verify_admin_secret(&payload.secret, &state.admin_secret) {
+        log_admin_audit(
+            "grant_credits",
+            false,
+            &format!("invalid secret, attempted email={}", payload.email),
+            client_ip,
+        );
+        return Err(StatusCode::UNAUTHORIZED);
+    }
+
+    // Check if email already exists
+    if let Some(existing_key) = state.db.get_key_by_email(&payload.email).await {
+        // Add credits to existing user
+        match state
+            .db
+            .add_credits_with_description(&existing_key, payload.initial_credits, "Free credits")
+            .await
+        {
+            Ok(new_balance) => {
+                log_admin_audit(
+                    "grant_credits",
+                    true,
+                    &format!(
+                        "existing user: email={}, added={}, new_balance={}",
+                        payload.email, payload.initial_credits, new_balance
+                    ),
+                    client_ip,
+                );
+
+                // Send top-up email
+                let email_html = format!(
+                    r#"
+                    <html><body style="font-family:sans-serif; background:#111; color:white; padding:40px;">
+                        <div style="max-width:600px; margin:0 auto;">
+                            <h1 style="color:#10b981;">Credits Added!</h1>
+                            <p>We've added <strong>{} credits</strong> to your account.</p>
+                            <p>Your new balance: <strong>{} credits</strong></p>
+
+                            <p style="margin-top:30px;">
+                                <a href="https://webdeliveryengine.com" style="background:#3b82f6; color:white; padding:12px 24px; text-decoration:none; border-radius:6px;">Go to Dashboard</a>
+                            </p>
+                        </div>
+                    </body></html>
+                    "#,
+                    payload.initial_credits, new_balance
+                );
+
+                let client = reqwest::Client::new();
+                let _ = client
+                    .post("https://api.resend.com/emails")
+                    .header("Authorization", format!("Bearer {}", state.resend_api_key))
+                    .json(&json!({
+                        "from": "Mesh Optimizer <support@webdeliveryengine.com>",
+                        "to": [payload.email.clone()],
+                        "subject": "Credits Added to Your Mesh Optimizer Account",
+                        "html": email_html
+                    }))
+                    .send()
+                    .await;
+
+                Ok(Json(json!({
+                    "success": true,
+                    "action": "added_credits",
+                    "email": payload.email,
+                    "credits_added": payload.initial_credits,
+                    "new_balance": new_balance
+                })))
+            }
+            Err(e) => {
+                log_admin_audit(
+                    "grant_credits",
+                    false,
+                    &format!(
+                        "db error adding credits for email={}: {:?}",
+                        payload.email, e
+                    ),
+                    client_ip,
+                );
+                error!("Failed to add credits: {:?}", e);
+                Err(StatusCode::INTERNAL_SERVER_ERROR)
+            }
+        }
+    } else {
+        // Create new user
+        match state
+            .db
+            .create_key_with_description(
+                payload.email.clone(),
+                format!("admin_created_{}", uuid::Uuid::new_v4().simple()),
+                payload.initial_credits,
+                "Free credits",
+            )
+            .await
+        {
+            Ok(new_key) => {
+                log_admin_audit(
+                    "grant_credits",
+                    true,
+                    &format!(
+                        "new user: email={}, initial_credits={}",
+                        payload.email, payload.initial_credits
+                    ),
+                    client_ip,
+                );
+
+                // Send welcome email with API key
+                let email_html = format!(
+                    r#"
+                    <html><body style="font-family:sans-serif; background:#111; color:white; padding:40px;">
+                        <div style="max-width:600px; margin:0 auto;">
+                            <h1 style="color:#10b981;">Welcome to Mesh Optimizer!</h1>
+                            <p>Your account has been created with <strong>{} credits</strong>.</p>
+
+                            <div style="background:#1f2937; padding:20px; border-radius:8px; margin:30px 0; border-left:4px solid #3b82f6;">
+                                <p style="margin:0 0 10px 0; color:#9ca3af;">Your API Key:</p>
+                                <code style="font-size:16px; color:#3b82f6; word-break:break-all;">{}</code>
+                            </div>
+
+                            <p>Use this key in the API Key field on the dashboard to optimize your 3D models.</p>
+                            <p style="margin-top:30px;">
+                                <a href="https://webdeliveryengine.com" style="background:#3b82f6; color:white; padding:12px 24px; text-decoration:none; border-radius:6px;">Go to Dashboard</a>
+                            </p>
+
+                            <p style="color:#6b7280; font-size:14px; margin-top:40px;">
+                                Questions? Reply to this email or visit our support page.
+                            </p>
+                        </div>
+                    </body></html>
+                    "#,
+                    payload.initial_credits, new_key
+                );
+
+                let client = reqwest::Client::new();
+                let email_result = client
+                    .post("https://api.resend.com/emails")
+                    .header("Authorization", format!("Bearer {}", state.resend_api_key))
+                    .json(&json!({
+                        "from": "Mesh Optimizer <support@webdeliveryengine.com>",
+                        "to": [payload.email.clone()],
+                        "subject": "Your Mesh Optimizer API Key",
+                        "html": email_html
+                    }))
+                    .send()
+                    .await;
+
+                let email_sent = match email_result {
+                    Ok(res) if res.status().is_success() => {
+                        info!("Welcome email sent to {}", payload.email);
+                        true
+                    }
+                    Ok(res) => {
+                        error!(
+                            "Failed to send welcome email to {}: status {}",
+                            payload.email,
+                            res.status()
+                        );
+                        false
+                    }
+                    Err(e) => {
+                        error!("Failed to send welcome email to {}: {}", payload.email, e);
+                        false
+                    }
+                };
+
+                Ok(Json(json!({
+                    "success": true,
+                    "action": "created_key",
+                    "key": new_key,
+                    "email": payload.email,
+                    "initial_credits": payload.initial_credits,
+                    "email_sent": email_sent
+                })))
+            }
+            Err(e) => {
+                log_admin_audit(
+                    "grant_credits",
+                    false,
+                    &format!("db error creating key for email={}: {:?}", payload.email, e),
+                    client_ip,
+                );
+                error!("Failed to create key: {:?}", e);
+                Err(StatusCode::INTERNAL_SERVER_ERROR)
+            }
         }
     }
 }
