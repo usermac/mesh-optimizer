@@ -752,3 +752,220 @@ impl Database {
         }
     }
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sqlx::sqlite::SqlitePoolOptions;
+    use std::time::{Duration, UNIX_EPOCH};
+
+    // Helper to create a test database instance with an in-memory SQLite DB.
+    async fn setup_test_db() -> Database {
+        let pool = SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect("sqlite::memory:")
+            .await
+            .expect("Failed to create in-memory SQLite pool");
+
+        // Run migrations
+        sqlx::query(
+            r#"
+            CREATE TABLE IF NOT EXISTS credit_transactions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_key TEXT NOT NULL,
+                amount INTEGER NOT NULL,
+                description TEXT NOT NULL,
+                reference_job_hash TEXT,
+                created_at INTEGER NOT NULL,
+                event_id TEXT UNIQUE
+            );
+            "#,
+        )
+        .execute(&pool)
+        .await
+        .expect("Failed to create transactions table");
+
+        let db_data = DbData {
+            keys: HashMap::new(),
+            customers: HashMap::new(),
+        };
+
+        Database {
+            file_path: PathBuf::from("test_db.json"), // Temporary, won't be saved
+            data: Arc::new(RwLock::new(db_data)),
+            pool: Some(pool),
+            salt: "test-salt".to_string(),
+            encryption_key: None,
+        }
+    }
+
+    #[tokio::test]
+    async fn test_credit_deduction() {
+        let db = setup_test_db().await;
+        let key = "test_key_deduct";
+
+        // 1. Give the user 100 credits to start
+        {
+            let mut data = db.data.write().await;
+            data.keys.insert(
+                key.to_string(),
+                KeyInfo {
+                    credits: 100,
+                    ..Default::default()
+                },
+            );
+        }
+
+        // 2. Deduct 10 credits for a "decimate" job
+        let new_balance = db
+            .record_transaction(key, -10, "decimate", Some("file_hash_1".to_string()))
+            .await
+            .unwrap();
+
+        // 3. Assert the balance is correct
+        assert_eq!(new_balance, 90);
+
+        // 4. Verify in-memory state
+        let final_credits = db.get_credits(key).await.unwrap();
+        assert_eq!(final_credits, 90);
+    }
+
+    #[tokio::test]
+    async fn test_credit_refund() {
+        let db = setup_test_db().await;
+        let key = "test_key_refund";
+
+        // 1. Start with 50 credits
+        {
+            let mut data = db.data.write().await;
+            data.keys.insert(
+                key.to_string(),
+                KeyInfo {
+                    credits: 50,
+                    ..Default::default()
+                },
+            );
+        }
+
+        // 2. Refund 20 credits for a "failed job"
+        let new_balance = db
+            .record_transaction(key, 20, "refund: failed job", None)
+            .await
+            .unwrap();
+
+        // 3. Assert the balance is correct
+        assert_eq!(new_balance, 70);
+        let final_credits = db.get_credits(key).await.unwrap();
+        assert_eq!(final_credits, 70);
+    }
+
+    #[tokio::test]
+    async fn test_free_reoptimization_should_be_free() {
+        let db = setup_test_db().await;
+        let key = "test_key_reopt_free";
+        let file_hash = "file_hash_reopt_free";
+        let free_reoptimization_hours = 1;
+
+        {
+            let mut data = db.data.write().await;
+            data.keys.insert(
+                key.to_string(),
+                KeyInfo {
+                    credits: 100,
+                    ..Default::default()
+                },
+            );
+        }
+
+        // 1. First, charge for the job
+        db.record_transaction(key, -10, "remesh", Some(file_hash.to_string()))
+            .await
+            .unwrap();
+        assert_eq!(db.get_credits(key).await.unwrap(), 90);
+
+        // 2. Immediately check if we should charge again for the same file
+        let should_charge = db
+            .should_charge_for_file(key, file_hash, free_reoptimization_hours)
+            .await;
+
+        // 3. Assert that we should NOT charge again
+        assert!(!should_charge);
+    }
+
+    #[tokio::test]
+    async fn test_free_reoptimization_should_charge_when_expired() {
+        let db = setup_test_db().await;
+        let key = "test_key_reopt_expired";
+        let file_hash = "file_hash_reopt_expired";
+        let free_reoptimization_hours = 1;
+
+        {
+            let mut data = db.data.write().await;
+            data.keys.insert(
+                key.to_string(),
+                KeyInfo {
+                    credits: 100,
+                    ..Default::default()
+                },
+            );
+        }
+
+        // 1. Manually insert an OLD transaction (2 hours ago)
+        let two_hours_ago = (SystemTime::now() - Duration::from_secs(2 * 60 * 60))
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as i64;
+
+        let pool = db.pool.as_ref().unwrap();
+        sqlx::query(
+            "INSERT INTO credit_transactions (user_key, amount, description, reference_job_hash, created_at) VALUES (?, -10, ?, ?, ?)",
+        )
+        .bind(key)
+        .bind("remesh")
+        .bind(file_hash)
+        .bind(two_hours_ago)
+        .execute(pool)
+        .await
+        .unwrap();
+
+        // 2. Check if we should charge for the same file now
+        let should_charge = db
+            .should_charge_for_file(key, file_hash, free_reoptimization_hours)
+            .await;
+
+        // 3. Assert that we SHOULD charge again because the window has expired
+        assert!(should_charge);
+    }
+
+    #[tokio::test]
+    async fn test_free_reoptimization_should_charge_for_different_file() {
+        let db = setup_test_db().await;
+        let key = "test_key_reopt_diff";
+        let file_hash_1 = "file_hash_reopt_diff_1";
+        let file_hash_2 = "file_hash_reopt_diff_2";
+        let free_reoptimization_hours = 1;
+
+        {
+            let mut data = db.data.write().await;
+            data.keys.insert(
+                key.to_string(),
+                KeyInfo {
+                    credits: 100,
+                    ..Default::default()
+                },
+            );
+        }
+
+        // 1. Charge for the first file
+        db.record_transaction(key, -10, "remesh", Some(file_hash_1.to_string()))
+            .await
+            .unwrap();
+
+        // 2. Check if we should charge for a DIFFERENT file
+        let should_charge = db
+            .should_charge_for_file(key, file_hash_2, free_reoptimization_hours)
+            .await;
+
+        // 3. Assert that we SHOULD charge
+        assert!(should_charge);
+    }
+}
