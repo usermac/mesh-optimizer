@@ -629,9 +629,13 @@ async fn success_page(
 
             <p style="color:#888; font-size:0.9em; margin-top:20px;">Use this key in the API Key field on the dashboard to optimize your 3D models.</p>
             <a href="/" style="color:#3b82f6; text-decoration:none; margin-top:30px; display:inline-block; padding:10px 20px; border:1px solid #3b82f6; border-radius:6px;">&larr; Back to Dashboard</a>
+            <script>
+                // Save API key to localStorage so it auto-fills on the dashboard
+                localStorage.setItem('apiKey', '{}');
+            </script>
         </body></html>
     "#,
-        key
+        key, key
     );
 
     Html(html).into_response()
