@@ -61,6 +61,29 @@
 
 ---
 
+## Unit Tests (High Priority)
+
+### Billing Logic (db.rs)
+- [ ] Test credit deduction for decimate mode
+- [ ] Test credit deduction for remesh mode  
+- [ ] Test credit refund on job failure
+- [ ] Test free re-optimization (same file + mode within window)
+- [ ] Test insufficient credits rejection
+- [ ] Test pricing tier calculations
+
+### Stripe Webhooks (main.rs)
+- [ ] Test valid checkout.session.completed → credits added
+- [ ] Test invalid webhook signature → rejected
+- [ ] Test duplicate event ID → idempotent handling
+- [ ] Test malformed payload → graceful failure
+
+### API Key Validation
+- [ ] Test valid key → authorized
+- [ ] Test invalid key → rejected
+- [ ] Test inactive/banned key → rejected
+
+---
+
 ## High Priority (Before/Shortly After Launch)
 
 ### Infrastructure
