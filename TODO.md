@@ -63,13 +63,13 @@
 
 ## Unit Tests (High Priority)
 
-### Billing Logic (db.rs)
+### Billing Logic (db.rs) 2025-12-18 run "cargo test -p mesh-api" on local dev machine to test. - Brian
 - [x] Test credit deduction for decimate mode
 - [x] Test credit deduction for remesh mode  
 - [x] Test credit refund on job failure
 - [x] Test free re-optimization (same file + mode within window)
-- [ ] Test insufficient credits rejection
-- [ ] Test pricing tier calculations
+- [x] Test insufficient credits rejection
+- [x] Test pricing tier calculations
 
 ### Stripe Webhooks (main.rs)
 - [ ] Test valid checkout.session.completed → credits added

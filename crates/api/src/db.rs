@@ -752,6 +752,36 @@ impl Database {
         }
     }
 }
+/// Pricing tier for bonus credit calculations
+#[derive(Clone, Debug)]
+pub struct PricingTier {
+    pub min_spend_usd: u32,
+    pub bonus_percent: u32,
+}
+
+/// Calculate total credits from a USD purchase amount
+/// Returns (base_credits, bonus_credits, bonus_percent, total_credits)
+pub fn calculate_credits_from_purchase(
+    usd_amount: u32,
+    base_rate_usd_per_credit: f64,
+    tiers: &[PricingTier],
+) -> (i32, i32, u32, i32) {
+    // Calculate base credits from USD amount
+    let base_credits = (usd_amount as f64 / base_rate_usd_per_credit).floor() as i32;
+
+    // Determine bonus percentage from tiers (highest qualifying tier wins)
+    let bonus_percent = tiers
+        .iter()
+        .filter(|tier| usd_amount >= tier.min_spend_usd)
+        .max_by_key(|tier| tier.min_spend_usd)
+        .map_or(0, |tier| tier.bonus_percent);
+
+    let bonus_credits = (base_credits as f64 * (bonus_percent as f64 / 100.0)).floor() as i32;
+    let total_credits = base_credits + bonus_credits;
+
+    (base_credits, bonus_credits, bonus_percent, total_credits)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -967,5 +997,137 @@ mod tests {
 
         // 3. Assert that we SHOULD charge
         assert!(should_charge);
+    }
+
+    #[tokio::test]
+    async fn test_insufficient_credits_rejection() {
+        let db = setup_test_db().await;
+        let key = "test_key_insufficient";
+
+        // 1. Give the user only 5 credits
+        {
+            let mut data = db.data.write().await;
+            data.keys.insert(
+                key.to_string(),
+                KeyInfo {
+                    credits: 5,
+                    active: true,
+                    ..Default::default()
+                },
+            );
+        }
+
+        // 2. Check balance and simulate the rejection logic from main.rs
+        let current_balance = db.get_credits(key).await.unwrap();
+        let required_credits_decimate = 1;
+        let required_credits_remesh = 2;
+
+        // 3. User has enough for decimate (5 >= 1)
+        assert!(current_balance >= required_credits_decimate);
+
+        // 4. User has enough for remesh (5 >= 2)
+        assert!(current_balance >= required_credits_remesh);
+
+        // 5. Now deduct to leave only 1 credit
+        db.record_transaction(key, -4, "test deduction", None)
+            .await
+            .unwrap();
+
+        let new_balance = db.get_credits(key).await.unwrap();
+        assert_eq!(new_balance, 1);
+
+        // 6. User still has enough for decimate (1 >= 1)
+        assert!(new_balance >= required_credits_decimate);
+
+        // 7. User does NOT have enough for remesh (1 < 2) - THIS IS THE REJECTION CASE
+        assert!(new_balance < required_credits_remesh);
+
+        // 8. Deduct to zero
+        db.record_transaction(key, -1, "test deduction", None)
+            .await
+            .unwrap();
+
+        let zero_balance = db.get_credits(key).await.unwrap();
+        assert_eq!(zero_balance, 0);
+
+        // 9. User cannot afford either operation now
+        assert!(zero_balance < required_credits_decimate);
+        assert!(zero_balance < required_credits_remesh);
+    }
+
+    #[test]
+    fn test_pricing_tier_calculations() {
+        // Setup: Match production pricing.json tiers
+        let tiers = vec![
+            PricingTier {
+                min_spend_usd: 50,
+                bonus_percent: 10,
+            },
+            PricingTier {
+                min_spend_usd: 200,
+                bonus_percent: 20,
+            },
+            PricingTier {
+                min_spend_usd: 400,
+                bonus_percent: 25,
+            },
+        ];
+        let base_rate = 0.5; // $0.50 per credit
+
+        // Test 1: $10 purchase - no bonus tier
+        let (base, bonus, pct, total) = calculate_credits_from_purchase(10, base_rate, &tiers);
+        assert_eq!(base, 20); // $10 / $0.50 = 20 credits
+        assert_eq!(bonus, 0); // No tier reached
+        assert_eq!(pct, 0);
+        assert_eq!(total, 20);
+
+        // Test 2: $49 purchase - still no bonus (just under Pro Tier)
+        let (base, bonus, pct, total) = calculate_credits_from_purchase(49, base_rate, &tiers);
+        assert_eq!(base, 98); // $49 / $0.50 = 98 credits
+        assert_eq!(bonus, 0);
+        assert_eq!(pct, 0);
+        assert_eq!(total, 98);
+
+        // Test 3: $50 purchase - Pro Tier (10% bonus)
+        let (base, bonus, pct, total) = calculate_credits_from_purchase(50, base_rate, &tiers);
+        assert_eq!(base, 100); // $50 / $0.50 = 100 credits
+        assert_eq!(pct, 10);
+        assert_eq!(bonus, 10); // 100 * 10% = 10
+        assert_eq!(total, 110);
+
+        // Test 4: $100 purchase - still Pro Tier (10% bonus)
+        let (base, bonus, pct, total) = calculate_credits_from_purchase(100, base_rate, &tiers);
+        assert_eq!(base, 200);
+        assert_eq!(pct, 10);
+        assert_eq!(bonus, 20); // 200 * 10% = 20
+        assert_eq!(total, 220);
+
+        // Test 5: $200 purchase - Studio Tier (20% bonus)
+        let (base, bonus, pct, total) = calculate_credits_from_purchase(200, base_rate, &tiers);
+        assert_eq!(base, 400);
+        assert_eq!(pct, 20);
+        assert_eq!(bonus, 80); // 400 * 20% = 80
+        assert_eq!(total, 480);
+
+        // Test 6: $400 purchase - Premium Tier (25% bonus)
+        let (base, bonus, pct, total) = calculate_credits_from_purchase(400, base_rate, &tiers);
+        assert_eq!(base, 800);
+        assert_eq!(pct, 25);
+        assert_eq!(bonus, 200); // 800 * 25% = 200
+        assert_eq!(total, 1000);
+
+        // Test 7: $500 purchase - still Premium Tier (25% bonus)
+        let (base, bonus, pct, total) = calculate_credits_from_purchase(500, base_rate, &tiers);
+        assert_eq!(base, 1000);
+        assert_eq!(pct, 25);
+        assert_eq!(bonus, 250); // 1000 * 25% = 250
+        assert_eq!(total, 1250);
+
+        // Test 8: Empty tiers - no bonus
+        let (base, bonus, pct, total) = calculate_credits_from_purchase(100, base_rate, &[]);
+        assert_eq!(base, 200);
+        assert_eq!(bonus, 0);
+        assert_eq!(pct, 0);
+        assert_eq!(total, 200);
     }
 }

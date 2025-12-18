@@ -1,0 +1,12 @@
+{
+  "keys": {
+    "test_key_insufficient": {
+      "email": "",
+      "stripeCustomerId": "",
+      "created": 0,
+      "active": true,
+      "credits": 0
+    }
+  },
+  "customers": {}
+}
