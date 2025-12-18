@@ -47,8 +47,8 @@
 
 ### Testing
 - [ ] **Test Backup System**: Run `setup.sh` and wait for first automated backup.
-- [ ] **Test Email Notifications**: Verify you receive success/failure emails from backup system.
-- [ ] **Verify Blender on Production**: Confirm Blender is installed and functional on server.
+- [x] **Test Email Notifications**: Verify you receive success/failure emails from backup system.
+- [x] **Verify Blender on Production**: Confirm Blender is installed and functional on server.
 - [ ] **Test Cron Jobs Manually**: Run each script to verify it works.
 - [ ] **Test Payment Success Page**: Verify API key displays with "SAVE YOUR KEY NOW" warning.
 - [ ] **Test Key-Based History**: Verify transaction history loads correctly.
@@ -64,10 +64,10 @@
 ## Unit Tests (High Priority)
 
 ### Billing Logic (db.rs)
-- [ ] Test credit deduction for decimate mode
-- [ ] Test credit deduction for remesh mode  
-- [ ] Test credit refund on job failure
-- [ ] Test free re-optimization (same file + mode within window)
+- [x] Test credit deduction for decimate mode
+- [x] Test credit deduction for remesh mode  
+- [x] Test credit refund on job failure
+- [x] Test free re-optimization (same file + mode within window)
 - [ ] Test insufficient credits rejection
 - [ ] Test pricing tier calculations
 
