@@ -534,7 +534,7 @@ async fn stripe_webhook(
                         info!("Top Up: Adding credits to existing user {}", email);
                         let _ = state
                             .db
-                            .add_credits(&existing_key, credit_amount)
+                            .add_credits_with_description(&existing_key, credit_amount, "payment")
                             .await
                             .map_err(|e| {
                                 error!("DB Error adding credits: {:?}", e);
