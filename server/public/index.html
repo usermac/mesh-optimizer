@@ -439,10 +439,16 @@
                         <input
                             id="historySearchInput"
                             type="text"
-                            placeholder="Search by activity, date..."
+                            placeholder="Search transactions..."
                             class="flex-1 text-small"
                             aria-label="Search transaction history"
                         />
+                        <span
+                            class="history-search-help"
+                            title="Search by text, amount, or date range:&#10;&#10;Text: stripe, refund, chair.obj&#10;Date range: 2025-01-01..2025-01-31&#10;Open-ended: 2025-12-01.. or ..2025-12-15&#10;Combined: stripe 2025-12-01..2025-12-19"
+                            aria-label="Search help"
+                            style="cursor: help; font-size: 0.9rem; color: var(--text-muted);"
+                        >&#9432;</span>
                         <span
                             id="historySearchCount"
                             class="text-small text-muted text-nowrap min-w-60 text-right"
@@ -1487,19 +1493,62 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 if (!searchTerm.trim()) {
                     filteredHistoryData = currentHistoryData;
                 } else {
-                    const term = searchTerm.toLowerCase();
-                    filteredHistoryData = currentHistoryData.filter((tx) => {
-                        const date = new Date(tx.created_at)
-                            .toLocaleString()
-                            .toLowerCase();
-                        const description = tx.description.toLowerCase();
-                        const amount = tx.amount.toString();
+                    // Check for date range pattern: YYYY-MM-DD..YYYY-MM-DD
+                    const dateRangePattern = /(\d{4}-\d{2}-\d{2})\.\.(\d{4}-\d{2}-\d{2})?|\.\.(\d{4}-\d{2}-\d{2})/;
+                    const match = searchTerm.match(dateRangePattern);
 
-                        return (
-                            description.includes(term) ||
-                            date.includes(term) ||
-                            amount.includes(term)
-                        );
+                    let startDate = null;
+                    let endDate = null;
+                    let textSearch = searchTerm;
+
+                    if (match) {
+                        // Extract and remove date range from search term
+                        textSearch = searchTerm.replace(dateRangePattern, '').trim();
+
+                        if (match[1]) {
+                            // Start date found (YYYY-MM-DD..)
+                            startDate = new Date(match[1]);
+                            startDate.setHours(0, 0, 0, 0);
+                        }
+                        if (match[2]) {
+                            // End date found (..YYYY-MM-DD after start)
+                            endDate = new Date(match[2]);
+                            endDate.setHours(23, 59, 59, 999);
+                        } else if (match[3]) {
+                            // End date only (..YYYY-MM-DD)
+                            endDate = new Date(match[3]);
+                            endDate.setHours(23, 59, 59, 999);
+                        } else if (match[1] && !match[2]) {
+                            // Open-ended: from start date onward
+                            // endDate stays null
+                        }
+                    }
+
+                    const term = textSearch.toLowerCase();
+
+                    filteredHistoryData = currentHistoryData.filter((tx) => {
+                        const txDate = new Date(tx.created_at);
+
+                        // Date range filter
+                        if (startDate && txDate < startDate) return false;
+                        if (endDate && txDate > endDate) return false;
+
+                        // Text filter (if any text remains after extracting date range)
+                        if (term) {
+                            const date = new Date(tx.created_at)
+                                .toLocaleString()
+                                .toLowerCase();
+                            const description = tx.description.toLowerCase();
+                            const amount = tx.amount.toString();
+
+                            if (!(description.includes(term) ||
+                                  date.includes(term) ||
+                                  amount.includes(term))) {
+                                return false;
+                            }
+                        }
+
+                        return true;
                     });
                 }
                 renderHistoryTable(filteredHistoryData);
