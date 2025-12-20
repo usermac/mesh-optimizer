@@ -1594,7 +1594,9 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 if (isFiltered && searchInput) {
                     const sanitized = searchInput
                         .replace(/[<>:"/\\|?*]/g, '')  // Remove Windows-unsafe chars
-                        .replace(/\.\./g, '-to-')      // Replace date range separator
+                        .replace(/^\.\./, 'upto-')     // Leading .. means "up to"
+                        .replace(/\.\.$/, '-onward')   // Trailing .. means "onward"
+                        .replace(/\.\./g, '-to-')      // Middle .. is a range separator
                         .replace(/\s+/g, '_');         // Spaces to underscores
                     if (sanitized) {
                         searchSuffix = `-${sanitized}`;
