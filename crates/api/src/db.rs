@@ -4,6 +4,7 @@ use aes_gcm::{
 };
 use anyhow::Result;
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
+use chrono::Utc;
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -376,7 +377,9 @@ impl Database {
         initial_credits: i32,
         description: &str,
     ) -> Result<String> {
-        let new_key = format!("sk_{}", Uuid::new_v4().simple());
+        let date_str = Utc::now().format("%y%m%d").to_string();
+        let uuid_short = &Uuid::new_v4().simple().to_string()[..8];
+        let new_key = format!("sk_{}_{}", date_str, uuid_short);
 
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
