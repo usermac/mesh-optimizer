@@ -1541,18 +1541,20 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                         if (startDate && txDate < startDate) return false;
                         if (endDate && txDate > endDate) return false;
 
-                        // Text filter (if any text remains after extracting date range)
+                        // Text filter - split into terms, ALL must match somewhere
                         if (term) {
                             const date = new Date(tx.created_at)
                                 .toLocaleString()
                                 .toLowerCase();
                             const description = tx.description.toLowerCase();
                             const amount = tx.amount.toString();
+                            const allFields = `${date} ${description} ${amount}`;
 
-                            if (!(description.includes(term) ||
-                                  date.includes(term) ||
-                                  amount.includes(term))) {
-                                return false;
+                            const terms = term.split(/\s+/).filter(t => t.length > 0);
+                            for (const t of terms) {
+                                if (!allFields.includes(t)) {
+                                    return false;
+                                }
                             }
                         }
 
