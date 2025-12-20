@@ -379,7 +379,8 @@ async fn get_config() -> Result<Json<serde_json::Value>, StatusCode> {
             "max_purchase_usd": pricing.max_purchase_usd,
             "default_purchase_usd": pricing.default_purchase_usd,
             "tiers": pricing.tiers,
-            "free_reoptimization_hours": pricing.free_reoptimization_hours
+            "free_reoptimization_hours": pricing.free_reoptimization_hours,
+            "free_initial_credits": pricing.free_initial_credits
         },
         "cost_decimate": pricing.cost_decimate,
         "cost_remesh": pricing.cost_remesh
@@ -2526,5 +2527,56 @@ async fn capacity_stats_task(semaphore: Arc<Semaphore>, total_slots: usize) {
             );
         }
         // Don't log if nothing is happening (0% utilization)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_config_includes_free_initial_credits() {
+        // This test ensures free_initial_credits is always included in the config response.
+        // The bug: when this field was missing from get_config(), the frontend would
+        // show a hardcoded value instead of the dynamic value from pricing.json.
+
+        // Try workspace root first, then relative path (for different test contexts)
+        let pricing_path = if Path::new("server/pricing.json").exists() {
+            "server/pricing.json"
+        } else if Path::new("../../server/pricing.json").exists() {
+            "../../server/pricing.json"
+        } else {
+            panic!("Cannot find pricing.json - run tests from workspace root");
+        };
+
+        let content = fs::read_to_string(pricing_path).expect("Failed to read pricing.json");
+        let pricing: PricingConfig =
+            serde_json::from_str(&content).expect("Failed to parse pricing.json");
+
+        let config_json = json!({
+            "pricing": {
+                "base_rate_usd_per_credit": pricing.base_rate_usd_per_credit,
+                "min_purchase_usd": pricing.min_purchase_usd,
+                "max_purchase_usd": pricing.max_purchase_usd,
+                "default_purchase_usd": pricing.default_purchase_usd,
+                "tiers": pricing.tiers,
+                "free_reoptimization_hours": pricing.free_reoptimization_hours,
+                "free_initial_credits": pricing.free_initial_credits
+            },
+            "cost_decimate": pricing.cost_decimate,
+            "cost_remesh": pricing.cost_remesh
+        });
+
+        // Verify free_initial_credits is present and matches the config
+        let free_credits = config_json["pricing"]["free_initial_credits"].as_i64();
+        assert!(
+            free_credits.is_some(),
+            "free_initial_credits must be present in config response"
+        );
+        assert_eq!(
+            free_credits.unwrap(),
+            pricing.free_initial_credits as i64,
+            "free_initial_credits must match pricing.json value"
+        );
     }
 }
