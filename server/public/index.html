@@ -1586,11 +1586,10 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 const url = URL.createObjectURL(blob);
 
                 const searchInput = document.getElementById("historySearchInput").value.trim();
-                const isFiltered = searchInput && filteredHistoryData.length < currentHistoryData.length;
 
                 // Sanitize search term for filename: remove/replace OS-unsafe characters
                 let searchSuffix = '';
-                if (isFiltered && searchInput) {
+                if (searchInput) {
                     const sanitized = searchInput
                         .replace(/[<>:"/\\|?*]/g, '')  // Remove Windows-unsafe chars
                         .replace(/^\.\./, 'upto-')     // Leading .. means "up to"
