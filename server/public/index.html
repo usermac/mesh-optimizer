@@ -1506,18 +1506,18 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                         textSearch = searchTerm.replace(dateRangePattern, '').trim();
 
                         if (match[1]) {
-                            // Start date found (YYYY-MM-DD..)
-                            startDate = new Date(match[1]);
-                            startDate.setHours(0, 0, 0, 0);
+                            // Start date found (YYYY-MM-DD..) - parse as local time
+                            const [y, m, d] = match[1].split('-').map(Number);
+                            startDate = new Date(y, m - 1, d, 0, 0, 0, 0);
                         }
                         if (match[2]) {
-                            // End date found (..YYYY-MM-DD after start)
-                            endDate = new Date(match[2]);
-                            endDate.setHours(23, 59, 59, 999);
+                            // End date found (..YYYY-MM-DD after start) - parse as local time
+                            const [y, m, d] = match[2].split('-').map(Number);
+                            endDate = new Date(y, m - 1, d, 23, 59, 59, 999);
                         } else if (match[3]) {
-                            // End date only (..YYYY-MM-DD)
-                            endDate = new Date(match[3]);
-                            endDate.setHours(23, 59, 59, 999);
+                            // End date only (..YYYY-MM-DD) - parse as local time
+                            const [y, m, d] = match[3].split('-').map(Number);
+                            endDate = new Date(y, m - 1, d, 23, 59, 59, 999);
                         } else if (match[1] && !match[2]) {
                             // Open-ended: from start date onward
                             // endDate stays null
