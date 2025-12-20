@@ -1585,7 +1585,6 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 const link = document.createElement("a");
                 const url = URL.createObjectURL(blob);
 
-                const now = new Date();
                 const searchInput = document.getElementById("historySearchInput").value.trim();
                 const isFiltered = searchInput && filteredHistoryData.length < currentHistoryData.length;
 
@@ -1603,12 +1602,7 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                     }
                 }
 
-                const filename = `transaction-history${searchSuffix}-${now.getFullYear()}-${String(
-                    now.getMonth() + 1,
-                ).padStart(
-                    2,
-                    "0",
-                )}-${String(now.getDate()).padStart(2, "0")}.csv`;
+                const filename = `transaction-history${searchSuffix}.csv`;
 
                 link.setAttribute("href", url);
                 link.setAttribute("download", filename);
