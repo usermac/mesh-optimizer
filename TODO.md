@@ -281,7 +281,7 @@ curl -H "Authorization: Bearer sk_their_key" https://webdeliveryengine.com/credi
 
 ## Quick Commands
 
-### Add to ship.sh
+### Add to deploy.sh
 ```bash
 ssh root@your-server "bash /root/mesh-optimizer/scripts/backup/setup.sh"
 ```

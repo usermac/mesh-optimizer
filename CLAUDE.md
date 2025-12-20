@@ -20,7 +20,7 @@ cargo build -p mesh-worker --release
 cargo run -p mesh-api
 
 # Deploy to production
-./ship.sh
+./deploy.sh
 ```
 
 ## Architecture
@@ -90,7 +90,7 @@ Optional:
 
 ## Deployment
 
-Docker-based deployment via `ship.sh`:
+Docker-based deployment via `deploy.sh`:
 1. Rsyncs code to production server
 2. Builds Docker image (Rust binaries + Blender 4.1)
 3. Runs with Caddy reverse proxy for HTTPS

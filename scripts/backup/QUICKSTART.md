@@ -48,7 +48,7 @@ From your **local Mac**, deploy the backup system:
 
 ```bash
 cd ~/Documents/ZedDocs/mesh-code/mesh-optimizer
-./ship.sh
+./deploy.sh
 ```
 
 This will sync the backup scripts to your server.
