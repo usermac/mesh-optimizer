@@ -1555,7 +1555,9 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
             }
 
             function downloadHistoryAsCSV() {
-                if (currentHistoryData.length === 0) {
+                const dataToExport = filteredHistoryData.length > 0 ? filteredHistoryData : currentHistoryData;
+
+                if (dataToExport.length === 0) {
                     alert("No history data to download");
                     return;
                 }
@@ -1565,7 +1567,7 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 const csvRows = [headers.join(",")];
 
                 // Add data rows
-                currentHistoryData.forEach((tx) => {
+                dataToExport.forEach((tx) => {
                     const date = new Date(tx.created_at).toLocaleString();
                     // Escape quotes in description and wrap in quotes if contains comma
                     const description = tx.description.includes(",")
@@ -1584,7 +1586,8 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 const url = URL.createObjectURL(blob);
 
                 const now = new Date();
-                const filename = `transaction-history-${now.getFullYear()}-${String(
+                const isFiltered = filteredHistoryData.length > 0 && filteredHistoryData.length < currentHistoryData.length;
+                const filename = `transaction-history${isFiltered ? '-filtered' : ''}-${now.getFullYear()}-${String(
                     now.getMonth() + 1,
                 ).padStart(
                     2,
