@@ -2187,15 +2187,14 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 .getElementById("freeCreditsLink")
                 .addEventListener("click", function(e) {
                     e.preventDefault();
-                    const modal = document.getElementById("freeCreditsModal");
-                    modal.style.display = "flex";
-                    document.body.style.overflow = "hidden";
-                    // Reset form state
+                    // Reset form state before opening
                     document.getElementById("free-credits-form").reset();
                     document.getElementById("free-credits-success-alert").style.display = "none";
                     document.getElementById("free-credits-existing-alert").style.display = "none";
                     document.getElementById("free-credits-error-alert").style.display = "none";
                     document.getElementById("free-credits-form").style.display = "block";
+                    // Use openModal for proper focus management (stores trigger, enables focus return)
+                    openModal("freeCreditsModal", this);
                     // Focus email input
                     requestAnimationFrame(() => {
                         document.getElementById("free-credits-email").focus();
