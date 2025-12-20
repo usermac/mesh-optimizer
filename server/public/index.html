@@ -1586,8 +1586,22 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 const url = URL.createObjectURL(blob);
 
                 const now = new Date();
-                const isFiltered = filteredHistoryData.length > 0 && filteredHistoryData.length < currentHistoryData.length;
-                const filename = `transaction-history${isFiltered ? '-filtered' : ''}-${now.getFullYear()}-${String(
+                const searchInput = document.getElementById("historySearchInput").value.trim();
+                const isFiltered = searchInput && filteredHistoryData.length < currentHistoryData.length;
+
+                // Sanitize search term for filename: remove/replace OS-unsafe characters
+                let searchSuffix = '';
+                if (isFiltered && searchInput) {
+                    const sanitized = searchInput
+                        .replace(/[<>:"/\\|?*]/g, '')  // Remove Windows-unsafe chars
+                        .replace(/\.\./g, '-to-')      // Replace date range separator
+                        .replace(/\s+/g, '_');         // Spaces to underscores
+                    if (sanitized) {
+                        searchSuffix = `-${sanitized}`;
+                    }
+                }
+
+                const filename = `transaction-history${searchSuffix}-${now.getFullYear()}-${String(
                     now.getMonth() + 1,
                 ).padStart(
                     2,
