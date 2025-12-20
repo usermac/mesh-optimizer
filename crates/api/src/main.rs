@@ -451,6 +451,7 @@ async fn create_checkout_session(
     // 5. Build metadata to pass total_credits to the webhook
     let mut metadata: std::collections::HashMap<String, String> = std::collections::HashMap::new();
     metadata.insert("total_credits".to_string(), total_credits.to_string());
+    metadata.insert("app".to_string(), "MeshOpt".to_string());
 
     // 6. Create Stripe Checkout Session
     let params = CreateCheckoutSession {
