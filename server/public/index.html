@@ -445,7 +445,7 @@
                         />
                         <span
                             class="history-search-help"
-                            title="Search by text, amount, or date range:&#10;&#10;Text: stripe, refund, chair.obj&#10;Date range: 2025-01-01..2025-01-31&#10;Open-ended: 2025-12-01.. or ..2025-12-15&#10;Combined: stripe 2025-12-01..2025-12-19"
+                            title="Search by text, amount, or date:&#10;&#10;Text: stripe, refund, 12/17&#10;Single day: 2025-12-17&#10;Date range: 2025-01-01..2025-01-31&#10;Open-ended: 2025-12-01.. or ..2025-12-15&#10;Combined: stripe 2025-12-01..2025-12-19"
                             aria-label="Search help"
                             style="cursor: help; font-size: 0.9rem; color: var(--text-muted);"
                         >&#9432;</span>
@@ -1493,15 +1493,23 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 if (!searchTerm.trim()) {
                     filteredHistoryData = currentHistoryData;
                 } else {
-                    // Check for date range pattern: YYYY-MM-DD..YYYY-MM-DD
+                    // Check for date range pattern: YYYY-MM-DD..YYYY-MM-DD, or single YYYY-MM-DD
                     const dateRangePattern = /(\d{4}-\d{2}-\d{2})\.\.(\d{4}-\d{2}-\d{2})?|\.\.(\d{4}-\d{2}-\d{2})/;
+                    const singleDatePattern = /^(\d{4}-\d{2}-\d{2})$/;
                     const match = searchTerm.match(dateRangePattern);
+                    const singleMatch = searchTerm.match(singleDatePattern);
 
                     let startDate = null;
                     let endDate = null;
                     let textSearch = searchTerm;
 
-                    if (match) {
+                    if (singleMatch) {
+                        // Single ISO date: treat as one-day range
+                        textSearch = '';
+                        const [y, m, d] = singleMatch[1].split('-').map(Number);
+                        startDate = new Date(y, m - 1, d, 0, 0, 0, 0);
+                        endDate = new Date(y, m - 1, d, 23, 59, 59, 999);
+                    } else if (match) {
                         // Extract and remove date range from search term
                         textSearch = searchTerm.replace(dateRangePattern, '').trim();
 
