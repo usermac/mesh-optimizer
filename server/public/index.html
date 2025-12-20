@@ -79,6 +79,12 @@
                     class="text-center text-muted text-small d-block mt-5"
                     >View History</a
                 >
+                <a
+                    href="#"
+                    id="freeCreditsLink"
+                    class="text-center text-muted text-small d-block mt-5"
+                    >Get <span id="freeCreditsAmount">20</span> free credits here...</a
+                >
             </div>
             <!-- Auth -->
             <div class="d-flex gap-10 align-center">
@@ -1357,6 +1363,55 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                     </div>
                 </div>
             </div>
+
+            <!-- Free Credits Modal -->
+            <div id="freeCreditsModal" class="modal-overlay" role="dialog" aria-labelledby="freeCreditsModalTitle" aria-modal="true">
+                <div class="modal-window">
+                    <div class="modal-header">
+                        <h2 class="m-0" id="freeCreditsModalTitle">Get Free Credits</h2>
+                        <button type="button" class="modal-close" onclick="closeModal('freeCreditsModal')" aria-label="Close free credits form">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="intro">
+                            <p>
+                                <strong>Try MeshOptimizer for free!</strong> Enter your email below and we'll send you an API key with <span id="freeCreditsModalAmount">20</span> free credits.
+                            </p>
+                        </div>
+
+                        <div id="free-credits-success-alert" class="alert success" role="alert" style="display: none;">
+                            <strong>&#10003; Check your email!</strong> We've sent your free API key. Paste it in the API KEY field to get started.
+                        </div>
+
+                        <div id="free-credits-existing-alert" class="alert success" role="alert" style="display: none;">
+                            <strong>&#10003; Welcome back!</strong> You already have an account. Your API key has been restored and we've also emailed it to you.
+                        </div>
+
+                        <div id="free-credits-error-alert" class="alert error" role="alert" style="display: none;">
+                            <strong>&#10007; Error:</strong> <span id="free-credits-error-message"></span>
+                        </div>
+
+                        <form id="free-credits-form" aria-label="Free credits form">
+                            <div class="form-group">
+                                <label for="free-credits-email">Email <span class="required">*</span></label>
+                                <input
+                                    type="email"
+                                    id="free-credits-email"
+                                    name="email"
+                                    required
+                                    placeholder="your.email@example.com"
+                                />
+                                <div class="helper-text">
+                                    We'll send your API key to this address
+                                </div>
+                            </div>
+
+                            <div class="button-group">
+                                <button type="submit" id="free-credits-submit-btn">Get Free Credits</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <script>
@@ -1589,6 +1644,13 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 }
             }
 
+            // Toggle between "View History" and "Get free credits" links based on API key presence
+            function updateHistoryFreeCreditsLinks() {
+                const hasKey = !!localStorage.getItem("apiKey");
+                document.getElementById("historyLink").style.display = hasKey ? "block" : "none";
+                document.getElementById("freeCreditsLink").style.display = hasKey ? "none" : "block";
+            }
+
             // Clean up any old test keys from localStorage
             const storedKey = localStorage.getItem("apiKey");
             if (storedKey === "sk_test_123") {
@@ -1603,12 +1665,20 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 updateApiKeyPreview();
             }
 
+            // Initial toggle of history/free credits links
+            updateHistoryFreeCreditsLinks();
+
             // API Key Preview - update on input
             apiKeyEl.addEventListener("input", (e) => {
                 const key = e.target.value;
                 // Save key to localStorage on change
-                localStorage.setItem("apiKey", key);
+                if (key) {
+                    localStorage.setItem("apiKey", key);
+                } else {
+                    localStorage.removeItem("apiKey");
+                }
                 updateApiKeyPreview();
+                updateHistoryFreeCreditsLinks();
             });
 
             // Handle browser back/forward navigation
@@ -1965,6 +2035,12 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                     if (data.pricing && data.pricing.free_reoptimization_hours !== undefined) {
                         updateFairUseDisplay(data.pricing.free_reoptimization_hours);
                     }
+
+                    // Update free credits amount from config
+                    if (data.pricing && data.pricing.free_initial_credits !== undefined) {
+                        document.getElementById("freeCreditsAmount").textContent = data.pricing.free_initial_credits;
+                        document.getElementById("freeCreditsModalAmount").textContent = data.pricing.free_initial_credits;
+                    }
                 });
 
             // History Logic
@@ -2022,6 +2098,80 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                         tbody.innerHTML =
                             '<tr><td colspan="3">Failed to load history</td></tr>';
                         remainingCreditsSpan.textContent = "Error";
+                    }
+                });
+
+            // Free Credits Link - open modal
+            document
+                .getElementById("freeCreditsLink")
+                .addEventListener("click", function(e) {
+                    e.preventDefault();
+                    const modal = document.getElementById("freeCreditsModal");
+                    modal.style.display = "flex";
+                    document.body.style.overflow = "hidden";
+                    // Reset form state
+                    document.getElementById("free-credits-form").reset();
+                    document.getElementById("free-credits-success-alert").style.display = "none";
+                    document.getElementById("free-credits-existing-alert").style.display = "none";
+                    document.getElementById("free-credits-error-alert").style.display = "none";
+                    document.getElementById("free-credits-form").style.display = "block";
+                    // Focus email input
+                    requestAnimationFrame(() => {
+                        document.getElementById("free-credits-email").focus();
+                    });
+                });
+
+            // Free Credits Form submission
+            document
+                .getElementById("free-credits-form")
+                .addEventListener("submit", async function(e) {
+                    e.preventDefault();
+                    const email = document.getElementById("free-credits-email").value.trim();
+                    const submitBtn = document.getElementById("free-credits-submit-btn");
+                    const successAlert = document.getElementById("free-credits-success-alert");
+                    const existingAlert = document.getElementById("free-credits-existing-alert");
+                    const errorAlert = document.getElementById("free-credits-error-alert");
+                    const errorMessage = document.getElementById("free-credits-error-message");
+
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = "Sending...";
+                    errorAlert.style.display = "none";
+
+                    try {
+                        const res = await fetch("/claim-free-credits", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ email: email })
+                        });
+                        const data = await res.json();
+
+                        if (res.ok) {
+                            // Hide form
+                            document.getElementById("free-credits-form").style.display = "none";
+
+                            if (data.existing && data.api_key) {
+                                // Existing user - restore their key and show different message
+                                existingAlert.style.display = "block";
+                                // Populate the API key field
+                                const apiKeyEl = document.getElementById("apiKey");
+                                apiKeyEl.value = data.api_key;
+                                localStorage.setItem("apiKey", data.api_key);
+                                updateApiKeyPreview();
+                                updateHistoryFreeCreditsLinks();
+                            } else {
+                                // New user - check email
+                                successAlert.style.display = "block";
+                            }
+                        } else {
+                            errorMessage.textContent = data.error || "Failed to claim free credits";
+                            errorAlert.style.display = "block";
+                        }
+                    } catch (err) {
+                        errorMessage.textContent = "Network error. Please try again.";
+                        errorAlert.style.display = "block";
+                    } finally {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = "Get Free Credits";
                     }
                 });
 

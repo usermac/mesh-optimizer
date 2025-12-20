@@ -73,6 +73,8 @@ struct PricingConfig {
     free_reoptimization_hours: u32,
     cost_decimate: i32,
     cost_remesh: i32,
+    #[serde(default)]
+    free_initial_credits: i32,
 }
 
 /// Load pricing config fresh from disk (enables hot reloading without restart)
@@ -274,6 +276,7 @@ async fn main() -> Result<()> {
         // Public Routes
         .route("/config", get(get_config))
         .route("/contact", post(contact_handler))
+        .route("/claim-free-credits", post(claim_free_credits))
         .route("/job/:id", get(job_status_handler))
         .route(
             "/history",
@@ -2215,6 +2218,170 @@ async fn history_handler(
             error!("Failed to get history for key={}: {:?}", &auth_key.0, e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
+    }
+}
+
+// --- FREE CREDITS HANDLER ---
+
+#[derive(Debug, Deserialize)]
+struct ClaimFreeCreditsRequest {
+    email: String,
+}
+
+async fn claim_free_credits(
+    State(state): State<AppState>,
+    Json(req): Json<ClaimFreeCreditsRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let email = req.email.trim().to_lowercase();
+
+    // Validate email format (basic check)
+    if !email.contains('@') || !email.contains('.') {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": "Invalid email address" })),
+        ));
+    }
+
+    // Load pricing config to get free_initial_credits
+    let pricing = load_pricing_config().map_err(|e| {
+        error!("Failed to load pricing config: {}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Server configuration error" })),
+        )
+    })?;
+
+    let free_credits = pricing.free_initial_credits;
+    if free_credits <= 0 {
+        return Err((
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(json!({ "error": "Free credits promotion is not currently available" })),
+        ));
+    }
+
+    // Check if email already has a key
+    let existing_key = state.db.get_key_by_email(&email).await;
+
+    if let Some(api_key) = existing_key {
+        // Email already exists - send them their existing key as a reminder
+        let html_body = format!(
+            r#"
+            <h2>Your MeshOptimizer API Key</h2>
+            <p>You requested your API key - here it is:</p>
+            <p style="font-family: monospace; font-size: 1.2em; background: #f4f4f4; padding: 10px; border-radius: 4px;">{}</p>
+            <p>We've also restored it in your browser if you requested this from our website.</p>
+            <p>To use it:</p>
+            <ol>
+                <li>Go to <a href="https://meshoptimizer.com">meshoptimizer.com</a></li>
+                <li>Paste your API key in the "API KEY" field</li>
+                <li>Upload a 3D model and optimize!</li>
+            </ol>
+            <p>Happy optimizing!</p>
+            "#,
+            api_key
+        );
+
+        let client = reqwest::Client::new();
+        let res = client
+            .post("https://api.resend.com/emails")
+            .header("Authorization", format!("Bearer {}", state.resend_api_key))
+            .json(&json!({
+                "from": "MeshOptimizer <noreply@webdeliveryengine.com>",
+                "to": [email.clone()],
+                "subject": "Your MeshOptimizer API Key (Reminder)",
+                "html": html_body
+            }))
+            .send()
+            .await
+            .map_err(|e| {
+                error!("Failed to send reminder email: {}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({ "error": "Failed to send email" })),
+                )
+            })?;
+
+        if res.status().is_success() {
+            info!("Existing key reminder sent to {}", email);
+            return Ok(Json(json!({
+                "success": true,
+                "existing": true,
+                "api_key": api_key,
+                "message": "Your existing API key has been restored"
+            })));
+        } else {
+            let error_text = res.text().await.unwrap_or_default();
+            error!("Resend API error: {}", error_text);
+            return Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to send email" })),
+            ));
+        }
+    }
+
+    // Create the free tier key
+    let api_key = state
+        .db
+        .create_free_tier_key(email.clone(), free_credits)
+        .await
+        .map_err(|e| {
+            error!("Failed to create free tier key: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to create API key" })),
+            )
+        })?;
+
+    // Send email with the API key
+    let html_body = format!(
+        r#"
+        <h2>Welcome to MeshOptimizer!</h2>
+        <p>Here's your free API key with <strong>{} credits</strong>:</p>
+        <p style="font-family: monospace; font-size: 1.2em; background: #f4f4f4; padding: 10px; border-radius: 4px;">{}</p>
+        <p>To get started:</p>
+        <ol>
+            <li>Go to <a href="https://meshoptimizer.com">meshoptimizer.com</a></li>
+            <li>Paste your API key in the "API KEY" field</li>
+            <li>Upload a 3D model and optimize!</li>
+        </ol>
+        <p>Need more credits? You can purchase additional credits anytime from the website.</p>
+        <p>Happy optimizing!</p>
+        "#,
+        free_credits, api_key
+    );
+
+    let client = reqwest::Client::new();
+    let res = client
+        .post("https://api.resend.com/emails")
+        .header("Authorization", format!("Bearer {}", state.resend_api_key))
+        .json(&json!({
+            "from": "MeshOptimizer <noreply@webdeliveryengine.com>",
+            "to": [email.clone()],
+            "subject": format!("Your Free MeshOptimizer API Key ({} credits)", free_credits),
+            "html": html_body
+        }))
+        .send()
+        .await
+        .map_err(|e| {
+            error!("Failed to send email: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to send email" })),
+            )
+        })?;
+
+    if res.status().is_success() {
+        info!("Free credits key sent to {}", email);
+        Ok(Json(
+            json!({ "success": true, "message": "API key sent to your email" }),
+        ))
+    } else {
+        let error_text = res.text().await.unwrap_or_default();
+        error!("Resend API error: {}", error_text);
+        Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Failed to send email" })),
+        ))
     }
 }
 

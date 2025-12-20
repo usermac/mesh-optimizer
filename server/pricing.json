@@ -33,5 +33,6 @@
   ],
   "free_reoptimization_hours": 24,
   "cost_decimate": 1,
-  "cost_remesh": 2
+  "cost_remesh": 2,
+  "free_initial_credits": 20
 }

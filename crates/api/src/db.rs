@@ -417,6 +417,43 @@ impl Database {
         Ok(new_key)
     }
 
+    pub async fn create_free_tier_key(
+        &self,
+        email: String,
+        initial_credits: i32,
+    ) -> Result<String> {
+        let date_str = Utc::now().format("%y%m%d").to_string();
+        let uuid_short = &Uuid::new_v4().simple().to_string()[..8];
+        let new_key = format!("fr_{}_{}", date_str, uuid_short);
+
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis() as u64;
+
+        {
+            let mut data = self.data.write().await;
+
+            data.keys.insert(
+                new_key.clone(),
+                KeyInfo {
+                    email: email.clone(),
+                    stripe_customer_id: String::new(), // No Stripe customer for free tier
+                    created: now,
+                    active: true,
+                    credits: 0,
+                },
+            );
+        }
+
+        self.persist().await?;
+
+        self.record_transaction(&new_key, initial_credits, "free_initial_credits", None)
+            .await?;
+
+        Ok(new_key)
+    }
+
     pub async fn get_key_by_email(&self, email: &str) -> Option<String> {
         let data = self.data.read().await;
         data.keys
@@ -1132,5 +1169,113 @@ mod tests {
         assert_eq!(bonus, 0);
         assert_eq!(pct, 0);
         assert_eq!(total, 200);
+    }
+
+    #[tokio::test]
+    async fn test_create_free_tier_key_format() {
+        let db = setup_test_db().await;
+        let email = "test@example.com".to_string();
+        let initial_credits = 20;
+
+        let key = db
+            .create_free_tier_key(email.clone(), initial_credits)
+            .await
+            .unwrap();
+
+        // 1. Key should start with "fr_"
+        assert!(key.starts_with("fr_"), "Key should start with 'fr_' prefix");
+
+        // 2. Key should be 18 characters: fr_ (3) + YYMMDD (6) + _ (1) + uuid8 (8)
+        assert_eq!(key.len(), 18, "Key should be 18 characters long");
+
+        // 3. Key should have correct structure: fr_YYMMDD_xxxxxxxx
+        let parts: Vec<&str> = key.split('_').collect();
+        assert_eq!(
+            parts.len(),
+            3,
+            "Key should have 3 parts separated by underscores"
+        );
+        assert_eq!(parts[0], "fr");
+        assert_eq!(
+            parts[1].len(),
+            6,
+            "Date part should be 6 characters (YYMMDD)"
+        );
+        assert_eq!(parts[2].len(), 8, "UUID part should be 8 characters");
+
+        // 4. Date part should be numeric
+        assert!(
+            parts[1].chars().all(|c| c.is_ascii_digit()),
+            "Date should be numeric"
+        );
+
+        // 5. UUID part should be hex
+        assert!(
+            parts[2].chars().all(|c| c.is_ascii_hexdigit()),
+            "UUID part should be hexadecimal"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_create_free_tier_key_grants_credits() {
+        let db = setup_test_db().await;
+        let email = "credits@example.com".to_string();
+        let initial_credits = 20;
+
+        let key = db
+            .create_free_tier_key(email, initial_credits)
+            .await
+            .unwrap();
+
+        // Verify the key has the correct credits
+        let credits = db.get_credits(&key).await.unwrap();
+        assert_eq!(credits, initial_credits, "Key should have initial credits");
+    }
+
+    #[tokio::test]
+    async fn test_create_free_tier_key_stores_email() {
+        let db = setup_test_db().await;
+        let email = "stored@example.com".to_string();
+        let initial_credits = 20;
+
+        let key = db
+            .create_free_tier_key(email.clone(), initial_credits)
+            .await
+            .unwrap();
+
+        // Verify we can find the key by email
+        let found_key = db.get_key_by_email(&email).await;
+        assert_eq!(found_key, Some(key), "Should find key by email");
+    }
+
+    #[tokio::test]
+    async fn test_get_key_by_email_not_found() {
+        let db = setup_test_db().await;
+
+        // Search for non-existent email
+        let found_key = db.get_key_by_email("nonexistent@example.com").await;
+        assert_eq!(found_key, None, "Should return None for unknown email");
+    }
+
+    #[tokio::test]
+    async fn test_create_free_tier_key_no_stripe_customer() {
+        let db = setup_test_db().await;
+        let email = "free@example.com".to_string();
+        let initial_credits = 20;
+
+        let key = db
+            .create_free_tier_key(email.clone(), initial_credits)
+            .await
+            .unwrap();
+
+        // Verify the key info has empty stripe_customer_id
+        let data = db.data.read().await;
+        let key_info = data.keys.get(&key).unwrap();
+        assert!(
+            key_info.stripe_customer_id.is_empty(),
+            "Free tier key should have empty stripe_customer_id"
+        );
+        assert_eq!(key_info.email, email);
+        assert!(key_info.active);
     }
 }
