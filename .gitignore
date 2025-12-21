@@ -7,3 +7,4 @@ uploads/
 .env
 server/database.json
 server/stats.db
+EMERGENCY_ACCOUNTS_TEMPLATE.md
