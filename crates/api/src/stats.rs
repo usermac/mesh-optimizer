@@ -20,6 +20,9 @@ pub struct DailySnapshot {
     pub jobs_24h: i64,
     pub jobs_success_24h: i64,
     pub jobs_failed_24h: i64,
+    pub jobs_web_24h: i64,
+    pub jobs_api_24h: i64,
+    pub jobs_batch_24h: i64,
     pub credits_purchased_24h: i64,
     pub credits_used_24h: i64,
 }
@@ -28,7 +31,7 @@ impl DailySnapshot {
     /// Format as a single log line
     pub fn to_log_line(&self) -> String {
         format!(
-            "{}-{:03} | signups: {} (free: {}, paid: {}) | jobs: {} (ok: {}, fail: {}) | credits: +{} -{}\n",
+            "{}-{:03} | signups: {} (free: {}, paid: {}) | jobs: {} (ok: {}, fail: {}) | sources: web={} api={} batch={} | credits: +{} -{}\n",
             self.year,
             self.day_of_year,
             self.signups_24h,
@@ -37,6 +40,9 @@ impl DailySnapshot {
             self.jobs_24h,
             self.jobs_success_24h,
             self.jobs_failed_24h,
+            self.jobs_web_24h,
+            self.jobs_api_24h,
+            self.jobs_batch_24h,
             self.credits_purchased_24h,
             self.credits_used_24h,
         )
@@ -99,6 +105,29 @@ pub async fn collect_daily_snapshot(pool: &Pool<Sqlite>) -> Result<DailySnapshot
     .await
     .unwrap_or((0,));
 
+    // Count jobs by source
+    let jobs_web: (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM job_history WHERE timestamp > ? AND source = 'web'")
+            .bind(&cutoff_datetime)
+            .fetch_one(pool)
+            .await
+            .unwrap_or((0,));
+
+    let jobs_api: (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM job_history WHERE timestamp > ? AND source = 'api'")
+            .bind(&cutoff_datetime)
+            .fetch_one(pool)
+            .await
+            .unwrap_or((0,));
+
+    let jobs_batch: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM job_history WHERE timestamp > ? AND source = 'api_batch'",
+    )
+    .bind(&cutoff_datetime)
+    .fetch_one(pool)
+    .await
+    .unwrap_or((0,));
+
     // Credits purchased (positive transactions from payment)
     let credits_purchased: (i64,) = sqlx::query_as(
         "SELECT COALESCE(SUM(amount), 0) FROM credit_transactions
@@ -129,6 +158,9 @@ pub async fn collect_daily_snapshot(pool: &Pool<Sqlite>) -> Result<DailySnapshot
         jobs_24h: jobs_total.0,
         jobs_success_24h: jobs_success.0,
         jobs_failed_24h: jobs_failed.0,
+        jobs_web_24h: jobs_web.0,
+        jobs_api_24h: jobs_api.0,
+        jobs_batch_24h: jobs_batch.0,
         credits_purchased_24h: credits_purchased.0,
         credits_used_24h: credits_used.0,
     })
@@ -211,6 +243,9 @@ mod tests {
             jobs_24h: 142,
             jobs_success_24h: 138,
             jobs_failed_24h: 4,
+            jobs_web_24h: 89,
+            jobs_api_24h: 50,
+            jobs_batch_24h: 3,
             credits_purchased_24h: 500,
             credits_used_24h: 89,
         };
@@ -225,6 +260,7 @@ mod tests {
         assert!(line.contains("jobs: 142"));
         assert!(line.contains("ok: 138"));
         assert!(line.contains("fail: 4"));
+        assert!(line.contains("sources: web=89 api=50 batch=3"));
         assert!(line.contains("+500"));
         assert!(line.contains("-89"));
         assert!(line.ends_with('\n'));
@@ -243,6 +279,9 @@ mod tests {
             jobs_24h: 0,
             jobs_success_24h: 0,
             jobs_failed_24h: 0,
+            jobs_web_24h: 0,
+            jobs_api_24h: 0,
+            jobs_batch_24h: 0,
             credits_purchased_24h: 0,
             credits_used_24h: 0,
         };
