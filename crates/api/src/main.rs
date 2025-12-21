@@ -1,4 +1,5 @@
 mod db;
+mod stats;
 
 use crate::db::JobStatus;
 use anyhow::{Context, Result};
@@ -270,6 +271,14 @@ async fn main() -> Result<()> {
     // 4b. Start Capacity Stats Task
     let semaphore_for_stats = state.worker_semaphore.clone();
     tokio::spawn(capacity_stats_task(semaphore_for_stats, worker_slots));
+
+    // 4c. Start Daily Stats Snapshot Task
+    if let Some(pool) = state.db.get_pool() {
+        tokio::spawn(stats::daily_stats_task(pool));
+        info!("Daily stats snapshot task started");
+    } else {
+        warn!("SQLite pool not available - daily stats task not started");
+    }
 
     // 5. Build Router
     let app = Router::new()

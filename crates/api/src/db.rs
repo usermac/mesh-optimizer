@@ -701,6 +701,11 @@ impl Database {
         Ok(0)
     }
 
+    /// Get a clone of the SQLite pool for use by other modules (e.g., stats)
+    pub fn get_pool(&self) -> Option<Pool<Sqlite>> {
+        self.pool.clone()
+    }
+
     pub async fn get_history(&self, key: &str, limit: i32) -> Result<Vec<Transaction>> {
         if let Some(pool) = &self.pool {
             let query = r#"
