@@ -227,7 +227,7 @@
                         class="font-bold text-small"
                         >Help & Guide</a
                     >
-                    <button type="button" class="text-small text-muted" data-modal-trigger="changelogModal" style="background:none; border:none; padding:0; margin:0; cursor:pointer; font-family: inherit;">v1.0.1beta <span class="text-primary">(2025-12-22)</span></button>
+                    <button type="button" id="changelogLink" class="text-small text-muted" style="background:none; border:none; padding:0; margin:0; cursor:pointer; font-family: inherit;">v1.0.1beta <span class="text-primary">(2025-12-22)</span></button>
                 </div>
             </header>
 
@@ -2391,7 +2391,7 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
             // Close any open modal on ESC key
             document.addEventListener("keydown", function (e) {
                 if (e.key === "Escape") {
-                    const modals = ["purchaseModal", "historyModal", "helpModal", "contactModal", "privacyModal", "apiCodeModal", "tosModal", "apiDocsModal", "batchScriptModal", "founderModal", "freeCreditsModal"];
+                    const modals = ["purchaseModal", "historyModal", "helpModal", "contactModal", "privacyModal", "apiCodeModal", "tosModal", "apiDocsModal", "batchScriptModal", "founderModal", "freeCreditsModal", "changelogModal"];
                     modals.forEach(function(modalId) {
                         const modal = document.getElementById(modalId);
                         if (modal && modal.style.display === "flex") {
@@ -2402,10 +2402,8 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
             });
 
             // Modal link handlers
-            document.getElementById("helpLink").addEventListener("click", function(e) {
-                e.preventDefault();
-                openModal("helpModal", this);
-            });
+                document.getElementById("helpLink").addEventListener("click", (e) => openModal("helpModal", e.currentTarget));
+                document.getElementById("changelogLink").addEventListener("click", (e) => openModal("changelogModal", e.currentTarget));
 
             document.getElementById("contactLink").addEventListener("click", function(e) {
                 e.preventDefault();
