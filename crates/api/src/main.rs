@@ -678,6 +678,72 @@ struct JobStatusQuery {
     mode: Option<String>,
 }
 
+/// Formats a JobStatus into the JSON response expected by the frontend.
+///
+/// IMPORTANT: The frontend (index.html) parses these responses in the polling loop.
+/// If you change this format, you MUST update the frontend to match, and update
+/// the test `test_job_status_response_format_matches_frontend_contract`.
+///
+/// Frontend expects for Completed/Failed:
+///   - status.Completed.glb_url (nested object format)
+///   - status.Failed.error (nested object format)
+fn format_job_status(status: &JobStatus, job_id: &str, msgs: &[String]) -> serde_json::Value {
+    match status {
+        JobStatus::Processing => json!({
+            "status": "Processing",
+            "message": get_processing_message(msgs, job_id)
+        }),
+        JobStatus::Completed {
+            output_size,
+            glb_url,
+            usdz_url,
+            expires_at,
+        } => {
+            let base = "https://webdeliveryengine.com";
+            let full_glb = format!("{}{}", base, glb_url);
+            let full_usdz = format!("{}{}", base, usdz_url);
+            let glb_filename = glb_url.split('/').last().unwrap_or("model.glb");
+            let usdz_filename = usdz_url.split('/').last().unwrap_or("model.usdz");
+            json!({
+                "status": {
+                    "Completed": {
+                        "output_size": output_size,
+                        "glb_url": glb_url,
+                        "usdz_url": usdz_url,
+                        "expires_at": expires_at
+                    }
+                },
+                "download_commands": {
+                    "curl": format!(
+                        "curl -O {}\ncurl -O {}",
+                        full_glb, full_usdz
+                    ),
+                    "python": format!(
+                        "import urllib.request\nurllib.request.urlretrieve('{}', '{}')\nurllib.request.urlretrieve('{}', '{}')",
+                        full_glb, glb_filename,
+                        full_usdz, usdz_filename
+                    ),
+                    "powershell": format!(
+                        "Invoke-WebRequest -Uri '{}' -OutFile '{}'\nInvoke-WebRequest -Uri '{}' -OutFile '{}'",
+                        full_glb, glb_filename,
+                        full_usdz, usdz_filename
+                    )
+                }
+            })
+        }
+        JobStatus::Failed { error } => {
+            json!({
+                "status": {
+                    "Failed": {
+                        "error": error
+                    }
+                }
+            })
+        }
+        _ => json!({ "status": status }),
+    }
+}
+
 async fn job_status_handler(
     State(state): State<AppState>,
     AxumPath(id): AxumPath<String>,
@@ -689,57 +755,11 @@ async fn job_status_handler(
         _ => &state.processing_messages.decimate,
     };
 
-    // Helper to format status response, with easter egg for Processing
-    let format_status = |status: &JobStatus, job_id: &str, msgs: &[String]| -> serde_json::Value {
-        match status {
-            JobStatus::Processing => json!({
-                "status": "Processing",
-                "message": get_processing_message(msgs, job_id)
-            }),
-            JobStatus::Completed {
-                output_size,
-                glb_url,
-                usdz_url,
-                expires_at,
-            } => {
-                let base = "https://webdeliveryengine.com";
-                let full_glb = format!("{}{}", base, glb_url);
-                let full_usdz = format!("{}{}", base, usdz_url);
-                let glb_filename = glb_url.split('/').last().unwrap_or("model.glb");
-                let usdz_filename = usdz_url.split('/').last().unwrap_or("model.usdz");
-                json!({
-                    "status": "Completed",
-                    "output_size": output_size,
-                    "glb_url": glb_url,
-                    "usdz_url": usdz_url,
-                    "expires_at": expires_at,
-                    "download_commands": {
-                        "curl": format!(
-                            "curl -O {}\ncurl -O {}",
-                            full_glb, full_usdz
-                        ),
-                        "python": format!(
-                            "import urllib.request\nurllib.request.urlretrieve('{}', '{}')\nurllib.request.urlretrieve('{}', '{}')",
-                            full_glb, glb_filename,
-                            full_usdz, usdz_filename
-                        ),
-                        "powershell": format!(
-                            "Invoke-WebRequest -Uri '{}' -OutFile '{}'\nInvoke-WebRequest -Uri '{}' -OutFile '{}'",
-                            full_glb, glb_filename,
-                            full_usdz, usdz_filename
-                        )
-                    }
-                })
-            }
-            _ => json!({ "status": status }),
-        }
-    };
-
     // Check in-memory cache first
     {
         let jobs = state.jobs.read().await;
         if let Some(status) = jobs.get(&id) {
-            return Json(format_status(status, &id, messages));
+            return Json(format_job_status(status, &id, messages));
         }
     }
 
@@ -750,7 +770,7 @@ async fn job_status_handler(
             let mut jobs = state.jobs.write().await;
             jobs.insert(id.clone(), status.clone());
         }
-        return Json(format_status(&status, &id, messages));
+        return Json(format_job_status(&status, &id, messages));
     }
 
     Json(json!({ "error": "Job not found" }))
@@ -2543,6 +2563,69 @@ async fn capacity_stats_task(semaphore: Arc<Semaphore>, total_slots: usize) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Tests that job status responses match the format expected by the frontend.
+    ///
+    /// IMPORTANT: The frontend (index.html) parses these responses in the polling loop.
+    /// If you change the response format here, you MUST update the frontend to match.
+    ///
+    /// Frontend expects for Completed status:
+    ///   - status.Completed.glb_url (nested object format)
+    ///   - status.Failed.error (nested object format)
+    ///
+    /// This test calls the ACTUAL format_job_status() function to catch any changes.
+    #[test]
+    fn test_job_status_response_format_matches_frontend_contract() {
+        let empty_msgs: Vec<String> = vec![];
+
+        // Test Completed status
+        let completed_status = JobStatus::Completed {
+            output_size: 12345,
+            glb_url: "/download/abc123/model.glb".to_string(),
+            usdz_url: "/download/abc123/model.usdz".to_string(),
+            expires_at: "2024-01-01T00:00:00Z".to_string(),
+        };
+
+        // Call the ACTUAL function that the handler uses
+        let response = format_job_status(&completed_status, "test-job-id", &empty_msgs);
+
+        // Frontend contract: status must be an object with "Completed" key
+        assert!(
+            response["status"].is_object(),
+            "status must be an object, not a string. Frontend checks: status.Completed.glb_url. Got: {}",
+            response["status"]
+        );
+        assert!(
+            response["status"]["Completed"].is_object(),
+            "status.Completed must be an object containing glb_url and usdz_url. Got: {}",
+            response["status"]
+        );
+        assert!(
+            response["status"]["Completed"]["glb_url"].is_string(),
+            "status.Completed.glb_url must be a string"
+        );
+        assert!(
+            response["status"]["Completed"]["usdz_url"].is_string(),
+            "status.Completed.usdz_url must be a string"
+        );
+
+        // Test Failed status
+        let failed_status = JobStatus::Failed {
+            error: "Something went wrong".to_string(),
+        };
+
+        // Call the ACTUAL function
+        let failed_response = format_job_status(&failed_status, "test-job-id", &empty_msgs);
+
+        assert!(
+            failed_response["status"]["Failed"].is_object(),
+            "status.Failed must be an object containing error"
+        );
+        assert!(
+            failed_response["status"]["Failed"]["error"].is_string(),
+            "status.Failed.error must be a string"
+        );
+    }
 
     #[test]
     fn test_get_config_includes_free_initial_credits() {
