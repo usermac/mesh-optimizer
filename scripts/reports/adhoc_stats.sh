@@ -1,13 +1,15 @@
 #!/bin/bash
 
 ################################################################################
-# Mesh Optimizer - Daily Usage Statistics Report
+# Mesh Optimizer - Ad Hoc Usage Statistics Report
 ################################################################################
-# Generates a daily email report with KPIs, usage patterns, and technical stats.
-# Designed to be run daily via cron (e.g., at 00:00 UTC).
+# Generates an on-demand email report for the past X hours.
 #
 # USAGE:
-#   ./daily_stats.sh
+#   ./adhoc_stats.sh -X <hours>
+#   ./adhoc_stats.sh -X 6      # Stats for the last 6 hours
+#   ./adhoc_stats.sh -X 24     # Stats for the last 24 hours
+#   ./adhoc_stats.sh -X 1      # Stats for the last hour
 ################################################################################
 
 set -euo pipefail
@@ -16,7 +18,46 @@ set -euo pipefail
 PROJECT_DIR="/root/mesh-optimizer"
 DB_PATH="$PROJECT_DIR/server/stats.db"
 SEND_REPORT_SCRIPT="$PROJECT_DIR/scripts/backup/send_report.sh"
-LOG_FILE="/var/log/mesh/daily_stats.log"
+LOG_FILE="/var/log/mesh/adhoc_stats.log"
+
+# ------------------------------------------------------------------------------
+# Parse Arguments
+# ------------------------------------------------------------------------------
+usage() {
+    echo "Usage: $0 -X <hours>"
+    echo ""
+    echo "Options:"
+    echo "  -X <hours>   Number of hours to look back (required, positive integer)"
+    echo ""
+    echo "Examples:"
+    echo "  $0 -X 6      # Stats for the last 6 hours"
+    echo "  $0 -X 24     # Stats for the last 24 hours"
+    exit 1
+}
+
+HOURS=""
+
+while getopts "X:" opt; do
+    case $opt in
+        X)
+            HOURS="$OPTARG"
+            ;;
+        *)
+            usage
+            ;;
+    esac
+done
+
+# Validate hours parameter
+if [[ -z "$HOURS" ]]; then
+    echo "Error: -X <hours> is required"
+    usage
+fi
+
+if ! [[ "$HOURS" =~ ^[0-9]+$ ]] || [[ "$HOURS" -lt 1 ]]; then
+    echo "Error: Hours must be a positive integer"
+    usage
+fi
 
 # Load environment variables if needed
 if [ -f "$PROJECT_DIR/.env" ]; then
@@ -35,13 +76,13 @@ REPORT=$(python3 -c "
 import sqlite3
 import os
 import sys
-import time
 from datetime import datetime, timedelta
 
 db_path = '$DB_PATH'
+hours = $HOURS
 
 if not os.path.exists(db_path):
-    print(\"Error: Database not found at \" + db_path)
+    print('Error: Database not found at ' + db_path)
     sys.exit(1)
 
 try:
@@ -49,40 +90,30 @@ try:
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
-    # Time Calculations - Previous calendar day (midnight to midnight)
+    # Time Calculations - X hours ago from now
     now = datetime.now()
-    today_midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    yesterday_midnight = today_midnight - timedelta(days=1)
-
-    # Start: yesterday 00:00:00, End: today 00:00:00
-    start_time = yesterday_midnight
-    end_time = today_midnight
+    start_time = now - timedelta(hours=hours)
 
     # Format for job_history (DATETIME string)
-    ts_start_string = start_time.strftime('%Y-%m-%d %H:%M:%S')
-    ts_end_string = end_time.strftime('%Y-%m-%d %H:%M:%S')
+    ts_string = start_time.strftime('%Y-%m-%d %H:%M:%S')
 
     # Format for credit_transactions (INTEGER millis)
-    ts_start_millis = int(start_time.timestamp() * 1000)
-    ts_end_millis = int(end_time.timestamp() * 1000)
-
-    # For display
-    report_date = yesterday_midnight.strftime('%Y-%m-%d')
+    ts_millis = int(start_time.timestamp() * 1000)
 
     # ---------------------------------------------------------
     # 1. The Pulse (KPIs)
     # ---------------------------------------------------------
 
     # Jobs Stats
-    cursor.execute(\"\"\"
+    cursor.execute('''
         SELECT
             COUNT(*) as total,
             SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) as success_count,
             SUM(input_size_bytes) as total_input,
             SUM(output_size_bytes) as total_output
         FROM job_history
-        WHERE timestamp >= ? AND timestamp < ?
-    \"\"\", (ts_start_string, ts_end_string))
+        WHERE timestamp > ?
+    ''', (ts_string,))
     job_stats = cursor.fetchone()
 
     total_jobs = job_stats['total'] or 0
@@ -93,21 +124,19 @@ try:
     success_rate = (success_count / total_jobs * 100) if total_jobs > 0 else 0.0
 
     # Credits Spent (Sum of negative amounts)
-    cursor.execute(\"\"\"
+    cursor.execute('''
         SELECT SUM(ABS(amount)) as spent
         FROM credit_transactions
-        WHERE created_at >= ? AND created_at < ? AND amount < 0
-    \"\"\", (ts_start_millis, ts_end_millis))
+        WHERE created_at > ? AND amount < 0
+    ''', (ts_millis,))
     credit_row = cursor.fetchone()
     credits_spent = credit_row['spent'] or 0
 
     # Web vs API Split
-    # Check if source column exists first
     try:
-        cursor.execute(\"SELECT source, COUNT(*) as cnt FROM job_history WHERE timestamp >= ? AND timestamp < ? GROUP BY source\", (ts_start_string, ts_end_string))
+        cursor.execute('SELECT source, COUNT(*) as cnt FROM job_history WHERE timestamp > ? GROUP BY source', (ts_string,))
         source_rows = cursor.fetchall()
     except sqlite3.OperationalError:
-        # Fallback if column missing
         source_rows = []
 
     web_count = 0
@@ -117,32 +146,28 @@ try:
         if s == 'web':
             web_count += row['cnt']
         else:
-            api_count += row['cnt'] # lump unknown/api together
+            api_count += row['cnt']
 
     # ---------------------------------------------------------
     # 2. Usage Patterns (Time of Day)
     # ---------------------------------------------------------
 
-    # Group by Hour (00-23)
-    cursor.execute(\"\"\"
+    cursor.execute('''
         SELECT strftime('%H', timestamp) as hour, COUNT(*) as cnt
         FROM job_history
-        WHERE timestamp >= ? AND timestamp < ?
+        WHERE timestamp > ?
         GROUP BY 1
         ORDER BY 2 DESC
-    \"\"\", (ts_start_string, ts_end_string))
+    ''', (ts_string,))
     hourly_rows = cursor.fetchall()
 
-    peak_hour = \"N/A\"
+    peak_hour = 'N/A'
     peak_count = 0
     if hourly_rows:
         peak_hour = f\"{hourly_rows[0]['hour']}:00\"
         peak_count = hourly_rows[0]['cnt']
 
-    # Find quietest hour (simplistic approach: just taking the last row if we have 24 rows,
-    # but strictly speaking we might have hours with 0 jobs which won't show up.
-    # For a simple report, taking the lowest returned count is fine.)
-    quiet_hour = \"N/A\"
+    quiet_hour = 'N/A'
     quiet_count = 0
     if hourly_rows:
         quiet_hour = f\"{hourly_rows[-1]['hour']}:00\"
@@ -152,19 +177,17 @@ try:
     # 3. Technical Stats
     # ---------------------------------------------------------
 
-    # Formats
-    cursor.execute(\"\"\"
+    cursor.execute('''
         SELECT input_format, COUNT(*) as cnt
         FROM job_history
-        WHERE timestamp >= ? AND timestamp < ?
+        WHERE timestamp > ?
         GROUP BY input_format
         ORDER BY 2 DESC
         LIMIT 1
-    \"\"\", (ts_start_string, ts_end_string))
+    ''', (ts_string,))
     format_row = cursor.fetchone()
-    top_format = format_row['input_format'] if format_row else \"N/A\"
+    top_format = format_row['input_format'] if format_row else 'N/A'
 
-    # Data Volume formatting
     def format_bytes(size):
         power = 2**10
         n = 0
@@ -172,12 +195,10 @@ try:
         while size > power:
             size /= power
             n += 1
-        return f\"{size:.1f} {power_labels[n]}B\"
+        return f'{size:.1f} {power_labels[n]}B'
 
     total_data_str = format_bytes(total_input)
 
-    # Avg Compression
-    # (1 - (output / input)) * 100
     avg_compression = 0.0
     if total_input > 0:
         avg_compression = (1.0 - (total_output / total_input)) * 100.0
@@ -187,32 +208,35 @@ try:
     # ---------------------------------------------------------
     # Build Report Output
     # ---------------------------------------------------------
-    print(f\"Daily Mesh Optimizer Report ({report_date})\")
-    print(\"\")
-    print(f\"--- The Pulse ({report_date}) ---\")
-    print(f\"Total Jobs:       {total_jobs}\")
-    print(f\"Success Rate:     {success_rate:.1f}%\")
-    print(f\"Credits Spent:    {credits_spent}\")
+    time_range = f'{start_time.strftime(\"%H:%M\")} - {now.strftime(\"%H:%M\")}'
+
+    print(f'Ad Hoc Report: Last {hours}h ({now.strftime(\"%Y-%m-%d\")})')
+    print('')
+    print(f'--- The Pulse (Last {hours}h) ---')
+    print(f'Time Range:       {time_range}')
+    print(f'Total Jobs:       {total_jobs}')
+    print(f'Success Rate:     {success_rate:.1f}%')
+    print(f'Credits Spent:    {credits_spent}')
     if total_jobs > 0:
         web_pct = (web_count / total_jobs) * 100
         api_pct = (api_count / total_jobs) * 100
-        print(f\"Web / API Split:  {web_pct:.0f}% Web / {api_pct:.0f}% API\")
+        print(f'Web / API Split:  {web_pct:.0f}% Web / {api_pct:.0f}% API')
     else:
-        print(f\"Web / API Split:  N/A\")
+        print('Web / API Split:  N/A')
 
-    print(\"\")
-    print(\"--- Usage Patterns ---\")
-    print(f\"Peak Hour:        {peak_hour} ({peak_count} jobs)\")
-    print(f\"Quiet Hour:       {quiet_hour} ({quiet_count} jobs)\")
+    print('')
+    print('--- Usage Patterns ---')
+    print(f'Peak Hour:        {peak_hour} ({peak_count} jobs)')
+    print(f'Quiet Hour:       {quiet_hour} ({quiet_count} jobs)')
 
-    print(\"\")
-    print(\"--- Technical Stats ---\")
-    print(f\"Data Processed:   {total_data_str}\")
-    print(f\"Avg Compression:  {avg_compression:.1f}% reduction\")
-    print(f\"Top Format:       {top_format}\")
+    print('')
+    print('--- Technical Stats ---')
+    print(f'Data Processed:   {total_data_str}')
+    print(f'Avg Compression:  {avg_compression:.1f}% reduction')
+    print(f'Top Format:       {top_format}')
 
 except Exception as e:
-    print(f\"Error generating report: {e}\")
+    print(f'Error generating report: {e}')
     sys.exit(1)
 ")
 
@@ -221,10 +245,9 @@ except Exception as e:
 # ------------------------------------------------------------------------------
 
 if [[ -n "$REPORT" ]]; then
-    # Extract the first line as the subject
     SUBJECT=$(echo "$REPORT" | head -n 1)
 
-    echo "[$(date)] Generated daily report. Sending..." | tee -a "$LOG_FILE"
+    echo "[$(date)] Generated ad hoc report (last ${HOURS}h). Sending..." | tee -a "$LOG_FILE"
 
     if [[ -x "$SEND_REPORT_SCRIPT" ]]; then
         "$SEND_REPORT_SCRIPT" "$SUBJECT" "$REPORT" >> "$LOG_FILE" 2>&1
