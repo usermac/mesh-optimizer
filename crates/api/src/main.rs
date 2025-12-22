@@ -308,6 +308,7 @@ async fn main() -> Result<()> {
         .route("/admin/add-credits", post(admin_add_credits))
         .route("/admin/create-key", post(admin_create_key))
         .route("/admin/grant-credits", post(admin_grant_credits))
+        .route("/admin/users", post(admin_list_users))
         // Static Files
         .nest_service("/", ServeDir::new("server/public")) // Assuming public dir is here
         .nest_service("/download", ServeDir::new(UPLOAD_DIR))
@@ -2212,6 +2213,61 @@ async fn admin_grant_credits(
             }
         }
     }
+}
+
+#[derive(Deserialize)]
+struct AdminListUsers {
+    secret: String,
+}
+
+async fn admin_list_users(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(payload): Json<AdminListUsers>,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    let client_ip = headers
+        .get("X-Forwarded-For")
+        .and_then(|v| v.to_str().ok())
+        .or_else(|| headers.get("X-Real-IP").and_then(|v| v.to_str().ok()));
+
+    let ip_for_limit = client_ip.unwrap_or("unknown");
+
+    // Rate limit: 5 requests per minute per IP
+    if !check_admin_rate_limit(&state.admin_rate_limiter, ip_for_limit, 5, 60).await {
+        log_admin_audit("list_users", false, "rate limited", client_ip);
+        return Err(StatusCode::TOO_MANY_REQUESTS);
+    }
+
+    if !verify_admin_secret(&payload.secret, &state.admin_secret) {
+        log_admin_audit("list_users", false, "invalid secret", client_ip);
+        return Err(StatusCode::UNAUTHORIZED);
+    }
+
+    let users = state.db.list_users().await;
+    let user_list: Vec<serde_json::Value> = users
+        .into_iter()
+        .map(|(key, email, credits, created)| {
+            json!({
+                "key": key,
+                "email": email,
+                "credits": credits,
+                "created": created
+            })
+        })
+        .collect();
+
+    log_admin_audit(
+        "list_users",
+        true,
+        &format!("returned {} users", user_list.len()),
+        client_ip,
+    );
+
+    Ok(Json(json!({
+        "success": true,
+        "count": user_list.len(),
+        "users": user_list
+    })))
 }
 
 async fn credits_handler(

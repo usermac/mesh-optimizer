@@ -584,6 +584,15 @@ impl Database {
         data.keys.get(key).map(|info| info.credits)
     }
 
+    /// List all users with their key, email, credits, and created timestamp
+    pub async fn list_users(&self) -> Vec<(String, String, i32, u64)> {
+        let data = self.data.read().await;
+        data.keys
+            .iter()
+            .map(|(key, info)| (key.clone(), info.email.clone(), info.credits, info.created))
+            .collect()
+    }
+
     // --- Job Persistence ---
 
     /// Save or update a job status
