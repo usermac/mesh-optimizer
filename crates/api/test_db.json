@@ -1,11 +1,11 @@
 {
   "keys": {
-    "test_key_insufficient": {
-      "email": "",
+    "fr_251222_aff4ab92": {
+      "email": "test@example.com",
       "stripeCustomerId": "",
-      "created": 0,
+      "created": 1766428954914,
       "active": true,
-      "credits": 0
+      "credits": 20
     }
   },
   "customers": {}

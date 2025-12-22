@@ -2035,16 +2035,18 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                             loader.innerHTML = msg;
                             announceStatus(msg);
                             continue;
-                        } else if (status && status.Completed) {
-                            data = {
-                                glb: status.Completed.glb_url,
-                                usdz: status.Completed.usdz_url,
-                            };
+                        } else if (status === "Completed" || (status && status.Completed)) {
+                            // Handle both flat format (status === "Completed" with urls at top level)
+                            // and legacy nested format (status.Completed.glb_url)
+                            data = status === "Completed"
+                                ? { glb: pollData.glb_url, usdz: pollData.usdz_url }
+                                : { glb: status.Completed.glb_url, usdz: status.Completed.usdz_url };
                             break;
-                        } else if (status && status.Failed) {
-                            throw new Error(
-                                status.Failed.error || "Optimization Failed",
-                            );
+                        } else if (status === "Failed" || (status && status.Failed)) {
+                            const errorMsg = status === "Failed"
+                                ? (pollData.error || "Optimization Failed")
+                                : (status.Failed.error || "Optimization Failed");
+                            throw new Error(errorMsg);
                         } else {
                             throw new Error(
                                 "Unknown job status: " + JSON.stringify(status),
