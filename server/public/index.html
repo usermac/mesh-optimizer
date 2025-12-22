@@ -227,7 +227,7 @@
                         class="font-bold text-small"
                         >Help & Guide</a
                     >
-                    <div class="text-small text-muted">v1.0.0 beta 2025-12-18</div>
+                    <button type="button" class="text-small text-muted" data-modal-trigger="changelogModal" style="background:none; border:none; padding:0; margin:0; cursor:pointer; font-family: inherit;">v1.0.1beta <span class="text-primary">(2025-12-22)</span></button>
                 </div>
             </header>
 
@@ -1376,6 +1376,28 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                                 <button type="submit" id="founder-submit-btn">Send Feedback</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Changelog Modal -->
+            <div id="changelogModal" class="modal-overlay" role="dialog" aria-labelledby="changelogModalTitle" aria-modal="true">
+                <div class="modal-window">
+                    <div class="modal-header">
+                        <h2 class="m-0" id="changelogModalTitle">Changelog</h2>
+                        <button type="button" class="modal-close" onclick="closeModal('changelogModal')" aria-label="Close changelog">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <section class="content-section">
+                            <h3>v1.0.1beta <span class="text-muted">(2025-12-22)</span></h3>
+                            <ul class="pl-20">
+                                <li><strong>Initial public release.</strong></li>
+                                <li><strong>Core Optimization:</strong> Support for Decimation (polygon reduction) and Remeshing (clean topology generation).</li>
+                                <li><strong>File Formats:</strong> Process .glb, .gltf, .obj, and .fbx files, and export to web-ready GLB and USDZ.</li>
+                                <li><strong>API & Credits:</strong> Full support for API key management, credit-based usage, and purchasing credits via Stripe.</li>
+                                <li><strong>Batch Processing:</strong> API code generation for curl, Python, and PowerShell to automate workflows.</li>
+                            </ul>
+                        </section>
                     </div>
                 </div>
             </div>
