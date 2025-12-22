@@ -12,15 +12,21 @@ ssh $SERVER "mkdir -p $REMOTE_DIR"
 # Install system tools for monitoring and backups
 ssh $SERVER "apt-get update && apt-get install -y htop sshpass" || true
 
-# 1. Sync Files
-rsync -avz --exclude 'target' \
-           --exclude 'node_modules' \
-           --exclude 'uploads' \
-           --exclude '.git' \
-           --exclude '.DS_Store' \
+# 1. Sync Files (whitelist approach - only sync what's needed for production)
+# If you add new top-level prod files/folders, update this include list
+rsync -avz \
+           --include 'crates/***' \
+           --include 'scripts/***' \
+           --include 'server/***' \
            --exclude 'server/database.json' \
            --exclude 'server/stats.db' \
-           --exclude 'backups' \
+           --include 'Cargo.toml' \
+           --include 'Cargo.lock' \
+           --include 'Dockerfile' \
+           --include 'Caddyfile' \
+           --include 'deploy.sh' \
+           --include '.env' \
+           --exclude '*' \
            . $SERVER:$REMOTE_DIR
 
 # 2. Make backup scripts executable
