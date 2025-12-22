@@ -1,10 +1,17 @@
 #!/bin/bash
+set -e  # Exit immediately if any command fails
 
 # Configuration
-SERVER="root@webdeliveryengine.com"
 REMOTE_DIR="/root/mesh-optimizer"
 
-echo "🚀 Deploying to Production..."
+# Server mapping - add new environments here
+case "${1:-prod}" in
+  prod)    SERVER="root@webdeliveryengine.com" ;;
+  staging) SERVER="root@staging.webdeliveryengine.com" ;;
+  *)       echo "Unknown target: $1. Valid targets: prod, staging"; exit 1 ;;
+esac
+
+echo "🚀 Deploying to ${1:-prod} ($SERVER)..."
 
 # Ensure remote directory exists
 ssh $SERVER "mkdir -p $REMOTE_DIR"
@@ -16,6 +23,8 @@ ssh $SERVER "apt-get update && apt-get install -y htop sshpass" || true
 # If you add new top-level prod files/folders, update this include list
 rsync -avz \
            --include 'crates/***' \
+           --exclude 'crates/*/test_*' \
+           --exclude 'crates/**/test_*' \
            --include 'scripts/***' \
            --include 'server/***' \
            --exclude 'server/database.json' \
@@ -53,9 +62,14 @@ ssh $SERVER "cd $REMOTE_DIR && \
                -v /root/uploads:/app/uploads \
                --restart always --name api mesh-api"
 
-if [ $? -eq 0 ]; then
-  echo "🎉 Deployment Complete! API is live."
+# 4. Verify API is responding
+echo "⏳ Waiting for API to start..."
+sleep 5
+if curl -sf --max-time 10 https://webdeliveryengine.com/health > /dev/null 2>&1; then
+    echo "✅ Health check passed"
 else
-  echo "❌ Deployment Failed."
-  exit 1
+    echo "❌ Health check FAILED - API not responding"
+    exit 1
 fi
+
+echo "🎉 Deployment Complete! API is live."

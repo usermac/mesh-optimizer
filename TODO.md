@@ -58,6 +58,7 @@
 ### Security
 - [x] **Remove Hardcoded Metrics Salt**: `METRICS_SALT` must not default to `"default-insecure-salt"`.
 - [x] **Remove Email from Dockerfile**: Replace hardcoded `Brian@BrianGinn.com` in Caddyfile with env var.
+- [ ] **Create dedicated deploy user**: Stop using root for deployments. Create `deploy` user with Docker group access, move project to `/home/deploy/mesh-optimizer`. (2025-12-22)
 
 ---
 
@@ -88,7 +89,7 @@
 
 ### Infrastructure
 - [ ] **Load Test with Large File**: Test 500MB FBX remesh, measure actual memory/time.
-- [ ] **Verify Storage Box Connection**: Test SSH key authentication to Hetzner Storage Box.
+- [ ] **Verify Storage Box Connection**: Test SSH key authentication to Hetzner Storage Box. If SSH keys work, can remove `sshpass` from deploy.sh (2025-12-22)
 - [ ] **Test Restore Procedure**: Perform test restore on staging/backup.
 - [ ] **Uncomment Docker Stop/Start**: In `restore.sh` for proper restoration.
 - [ ] **Add Python Dependency Check**: To `setup.sh`.

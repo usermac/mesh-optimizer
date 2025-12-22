@@ -283,6 +283,7 @@ async fn main() -> Result<()> {
     // 5. Build Router
     let app = Router::new()
         // Public Routes
+        .route("/health", get(health_check))
         .route("/config", get(get_config))
         .route("/contact", post(contact_handler))
         .route("/claim-free-credits", post(claim_free_credits))
@@ -375,6 +376,10 @@ async fn auth_middleware(
 }
 
 // --- HANDLERS ---
+
+async fn health_check() -> Json<serde_json::Value> {
+    Json(json!({ "status": "ok" }))
+}
 
 async fn get_config() -> Result<Json<serde_json::Value>, StatusCode> {
     let pricing = load_pricing_config().map_err(|e| {

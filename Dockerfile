@@ -67,16 +67,14 @@ RUN mkdir -p server
 ENV XDG_DATA_HOME=/data
 ENV XDG_CONFIG_HOME=/config
 
-# Configure Caddy (Same config as before)
-RUN echo "{" > /etc/caddy/Caddyfile && \
-    echo "    email {\$ACME_EMAIL}" >> /etc/caddy/Caddyfile && \
-    echo "}" >> /etc/caddy/Caddyfile && \
-    echo "webdeliveryengine.com, www.webdeliveryengine.com {" >> /etc/caddy/Caddyfile && \
-    echo "    reverse_proxy localhost:3000" >> /etc/caddy/Caddyfile && \
-    echo "}" >> /etc/caddy/Caddyfile
+# Copy Caddy configuration
+COPY Caddyfile /etc/caddy/Caddyfile
 
 EXPOSE 80 443
 
+# Copy startup script
+COPY scripts/start.sh /app/start.sh
+RUN chmod +x /app/start.sh
+
 # Start Caddy in background, then run API
-# Use exec to ensure mesh-api receives signals and logs go to stdout
-CMD caddy start --config /etc/caddy/Caddyfile && exec mesh-api
+CMD ["/app/start.sh"]

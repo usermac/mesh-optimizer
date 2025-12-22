@@ -1,0 +1,7 @@
+{
+    email {$ACME_EMAIL}
+}
+
+webdeliveryengine.com, www.webdeliveryengine.com {
+    reverse_proxy localhost:3000
+}
