@@ -1142,10 +1142,10 @@ async fn optimize_handler(
                 -required_credits,
                 &if mode == "remesh" {
                     format!(
-                        "{}{}; Rem; {}k faces; {}px",
+                        "{}{}; Rem; {} faces; {}px",
                         input_filename,
                         if was_zip { " (zip)" } else { "" },
-                        faces / 1000,
+                        faces,
                         texture_size
                     )
                 } else {
@@ -1186,10 +1186,10 @@ async fn optimize_handler(
                 0,
                 &if mode == "remesh" {
                     format!(
-                        "{}{}; Rem; {}k faces; {}px (free re-opt)",
+                        "{}{}; Rem; {} faces; {}px (free re-opt)",
                         input_filename,
                         if was_zip { " (zip)" } else { "" },
-                        faces / 1000,
+                        faces,
                         texture_size
                     )
                 } else {
