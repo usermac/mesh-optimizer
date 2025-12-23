@@ -706,6 +706,7 @@ fn format_job_status(status: &JobStatus, job_id: &str, msgs: &[String]) -> serde
             expires_at,
             original_faces,
             output_faces,
+            remesh_method,
         } => {
             let base = "https://webdeliveryengine.com";
             let full_glb = format!("{}{}", base, glb_url);
@@ -720,7 +721,8 @@ fn format_job_status(status: &JobStatus, job_id: &str, msgs: &[String]) -> serde
                         "usdz_url": usdz_url,
                         "expires_at": expires_at,
                         "original_faces": original_faces,
-                        "output_faces": output_faces
+                        "output_faces": output_faces,
+                        "remesh_method": remesh_method
                     }
                 },
                 "download_commands": {
@@ -1741,10 +1743,11 @@ async fn optimize_handler(
         if let Some(handle) = stdout_handle {
             let _ = handle.await;
         }
-        let (original_faces, output_faces) = {
+        let (original_faces, output_faces, remesh_method) = {
             let lines = stdout_lines.lock().await;
             let mut orig: Option<u64> = None;
             let mut out: Option<u64> = None;
+            let mut method: Option<String> = None;
             for line in lines.iter() {
                 if line.starts_with("FACE_COUNTS: ") {
                     let parts: Vec<&str> =
@@ -1753,12 +1756,15 @@ async fn optimize_handler(
                         orig = parts[0].parse().ok();
                         out = parts[1].parse().ok();
                     }
+                    if parts.len() >= 3 {
+                        method = Some(parts[2].to_string());
+                    }
                 }
             }
-            (orig, out)
+            (orig, out, method)
         };
         if let (Some(o), Some(f)) = (original_faces, output_faces) {
-            info!("Face counts: {} -> {}", o, f);
+            info!("Face counts: {} -> {} (method: {:?})", o, f, remesh_method);
         }
 
         let expires_at =
@@ -1770,6 +1776,7 @@ async fn optimize_handler(
             expires_at: expires_at.to_rfc3339(),
             original_faces,
             output_faces,
+            remesh_method,
         };
         {
             let mut jobs = state_clone.jobs.write().await;
@@ -2682,6 +2689,7 @@ mod tests {
             expires_at: "2024-01-01T00:00:00Z".to_string(),
             original_faces: Some(10000),
             output_faces: Some(5000),
+            remesh_method: Some("quadriflow".to_string()),
         };
 
         // Call the ACTUAL function that the handler uses

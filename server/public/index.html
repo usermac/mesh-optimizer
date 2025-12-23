@@ -1033,10 +1033,14 @@
       "output_size": 245678,
       "glb_url": "/download/1734012345678/model_opt.glb",
       "usdz_url": "/download/1734012345678/model_opt.usdz",
-      "expires_at": "2024-12-16T15:30:00Z"
+      "expires_at": "2024-12-16T15:30:00Z",
+      "original_faces": 50000,
+      "output_faces": 5000,
+      "remesh_method": "quadriflow"
     }
   }
 }</code></pre>
+                            <p class="text-muted text-small"><code>remesh_method</code> is only present for remesh jobs: <code>"quadriflow"</code> (retopology) or <code>"decimate"</code> (fallback).</p>
 
                             <h4>Response (Failed)</h4>
                             <pre class="code-block"><code>{
@@ -1058,7 +1062,10 @@
       "output_size": 245678,
       "glb_url": "/download/1734012345678/model_opt.glb",
       "usdz_url": "/download/1734012345678/model_opt.usdz",
-      "expires_at": "2024-12-16T15:30:00Z"
+      "expires_at": "2024-12-16T15:30:00Z",
+      "original_faces": 50000,
+      "output_faces": 5000,
+      "remesh_method": "quadriflow"
     }
   }
 }</code></pre>
@@ -2072,7 +2079,8 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                                 glb: completed.glb_url,
                                 usdz: completed.usdz_url,
                                 originalFaces: completed.original_faces,
-                                outputFaces: completed.output_faces
+                                outputFaces: completed.output_faces,
+                                remeshMethod: completed.remesh_method
                             };
                             break;
                         } else if (status === "Failed" || (status && status.Failed)) {
@@ -2126,14 +2134,16 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                     if (data.originalFaces && data.outputFaces) {
                         const orig = data.originalFaces.toLocaleString();
                         const out = data.outputFaces.toLocaleString();
-                        const faceCountText = `${orig} \u2192 ${out} faces`;
                         const currentMode = modeSelect.value;
 
                         if (currentMode === "decimate") {
                             // Replace helper text for decimate mode
+                            const faceCountText = `${orig} \u2192 ${out} faces`;
                             document.getElementById("ratioHelp").textContent = faceCountText;
                         } else {
-                            // For remesh, show next to target faces input
+                            // For remesh, show method prefix (Remesh = quadriflow, Dec = decimate fallback)
+                            const methodPrefix = data.remeshMethod === "quadriflow" ? "Remesh" : "Dec";
+                            const faceCountText = `${methodPrefix} ${orig} \u2192 ${out} faces`;
                             document.getElementById("remeshFaceResult").textContent = faceCountText;
                         }
                     }

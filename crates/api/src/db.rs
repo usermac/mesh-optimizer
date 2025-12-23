@@ -68,6 +68,8 @@ pub enum JobStatus {
         original_faces: Option<u64>,
         #[serde(default)]
         output_faces: Option<u64>,
+        #[serde(default)]
+        remesh_method: Option<String>, // "quadriflow" or "decimate" for remesh jobs
     },
     Failed {
         error: String,

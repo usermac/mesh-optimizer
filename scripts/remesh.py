@@ -135,29 +135,59 @@ def process(input_path, output_path, target_faces, texture_size):
     print(f"[INFO] Remeshing to approx {target_faces} faces using Quadriflow...")
     bpy.ops.object.mode_set(mode="OBJECT")
 
+    quadriflow_success = False
+    remesh_method = "decimate"  # Track which method was actually used
+    pre_remesh_faces = len(low_poly.data.polygons)
+
     try:
         with bpy.context.temp_override(
             active_object=low_poly, selected_objects=[low_poly]
         ):
             bpy.ops.object.quadriflow_remesh(target_faces=target_faces)
-        print(
-            f"[INFO] Quadriflow completed. New face count: {len(low_poly.data.polygons)}"
-        )
-    except Exception as e:
-        print(f"[WARN] Quadriflow failed ({e}), falling back to Decimate modifier")
-        # Fallback: Use Decimate modifier
-        mod = low_poly.modifiers.new(name="Decimate", type="DECIMATE")
-        # Calculate ratio based on target faces vs current faces
-        current_faces = len(low_poly.data.polygons)
-        if current_faces > 0:
-            mod.ratio = min(1.0, target_faces / current_faces)
+        post_remesh_faces = len(low_poly.data.polygons)
+        print(f"[INFO] Quadriflow completed. New face count: {post_remesh_faces}")
+        # Check if Quadriflow actually changed the mesh meaningfully
+        # If faces didn't change (or barely changed), consider it a failure
+        if (
+            post_remesh_faces < pre_remesh_faces * 0.95
+            or post_remesh_faces != pre_remesh_faces
+        ):
+            # Quadriflow made a meaningful change OR hit the target
+            if abs(post_remesh_faces - pre_remesh_faces) > 10:
+                quadriflow_success = True
+                remesh_method = "quadriflow"
+            else:
+                print(
+                    f"[WARN] Quadriflow didn't change face count ({pre_remesh_faces} -> {post_remesh_faces})"
+                )
         else:
-            mod.ratio = 0.1
-        with bpy.context.temp_override(object=low_poly):
-            bpy.ops.object.modifier_apply(modifier="Decimate")
-        print(
-            f"[INFO] Decimate fallback completed. New face count: {len(low_poly.data.polygons)}"
-        )
+            print(
+                f"[WARN] Quadriflow didn't reduce faces as expected ({pre_remesh_faces} -> {post_remesh_faces})"
+            )
+    except Exception as e:
+        print(f"[WARN] Quadriflow failed with exception: {e}")
+
+    # Fallback to Decimate if Quadriflow didn't work
+    if not quadriflow_success:
+        print(f"[INFO] Falling back to Decimate modifier...")
+        remesh_method = "decimate"
+        # If Quadriflow ran but didn't help, we need to work with current state
+        current_faces = len(low_poly.data.polygons)
+        if current_faces > target_faces:
+            mod = low_poly.modifiers.new(name="Decimate", type="DECIMATE")
+            mod.ratio = max(0.01, target_faces / current_faces)
+            print(
+                f"[INFO] Applying Decimate with ratio {mod.ratio:.4f} ({current_faces} -> target {target_faces})"
+            )
+            with bpy.context.temp_override(object=low_poly):
+                bpy.ops.object.modifier_apply(modifier="Decimate")
+            print(
+                f"[INFO] Decimate fallback completed. New face count: {len(low_poly.data.polygons)}"
+            )
+        else:
+            print(
+                f"[INFO] Current face count ({current_faces}) already at or below target ({target_faces})"
+            )
 
     # 4. UV Unwrap
     print("[INFO] UV Unwrapping...")
@@ -308,9 +338,9 @@ def process(input_path, output_path, target_faces, texture_size):
         traceback.print_exc()
         print("[WARN] Continuing without USDZ - GLB is available")
 
-    # Output face counts for API to parse
+    # Output face counts and method for API to parse
     final_face_count = len(low_poly.data.polygons)
-    print(f"FACE_COUNTS: {original_face_count} {final_face_count}")
+    print(f"FACE_COUNTS: {original_face_count} {final_face_count} {remesh_method}")
 
     print(f"[SUCCESS] Remesh complete! GLB: {output_path} ({output_size} bytes)")
 
