@@ -121,6 +121,7 @@ def process(input_path, output_path, target_faces, texture_size):
 
     # 1. Import
     high_poly = import_model(input_path)
+    original_face_count = len(high_poly.data.polygons)
 
     # 2. Duplicate for Remeshing
     bpy.ops.object.select_all(action="DESELECT")
@@ -306,6 +307,10 @@ def process(input_path, output_path, target_faces, texture_size):
         print(f"[WARN] USDZ export failed: {e}")
         traceback.print_exc()
         print("[WARN] Continuing without USDZ - GLB is available")
+
+    # Output face counts for API to parse
+    final_face_count = len(low_poly.data.polygons)
+    print(f"FACE_COUNTS: {original_face_count} {final_face_count}")
 
     print(f"[SUCCESS] Remesh complete! GLB: {output_path} ({output_size} bytes)")
 

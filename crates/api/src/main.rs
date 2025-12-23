@@ -704,6 +704,8 @@ fn format_job_status(status: &JobStatus, job_id: &str, msgs: &[String]) -> serde
             glb_url,
             usdz_url,
             expires_at,
+            original_faces,
+            output_faces,
         } => {
             let base = "https://webdeliveryengine.com";
             let full_glb = format!("{}{}", base, glb_url);
@@ -716,7 +718,9 @@ fn format_job_status(status: &JobStatus, job_id: &str, msgs: &[String]) -> serde
                         "output_size": output_size,
                         "glb_url": glb_url,
                         "usdz_url": usdz_url,
-                        "expires_at": expires_at
+                        "expires_at": expires_at,
+                        "original_faces": original_faces,
+                        "output_faces": output_faces
                     }
                 },
                 "download_commands": {
@@ -1355,15 +1359,20 @@ async fn optimize_handler(
             }
         };
 
-        // Stream stdout
-        if let Some(stdout) = child.stdout.take() {
-            tokio::spawn(async move {
+        // Stream stdout and capture lines for parsing
+        let stdout_lines = std::sync::Arc::new(tokio::sync::Mutex::new(Vec::<String>::new()));
+        let stdout_lines_clone = stdout_lines.clone();
+        let stdout_handle = if let Some(stdout) = child.stdout.take() {
+            Some(tokio::spawn(async move {
                 let mut reader = BufReader::new(stdout).lines();
                 while let Ok(Some(line)) = reader.next_line().await {
                     info!("WORKER: {}", line);
+                    stdout_lines_clone.lock().await.push(line);
                 }
-            });
-        }
+            }))
+        } else {
+            None
+        };
 
         // Stream stderr
         if let Some(stderr) = child.stderr.take() {
@@ -1728,6 +1737,30 @@ async fn optimize_handler(
             batch_id_clone, output_size
         );
 
+        // Wait for stdout capture to complete and parse face counts
+        if let Some(handle) = stdout_handle {
+            let _ = handle.await;
+        }
+        let (original_faces, output_faces) = {
+            let lines = stdout_lines.lock().await;
+            let mut orig: Option<u64> = None;
+            let mut out: Option<u64> = None;
+            for line in lines.iter() {
+                if line.starts_with("FACE_COUNTS: ") {
+                    let parts: Vec<&str> =
+                        line["FACE_COUNTS: ".len()..].split_whitespace().collect();
+                    if parts.len() >= 2 {
+                        orig = parts[0].parse().ok();
+                        out = parts[1].parse().ok();
+                    }
+                }
+            }
+            (orig, out)
+        };
+        if let (Some(o), Some(f)) = (original_faces, output_faces) {
+            info!("Face counts: {} -> {}", o, f);
+        }
+
         let expires_at =
             chrono::Utc::now() + chrono::Duration::seconds(DOWNLOAD_EXPIRES_SECS as i64);
         let completed_status = JobStatus::Completed {
@@ -1735,6 +1768,8 @@ async fn optimize_handler(
             glb_url,
             usdz_url,
             expires_at: expires_at.to_rfc3339(),
+            original_faces,
+            output_faces,
         };
         {
             let mut jobs = state_clone.jobs.write().await;
@@ -2645,6 +2680,8 @@ mod tests {
             glb_url: "/download/abc123/model.glb".to_string(),
             usdz_url: "/download/abc123/model.usdz".to_string(),
             expires_at: "2024-01-01T00:00:00Z".to_string(),
+            original_faces: Some(10000),
+            output_faces: Some(5000),
         };
 
         // Call the ACTUAL function that the handler uses

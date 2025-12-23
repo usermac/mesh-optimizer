@@ -191,7 +191,10 @@
             <div id="remeshControls" class="flex-column gap-10 d-none" role="group" aria-label="Remesh settings">
                 <div>
                     <label for="targetFaces">Target Faces</label>
-                    <input type="number" id="targetFaces" value="5000" aria-label="Target number of faces for remesh" />
+                    <div class="d-flex gap-10 align-center">
+                        <input type="number" id="targetFaces" value="5000" style="width: 40%;" aria-label="Target number of faces for remesh" />
+                        <span id="remeshFaceResult" class="text-muted text-small"></span>
+                    </div>
                 </div>
                 <div>
                     <label for="textureSize">Texture Size (px)</label>
@@ -1704,6 +1707,10 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 processBtn.style.display = "block";
                 const dlContainer = document.getElementById("dlContainer");
                 if (dlContainer) dlContainer.remove();
+                // Restore original helper text for decimate slider
+                document.getElementById("ratioHelp").textContent = "Lower = Less Detail. Higher = More Detail.";
+                // Clear remesh face result
+                document.getElementById("remeshFaceResult").textContent = "";
                 processBtn.disabled = false;
                 updateProcessButton();
             }
@@ -2060,9 +2067,13 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                         } else if (status === "Completed" || (status && status.Completed)) {
                             // Handle both flat format (status === "Completed" with urls at top level)
                             // and legacy nested format (status.Completed.glb_url)
-                            data = status === "Completed"
-                                ? { glb: pollData.glb_url, usdz: pollData.usdz_url }
-                                : { glb: status.Completed.glb_url, usdz: status.Completed.usdz_url };
+                            const completed = status === "Completed" ? pollData : status.Completed;
+                            data = {
+                                glb: completed.glb_url,
+                                usdz: completed.usdz_url,
+                                originalFaces: completed.original_faces,
+                                outputFaces: completed.output_faces
+                            };
                             break;
                         } else if (status === "Failed" || (status && status.Failed)) {
                             const errorMsg = status === "Failed"
@@ -2109,6 +2120,22 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                         dlContainer.style.display = "flex";
                         dlContainer.children[0].href = data.glb;
                         dlContainer.children[1].href = data.usdz;
+                    }
+
+                    // Display face counts if available
+                    if (data.originalFaces && data.outputFaces) {
+                        const orig = data.originalFaces.toLocaleString();
+                        const out = data.outputFaces.toLocaleString();
+                        const faceCountText = `${orig} \u2192 ${out} faces`;
+                        const currentMode = modeSelect.value;
+
+                        if (currentMode === "decimate") {
+                            // Replace helper text for decimate mode
+                            document.getElementById("ratioHelp").textContent = faceCountText;
+                        } else {
+                            // For remesh, show next to target faces input
+                            document.getElementById("remeshFaceResult").textContent = faceCountText;
+                        }
                     }
                 } catch (e) {
                     announceStatus("Error: " + e.message);

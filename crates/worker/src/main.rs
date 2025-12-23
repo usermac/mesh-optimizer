@@ -187,6 +187,10 @@ fn main() -> Result<()> {
         println!("EXPORT_USDZ_END");
     }
 
+    // Output face counts for API to parse
+    let final_face_count = simplified_indices.len() / 3;
+    println!("FACE_COUNTS: {} {}", original_face_count, final_face_count);
+
     println!("RUST_DONE");
     Ok(())
 }
