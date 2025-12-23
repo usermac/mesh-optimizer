@@ -2400,13 +2400,13 @@ async fn claim_free_credits(
         // Email already exists - send them their existing key as a reminder
         let html_body = format!(
             r#"
-            <h2>Your MeshOptimizer API Key</h2>
+            <h2>Your MeshOpt API Key from webdeliveryengine.com</h2>
             <p>You requested your API key - here it is:</p>
             <p style="font-family: monospace; font-size: 1.2em; background: #f4f4f4; padding: 10px; border-radius: 4px;">{}</p>
             <p>We've also restored it in your browser if you requested this from our website.</p>
             <p>To use it:</p>
             <ol>
-                <li>Go to <a href="https://meshoptimizer.com">meshoptimizer.com</a></li>
+                <li>Go to <a href="https://webdeliveryengine.com">webdeliveryengine.com</a></li>
                 <li>Paste your API key in the "API KEY" field</li>
                 <li>Upload a 3D model and optimize!</li>
             </ol>
@@ -2420,9 +2420,9 @@ async fn claim_free_credits(
             .post("https://api.resend.com/emails")
             .header("Authorization", format!("Bearer {}", state.resend_api_key))
             .json(&json!({
-                "from": "MeshOptimizer <noreply@webdeliveryengine.com>",
+                "from": "MeshOpt <support@webdeliveryengine.com>",
                 "to": [email.clone()],
-                "subject": "Your MeshOptimizer API Key (Reminder)",
+                "subject": "Your MeshOpt API Key (Reminder)",
                 "html": html_body
             }))
             .send()
@@ -2469,12 +2469,12 @@ async fn claim_free_credits(
     // Send email with the API key
     let html_body = format!(
         r#"
-        <h2>Welcome to MeshOptimizer!</h2>
+        <h2>Welcome to MeshOpt!</h2>
         <p>Here's your free API key with <strong>{} credits</strong>:</p>
         <p style="font-family: monospace; font-size: 1.2em; background: #f4f4f4; padding: 10px; border-radius: 4px;">{}</p>
         <p>To get started:</p>
         <ol>
-            <li>Go to <a href="https://meshoptimizer.com">meshoptimizer.com</a></li>
+            <li>Go to <a href="https://webdeliveryengine.com">webdeliveryengine.com</a></li>
             <li>Paste your API key in the "API KEY" field</li>
             <li>Upload a 3D model and optimize!</li>
         </ol>
@@ -2489,9 +2489,9 @@ async fn claim_free_credits(
         .post("https://api.resend.com/emails")
         .header("Authorization", format!("Bearer {}", state.resend_api_key))
         .json(&json!({
-            "from": "MeshOptimizer <noreply@webdeliveryengine.com>",
+            "from": "MeshOpt <support@webdeliveryengine.com>",
             "to": [email.clone()],
-            "subject": format!("Your Free MeshOptimizer API Key ({} credits)", free_credits),
+            "subject": format!("Your Free MeshOpt API Key ({} credits)", free_credits),
             "html": html_body
         }))
         .send()
