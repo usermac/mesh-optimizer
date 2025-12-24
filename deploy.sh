@@ -42,9 +42,12 @@ rsync -avz \
            --exclude '*' \
            . $SERVER:$REMOTE_DIR
 
-# 2. Make backup scripts executable
+# 2. Make backup scripts executable and set up cron job
 echo "🔧 Setting backup script permissions..."
 ssh $SERVER "chmod +x $REMOTE_DIR/scripts/backup/*.sh 2>/dev/null || true"
+
+echo "⏰ Ensuring daily backup cron job is configured..."
+ssh $SERVER "crontab -l 2>/dev/null | grep -q 'backup.sh' || (crontab -l 2>/dev/null; echo '0 2 * * * /root/mesh-optimizer/scripts/backup/backup.sh >> /var/log/mesh/backup.log 2>&1') | crontab -"
 
 echo "✅ Files Synced."
 echo "🔨 Rebuilding Docker Container..."
@@ -52,8 +55,8 @@ echo "🔨 Rebuilding Docker Container..."
 # 3. Remote Build & Restart
 # Added 'touch' command to ensure DB file exists so Docker doesn't make a directory
 ssh $SERVER "cd $REMOTE_DIR && \
-             touch server/database.json && \
-             touch server/stats.db && \
+             [ -f server/database.json ] || touch server/database.json && \
+             [ -f server/stats.db ] || touch server/stats.db && \
              mkdir -p /root/uploads && \
              docker build -t mesh-api . && \
              docker rm -f api || true && \
