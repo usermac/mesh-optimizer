@@ -1,0 +1,721 @@
+{
+  "generated": "2025-12-24T17:36:04.573Z",
+  "version": "1.0",
+  "entries": [
+    {
+      "text": "Lost Your API Key?",
+      "modal": "helpModal",
+      "modalName": "Help & Guide",
+      "section": null,
+      "context": "Lost Your API Key? Use the \"Get free credits here...\" link on the main page. While it's designed for new users, it also works as key recovery: simply enter your original email address, and your existi",
+      "keywords": []
+    },
+    {
+      "text": "Quick Start: Missing Textures?",
+      "modal": "helpModal",
+      "modalName": "Help & Guide",
+      "section": null,
+      "context": "Quick Start: Missing Textures?",
+      "keywords": []
+    },
+    {
+      "text": "Why is my model white/grey?",
+      "modal": "helpModal",
+      "modalName": "Help & Guide",
+      "section": null,
+      "context": "Why is my model white/grey? If you uploaded an .obj file and the result has no color, you likely forgot the texture files! The Rule: OBJ files need their associated material file ( .mtl ) and texture",
+      "keywords": [
+        ".obj",
+        ".mtl",
+        ".jpg",
+        ".png"
+      ]
+    },
+    {
+      "text": "How to fix it:",
+      "modal": "helpModal",
+      "modalName": "Help & Guide",
+      "section": null,
+      "context": "How to fix it: Option 1 (Recommended): Create a .zip file containing your model.obj , model.mtl , and all texture images. Drag the ZIP onto the upload area. This keeps everything organized together. O",
+      "keywords": [
+        ".zip",
+        "model.obj",
+        "model.mtl",
+        ".obj",
+        ".glb"
+      ]
+    },
+    {
+      "text": "Which Mode Should I Use?",
+      "modal": "helpModal",
+      "modalName": "Help & Guide",
+      "section": null,
+      "context": "Which Mode Should I Use?",
+      "keywords": []
+    },
+    {
+      "text": "Standard Decimation",
+      "modal": "helpModal",
+      "modalName": "Help & Guide",
+      "section": null,
+      "context": "Standard Decimation Cost: 1 Credit Best for: Reducing file size while keeping the exact same geometry structure. Good for CAD models or models that are already clean. How it works: It simply removes p",
+      "keywords": [
+        "cost:"
+      ]
+    },
+    {
+      "text": "Premium Remesh (Bake)",
+      "modal": "helpModal",
+      "modalName": "Help & Guide",
+      "section": null,
+      "context": "Premium Remesh (Bake) Cost: 2 Credits Best for: 3D Scans, Photogrammetry, and Organic shapes. How it works: It builds a brand new \"clean\" mesh (Retopology) and \"bakes\" the details from the high-qualit",
+      "keywords": [
+        "cost:"
+      ]
+    },
+    {
+      "text": "Supported File Formats",
+      "modal": "helpModal",
+      "modalName": "Help & Guide",
+      "section": null,
+      "context": "Supported File Formats - GLB (Recommended): The best format. All geometry, materials, and textures are embedded in a single file. Just drag and drop. - GLTF: Supported, but note that GLTF files often",
+      "keywords": [
+        ".bin",
+        ".gltf",
+        ".mtl",
+        ".jpg/.png",
+        "gltf:",
+        "obj:",
+        "fbx:"
+      ]
+    },
+    {
+      "text": "Pricing & Credits",
+      "modal": "helpModal",
+      "modalName": "Help & Guide",
+      "section": null,
+      "context": "Pricing & Credits We use a simple credit system. You purchase a pack of credits, and they are deducted when you run a job. ALREADY HAVE CREDITS? BUYING MORE ADDS TO YOUR CREDIT BALANCE. - Failed Jobs:",
+      "keywords": [
+        "re-runs:",
+        "free"
+      ]
+    },
+    {
+      "text": "Workflow Overview",
+      "modal": "apiDocsModal",
+      "modalName": "API Documentation",
+      "section": null,
+      "context": "Workflow Overview The API uses an asynchronous 3-step workflow: - Submit: POST your model to /optimize and receive a job ID - Poll: Check /job/:id until status is Completed or Failed - Download: Fetch",
+      "keywords": [
+        "/optimize",
+        "/job/:id",
+        "completed",
+        "failed",
+        "submit:",
+        "poll:",
+        "download:"
+      ]
+    },
+    {
+      "text": "POST /optimize",
+      "modal": "apiDocsModal",
+      "modalName": "API Documentation",
+      "section": null,
+      "context": "POST /optimize Submit a 3D model for processing. Returns a job ID for polling. Requires authentication.",
+      "keywords": []
+    },
+    {
+      "text": "Request (multipart/form-data)",
+      "modal": "apiDocsModal",
+      "modalName": "API Documentation",
+      "section": null,
+      "context": "Request (multipart/form-data) Field Type Required Description file file Yes 3D model file (.obj, .fbx, .glb, .gltf), .zip, or multiple files (model + .mtl + textures). Max 50 texture files. mode strin",
+      "keywords": [
+        "file",
+        "mode",
+        "decimate",
+        "remesh",
+        "ratio",
+        "faces",
+        "texture_size",
+        "format",
+        "glb",
+        "usdz",
+        "both",
+        "callback_url"
+      ]
+    },
+    {
+      "text": "Response (Success - 200)",
+      "modal": "apiDocsModal",
+      "modalName": "API Documentation",
+      "section": null,
+      "context": "Response (Success - 200) { \"jobId\": \"1734012345678\", \"status\": \"processing\" } Header X-Credits-Remaining contains your updated balance.",
+      "keywords": [
+        "x-credits-remaining"
+      ]
+    },
+    {
+      "text": "Error Responses",
+      "modal": "apiDocsModal",
+      "modalName": "API Documentation",
+      "section": null,
+      "context": "Error Responses Status Meaning 400 Bad request (no valid 3D model, missing external buffers, etc.) 401 Unauthorized (invalid or missing API key) 402 Payment required (insufficient credits)",
+      "keywords": [
+        "400",
+        "401",
+        "402"
+      ]
+    },
+    {
+      "text": "GET /job/:id",
+      "modal": "apiDocsModal",
+      "modalName": "API Documentation",
+      "section": null,
+      "context": "GET /job/:id Poll job status. No authentication required.",
+      "keywords": []
+    },
+    {
+      "text": "Response (Processing)",
+      "modal": "apiDocsModal",
+      "modalName": "API Documentation",
+      "section": null,
+      "context": "Response (Processing) { \"status\": \"Processing\" }",
+      "keywords": [
+        "{ \"status\": \"processing\" }"
+      ]
+    },
+    {
+      "text": "Response (Completed)",
+      "modal": "apiDocsModal",
+      "modalName": "API Documentation",
+      "section": null,
+      "context": "Response (Completed) { \"status\": { \"Completed\": { \"output_size\": 245678, \"glb_url\": \"/download/1734012345678/model_opt.glb\", \"usdz_url\": \"/download/1734012345678/model_opt.usdz\", \"expires_at\": \"2024-1",
+      "keywords": [
+        "remesh_method",
+        "\"quadriflow\"",
+        "\"decimate\""
+      ]
+    },
+    {
+      "text": "Response (Failed)",
+      "modal": "apiDocsModal",
+      "modalName": "API Documentation",
+      "section": null,
+      "context": "Response (Failed) { \"status\": { \"Failed\": { \"error\": \"Timeout\" } } }",
+      "keywords": []
+    },
+    {
+      "text": "Webhooks",
+      "modal": "apiDocsModal",
+      "modalName": "API Documentation",
+      "section": null,
+      "context": "Webhooks If you provide a callback_url when submitting a job, we'll POST the result to your endpoint when the job completes or fails. This is ideal for batch processing where polling many jobs is impr",
+      "keywords": [
+        "callback_url"
+      ]
+    },
+    {
+      "text": "Webhook Payload",
+      "modal": "apiDocsModal",
+      "modalName": "API Documentation",
+      "section": null,
+      "context": "Webhook Payload { \"jobId\": \"1734012345678\", \"status\": { \"Completed\": { \"output_size\": 245678, \"glb_url\": \"/download/1734012345678/model_opt.glb\", \"usdz_url\": \"/download/1734012345678/model_opt.usdz\",",
+      "keywords": []
+    },
+    {
+      "text": "GET /credits",
+      "modal": "apiDocsModal",
+      "modalName": "API Documentation",
+      "section": null,
+      "context": "GET /credits Get your current credit balance. Requires authentication.",
+      "keywords": []
+    },
+    {
+      "text": "Response",
+      "modal": "apiDocsModal",
+      "modalName": "API Documentation",
+      "section": null,
+      "context": "Response { \"credits\": 97 }",
+      "keywords": [
+        "{ \"credits\": 97 }"
+      ]
+    },
+    {
+      "text": "GET /history",
+      "modal": "apiDocsModal",
+      "modalName": "API Documentation",
+      "section": null,
+      "context": "GET /history Get your transaction history (last 50). Requires authentication.",
+      "keywords": []
+    },
+    {
+      "text": "GET /config",
+      "modal": "apiDocsModal",
+      "modalName": "API Documentation",
+      "section": null,
+      "context": "GET /config Get current pricing and configuration. No authentication required.",
+      "keywords": []
+    },
+    {
+      "text": "Error Codes",
+      "modal": "apiDocsModal",
+      "modalName": "API Documentation",
+      "section": null,
+      "context": "Error Codes Status Meaning 400 Bad Request — No supported 3D model found in upload 401 Unauthorized — Missing or invalid API key 402 Payment Required — Insufficient credits 404 Not Found — Job ID or r",
+      "keywords": [
+        "400",
+        "401",
+        "402",
+        "404",
+        "500"
+      ]
+    },
+    {
+      "text": "Billing Notes",
+      "modal": "apiDocsModal",
+      "modalName": "API Documentation",
+      "section": null,
+      "context": "Billing Notes - Decimate costs 1 credit per job - Remesh costs 2 credits per job",
+      "keywords": [
+        "decimate",
+        "remesh"
+      ]
+    },
+    {
+      "text": "Quick Start Example",
+      "modal": "apiDocsModal",
+      "modalName": "API Documentation",
+      "section": null,
+      "context": "Quick Start Example # Option A: Using a ZIP file (simplest approach) curl -X POST 'https://webdeliveryengine.com/optimize' \\ -H 'Authorization: Bearer YOUR_API_KEY' \\ -F 'file=@model.zip' \\ -F 'mode=d",
+      "keywords": []
+    },
+    {
+      "text": "File Packaging Guidelines",
+      "modal": "apiCodeModal",
+      "modalName": "API Code Generator",
+      "section": null,
+      "context": "File Packaging Guidelines - ZIP (Recommended) for .obj or .fbx files with textures. Package the model + materials + images together — keeps everything organized. - Multi-file Upload also works. Send t",
+      "keywords": [
+        ".obj",
+        ".fbx",
+        ".mtl",
+        "-f 'file=@...'",
+        ".glb",
+        "my_model.obj"
+      ]
+    },
+    {
+      "text": "API Command",
+      "modal": "apiCodeModal",
+      "modalName": "API Code Generator",
+      "section": null,
+      "context": "API Command cURL Python PowerShell Copy Copied to clipboard! PowerShell Note: Save as .ps1 and run with powershell -ExecutionPolicy Bypass -File script.ps1",
+      "keywords": [
+        ".ps1"
+      ]
+    },
+    {
+      "text": "Batch Example",
+      "modal": "apiCodeModal",
+      "modalName": "API Code Generator",
+      "section": null,
+      "context": "Batch Example Bash Python PowerShell Process multiple files by wrapping the API call in a loop: PowerShell Note: Run with powershell -ExecutionPolicy Bypass -File script.ps1",
+      "keywords": []
+    },
+    {
+      "text": "Current Settings",
+      "modal": "batchScriptModal",
+      "modalName": "Batch Script Generator",
+      "section": null,
+      "context": "Current Settings Loading... &#9888; Do not paste into AI chatbots. These scripts may contain your personal API key. Paste your file paths below (one per line). We'll generate a complete script that up",
+      "keywords": [
+        "paste file paths above to generate script..."
+      ]
+    },
+    {
+      "text": "Windows PowerShell Note",
+      "modal": "batchScriptModal",
+      "modalName": "Batch Script Generator",
+      "section": null,
+      "context": "Windows PowerShell Note PowerShell's default execution policy may block unsigned scripts. To run this script, use one of these methods: - One-time bypass: powershell -ExecutionPolicy Bypass -File scri",
+      "keywords": [
+        "./output/"
+      ]
+    },
+    {
+      "text": "Buy Credits",
+      "modal": "purchaseModal",
+      "modalName": "Buy Credits",
+      "section": null,
+      "context": "Buy Credits &times; API Key (optional) Purchase Amount (Adjust the slider): $50 $10 $500 You Get: 100 Credits What can you do with these credits? 100 Decimates $0.50 each 80 + 4 Mixed (80/20) 20 Remeshes $2.50 each ✨ Bonus credits start at $50! Cancel 🔒 Secured by Stripe Pay with Stripe →",
+      "keywords": [
+        "$50",
+        "stripe"
+      ]
+    },
+    {
+      "text": "Transaction History",
+      "modal": "historyModal",
+      "modalName": "Transaction History",
+      "section": null,
+      "context": "Transaction History Remaining Credits: -- &times; Download CSV &#9432; Date Activity Amount &copy; 2025 Brian Ginn. All rights reserved. Terms of Service Privacy Policy API Docs Contact & Enterprise ♿ Accessibility",
+      "keywords": []
+    },
+    {
+      "text": "Contact Us",
+      "modal": "contactModal",
+      "modalName": "Contact Us",
+      "section": null,
+      "context": "Contact Us &times; We're here to help! Whether you have a question about privacy, need technical support, or want to provide feedback, we'd love to hear from you. Fill out the form below and we'll respond within 24-48 hours. ✓ Message sent successfully! We'll get back to you within 24-48 hours. ✗ Er",
+      "keywords": []
+    },
+    {
+      "text": "1. Introduction",
+      "modal": "privacyModal",
+      "modalName": "Privacy Policy",
+      "section": null,
+      "context": "1. Introduction Welcome to MeshOpt (\"we,\" \"our,\" or \"us\"). We are committed to protecting your privacy and ensuring the security of your 3D assets. This Privacy Policy explains how we collect, use, an",
+      "keywords": []
+    },
+    {
+      "text": "2. Information We Collect",
+      "modal": "privacyModal",
+      "modalName": "Privacy Policy",
+      "section": null,
+      "context": "2. Information We Collect Personal Information: Email address (during payment/checkout), payment information (processed securely by Stripe - we do not store full credit card numbers). Usage Data: API",
+      "keywords": []
+    },
+    {
+      "text": "3. How We Use Your Information",
+      "modal": "privacyModal",
+      "modalName": "Privacy Policy",
+      "section": null,
+      "context": "3. How We Use Your Information Service Provision: To provide the 3D optimization service, manage your credit balance, and authenticate your API requests. Communications: To send transaction receipts,",
+      "keywords": [
+        "communications:"
+      ]
+    },
+    {
+      "text": "4. 3D File Handling & Security",
+      "modal": "privacyModal",
+      "modalName": "Privacy Policy",
+      "section": null,
+      "context": "4. 3D File Handling & Security Your Intellectual Property: You retain full ownership of all files you upload and the optimized files we generate. We claim no ownership rights. Processing: Files are tr",
+      "keywords": [
+        "processing:"
+      ]
+    },
+    {
+      "text": "5. Data Retention",
+      "modal": "privacyModal",
+      "modalName": "Privacy Policy",
+      "section": null,
+      "context": "5. Data Retention 3D Files: All uploaded files and generated results are automatically deleted from our servers after 1 hour . Account Data: We retain billing emails and transaction history indefinite",
+      "keywords": []
+    },
+    {
+      "text": "6. Third-Party Services",
+      "modal": "privacyModal",
+      "modalName": "Privacy Policy",
+      "section": null,
+      "context": "6. Third-Party Services Stripe: We use Stripe to process payments. We receive confirmation that payment succeeded and your email address. See Stripe's Privacy Policy . No Analytics or Tracking: We do",
+      "keywords": [
+        "stripe:",
+        "not"
+      ]
+    },
+    {
+      "text": "7. Your Rights",
+      "modal": "privacyModal",
+      "modalName": "Privacy Policy",
+      "section": null,
+      "context": "7. Your Rights You have the right to: Access your personal data, Correct inaccurate data, Delete your account and data, Export your transaction history (available in the app), and Object to processing",
+      "keywords": [
+        "access",
+        "correct",
+        "delete",
+        "export",
+        "object"
+      ]
+    },
+    {
+      "text": "8. Security Measures",
+      "modal": "privacyModal",
+      "modalName": "Privacy Policy",
+      "section": null,
+      "context": "8. Security Measures We implement industry-standard measures: SSL/TLS encryption, secure database with access controls, file isolation during processing, automatic deletion after processing, no perman",
+      "keywords": []
+    },
+    {
+      "text": "9. Cookies & Tracking",
+      "modal": "privacyModal",
+      "modalName": "Privacy Policy",
+      "section": null,
+      "context": "9. Cookies & Tracking We use minimal session storage for authentication state. We do NOT use analytics cookies, advertising cookies, social media tracking pixels, cross-site tracking, or third-party c",
+      "keywords": [
+        "not"
+      ]
+    },
+    {
+      "text": "10. Changes to This Policy",
+      "modal": "privacyModal",
+      "modalName": "Privacy Policy",
+      "section": null,
+      "context": "10. Changes to This Policy We may update this Privacy Policy from time to time. The \"Last Updated\" date will reflect when changes were made. For material changes, we will notify users via email.",
+      "keywords": []
+    },
+    {
+      "text": "11. Contact Us",
+      "modal": "privacyModal",
+      "modalName": "Privacy Policy",
+      "section": null,
+      "context": "11. Contact Us If you have questions, concerns, or requests regarding this Privacy Policy or your personal data, please use our Contact Form . We will respond to privacy inquiries within 30 days.",
+      "keywords": []
+    },
+    {
+      "text": "1. Agreement to Terms",
+      "modal": "tosModal",
+      "modalName": "Terms of Service",
+      "section": null,
+      "context": "1. Agreement to Terms By accessing or using MeshOpt (\"the Service\"), operated by DBA Brian Ginn (\"we,\" \"us,\" or \"our\"), you agree to be bound by these Terms of Service. If you do not agree to these te",
+      "keywords": []
+    },
+    {
+      "text": "2. Description of Service",
+      "modal": "tosModal",
+      "modalName": "Terms of Service",
+      "section": null,
+      "context": "2. Description of Service MeshOpt provides 3D mesh optimization services, including decimation (polygon reduction) and remeshing with texture baking. The Service is available via web interface and API",
+      "keywords": []
+    },
+    {
+      "text": "3. Credits and Payment",
+      "modal": "tosModal",
+      "modalName": "Terms of Service",
+      "section": null,
+      "context": "3. Credits and Payment Credit System: The Service operates on a prepaid credit system. Credits are purchased through Stripe and deducted when optimization jobs are processed. Credit Expiration: Purcha",
+      "keywords": [
+        "pricing:"
+      ]
+    },
+    {
+      "text": "4. Refund Policy",
+      "modal": "tosModal",
+      "modalName": "Terms of Service",
+      "section": null,
+      "context": "4. Refund Policy Automatic Refunds: If the Service fails to process your file due to a system error, timeout, or processing failure, your credits are automatically refunded. Manual Refunds: If you are",
+      "keywords": []
+    },
+    {
+      "text": "5. Your Content",
+      "modal": "tosModal",
+      "modalName": "Terms of Service",
+      "section": null,
+      "context": "5. Your Content Ownership: You retain full ownership of all 3D files you upload and the optimized files we generate. We claim no intellectual property rights over your content. License to Process: By",
+      "keywords": [
+        "ownership:",
+        "deletion:"
+      ]
+    },
+    {
+      "text": "6. Acceptable Use",
+      "modal": "tosModal",
+      "modalName": "Terms of Service",
+      "section": null,
+      "context": "6. Acceptable Use You agree NOT to use the Service to: - Process files containing illegal content under United States law - Process files that infringe on third-party intellectual property rights - At",
+      "keywords": []
+    },
+    {
+      "text": "7. API Usage",
+      "modal": "tosModal",
+      "modalName": "Terms of Service",
+      "section": null,
+      "context": "7. API Usage API Keys: Your API key is confidential. You are responsible for all activity under your key. Do not share or expose your key publicly. Rate Limits: We may impose rate limits to ensure fai",
+      "keywords": []
+    },
+    {
+      "text": "8. Service Availability",
+      "modal": "tosModal",
+      "modalName": "Terms of Service",
+      "section": null,
+      "context": "8. Service Availability As-Is Basis: The Service is provided \"as is\" and \"as available\" without warranties of any kind, either express or implied. No Uptime Guarantee: We do not guarantee uninterrupte",
+      "keywords": [
+        "modifications:"
+      ]
+    },
+    {
+      "text": "9. Limitation of Liability",
+      "modal": "tosModal",
+      "modalName": "Terms of Service",
+      "section": null,
+      "context": "9. Limitation of Liability To the maximum extent permitted by law, DBA Brian Ginn shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limit",
+      "keywords": []
+    },
+    {
+      "text": "10. Indemnification",
+      "modal": "tosModal",
+      "modalName": "Terms of Service",
+      "section": null,
+      "context": "10. Indemnification You agree to indemnify and hold harmless DBA Brian Ginn from any claims, damages, losses, or expenses (including legal fees) arising from your use of the Service, your content, or",
+      "keywords": []
+    },
+    {
+      "text": "11. Changes to Terms",
+      "modal": "tosModal",
+      "modalName": "Terms of Service",
+      "section": null,
+      "context": "11. Changes to Terms We may update these Terms from time to time. The \"Last Updated\" date will reflect when changes were made. Continued use of the Service after changes constitutes acceptance of the",
+      "keywords": []
+    },
+    {
+      "text": "12. Governing Law",
+      "modal": "tosModal",
+      "modalName": "Terms of Service",
+      "section": null,
+      "context": "12. Governing Law These Terms are governed by the laws of the United States. Any disputes shall be resolved in the courts of the United States.",
+      "keywords": []
+    },
+    {
+      "text": "13. Contact",
+      "modal": "tosModal",
+      "modalName": "Terms of Service",
+      "section": null,
+      "context": "13. Contact Questions about these Terms? Use our Contact Form .",
+      "keywords": []
+    },
+    {
+      "text": "Get Free Credits",
+      "modal": "freeCreditsModal",
+      "modalName": "Get Free Credits",
+      "section": null,
+      "context": "Get Free Credits &times; Try MeshOpt for free! Enter your email below and we'll send you an API key with -- free credits. &#10003; Check your email! We've sent your free API key. Paste it in the API KEY field to get started. &#10003; Welcome back! You already have an account. Your API key has been r",
+      "keywords": []
+    },
+    {
+      "text": "v1.0.1beta (2025-12-22)",
+      "modal": "changelogModal",
+      "modalName": "Changelog",
+      "section": null,
+      "context": "v1.0.1beta (2025-12-22) - Initial public release. - Core Optimization: Support for Decimation (polygon reduction) and Remeshing (clean topology generation). - File Formats: Process .glb, .gltf, .obj,",
+      "keywords": []
+    },
+    {
+      "text": "Founder's Story",
+      "modal": "founderModal",
+      "modalName": "Founder's Story",
+      "section": null,
+      "context": "Founder's Story &times; I was supposed to code a 3D printer project for myself while on a working vacation in NH in early Dec 2025. I told an LLM about my upcoming needs, but it misunderstood me. Instead, it told me about 3D Mesh, which actually sounded interesting. So, I built that instead. I'm not",
+      "keywords": []
+    },
+    {
+      "text": "Upload 3D File",
+      "modal": null,
+      "modalName": "Main Page",
+      "section": "dropzone",
+      "context": "Drag and drop your 3D file here. Supports GLB, OBJ, FBX, GLTF, and ZIP files.",
+      "keywords": [
+        "upload",
+        "drag",
+        "drop",
+        "glb",
+        "obj",
+        "fbx",
+        "gltf",
+        "zip",
+        "file"
+      ]
+    },
+    {
+      "text": "Optimization Mode",
+      "modal": null,
+      "modalName": "Main Page",
+      "section": "modeSelect",
+      "context": "Choose between Decimate (reduce polygon count) or Remesh + Bake (retopology with texture baking).",
+      "keywords": [
+        "decimate",
+        "remesh",
+        "bake",
+        "retopology",
+        "polygon",
+        "reduce",
+        "mode"
+      ]
+    },
+    {
+      "text": "Target Quality Slider",
+      "modal": null,
+      "modalName": "Main Page",
+      "section": "ratio",
+      "context": "Adjust the quality ratio for decimation. Lower means less detail, higher means more detail.",
+      "keywords": [
+        "quality",
+        "ratio",
+        "slider",
+        "percentage",
+        "detail"
+      ]
+    },
+    {
+      "text": "Target Faces",
+      "modal": null,
+      "modalName": "Main Page",
+      "section": "targetFaces",
+      "context": "Set the target number of faces for remesh mode.",
+      "keywords": [
+        "faces",
+        "target",
+        "count",
+        "polygon",
+        "remesh"
+      ]
+    },
+    {
+      "text": "Texture Size",
+      "modal": null,
+      "modalName": "Main Page",
+      "section": "textureSize",
+      "context": "Select texture resolution for remesh: 1024, 2048, or 4096 pixels.",
+      "keywords": [
+        "texture",
+        "size",
+        "resolution",
+        "pixels",
+        "1024",
+        "2048",
+        "4096"
+      ]
+    },
+    {
+      "text": "API Key",
+      "modal": null,
+      "modalName": "Main Page",
+      "section": "apiKey",
+      "context": "Enter your API key to authenticate. Keys start with sk_ or fr_.",
+      "keywords": [
+        "api",
+        "key",
+        "authentication",
+        "sk_",
+        "fr_",
+        "login"
+      ]
+    },
+    {
+      "text": "Material and Textures",
+      "modal": null,
+      "modalName": "Main Page",
+      "section": "objInputs",
+      "context": "For OBJ files, add optional .mtl material file and texture images.",
+      "keywords": [
+        "material",
+        "mtl",
+        "texture",
+        "obj",
+        "png",
+        "jpg",
+        "images"
+      ]
+    }
+  ]
+}

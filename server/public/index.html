@@ -491,6 +491,10 @@
                         <h2 class="m-0" id="helpModalTitle">Help & Guide</h2>
                         <button type="button" class="modal-close" onclick="closeModal('helpModal')" aria-label="Close help guide">&times;</button>
                     </div>
+                    <div class="help-search-container help-search-below-header">
+                        <input type="text" id="helpSearchInput" placeholder="Search help topics..." aria-label="Search help topics" autocomplete="off" />
+                        <div id="helpSearchResults" class="help-search-results" role="listbox" aria-label="Search results"></div>
+                    </div>
                     <div class="modal-body">
                         <section class="content-section">
                             <h3>Lost Your API Key?</h3>
@@ -1463,6 +1467,253 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
         </div>
 
         <script>
+            // ==========================================
+            // Help Search Feature
+            // ==========================================
+            let helpSearchIndex = null;
+            let helpSearchDebounceTimer = null;
+
+            // Load the help search index
+            async function loadHelpSearchIndex() {
+                try {
+                    const response = await fetch('/help-index.json');
+                    if (response.ok) {
+                        const data = await response.json();
+                        helpSearchIndex = data.entries;
+                    }
+                } catch (e) {
+                    console.warn('Help search index not available:', e);
+                }
+            }
+
+            // Search the help index
+            function searchHelp(query) {
+                if (!helpSearchIndex || !query.trim()) return [];
+
+                const terms = query.toLowerCase().split(/\s+/).filter(t => t.length > 0);
+                if (terms.length === 0) return [];
+
+                const results = [];
+
+                for (const entry of helpSearchIndex) {
+                    let score = 0;
+                    const searchableText = [
+                        entry.text,
+                        entry.context,
+                        entry.modalName,
+                        ...(entry.keywords || [])
+                    ].join(' ').toLowerCase();
+
+                    // Check if all terms match somewhere
+                    let allMatch = true;
+                    for (const term of terms) {
+                        if (searchableText.includes(term)) {
+                            // Boost score for title matches
+                            if (entry.text.toLowerCase().includes(term)) {
+                                score += 10;
+                            }
+                            // Boost for keyword matches
+                            if (entry.keywords && entry.keywords.some(k => k.includes(term))) {
+                                score += 5;
+                            }
+                            // Base score for context match
+                            score += 1;
+                        } else {
+                            allMatch = false;
+                            break;
+                        }
+                    }
+
+                    if (allMatch && score > 0) {
+                        results.push({ entry, score });
+                    }
+                }
+
+                // Sort by score descending, limit to 8 results
+                return results
+                    .sort((a, b) => b.score - a.score)
+                    .slice(0, 8)
+                    .map(r => r.entry);
+            }
+
+            // Highlight matching terms in text
+            function highlightTerms(text, query) {
+                if (!text || !query) return text;
+                const terms = query.toLowerCase().split(/\s+/).filter(t => t.length > 1);
+                let result = text;
+                for (const term of terms) {
+                    const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                    result = result.replace(regex, '<mark>$1</mark>');
+                }
+                return result;
+            }
+
+            // Render search results
+            function renderHelpSearchResults(results, query) {
+                const container = document.getElementById('helpSearchResults');
+                if (!container) return;
+
+                if (results.length === 0) {
+                    container.innerHTML = '<div class="help-search-no-results">No results found</div>';
+                    container.classList.add('active');
+                    return;
+                }
+
+                container.innerHTML = results.map((entry, index) => {
+                    const location = entry.modal ? entry.modalName : 'Main Page';
+                    const contextPreview = entry.context ? entry.context.substring(0, 120) + (entry.context.length > 120 ? '...' : '') : '';
+
+                    return `
+                        <div class="help-search-result"
+                             role="option"
+                             tabindex="0"
+                             data-modal="${entry.modal || ''}"
+                             data-section="${entry.section || ''}"
+                             data-index="${index}">
+                            <div class="help-search-result-title">${highlightTerms(entry.text, query)}</div>
+                            <div class="help-search-result-location">${location}</div>
+                            <div class="help-search-result-context">${highlightTerms(contextPreview, query)}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                container.classList.add('active');
+
+                // Add click handlers
+                container.querySelectorAll('.help-search-result').forEach(el => {
+                    el.addEventListener('click', () => handleHelpSearchResultClick(el));
+                    el.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') handleHelpSearchResultClick(el);
+                    });
+                });
+            }
+
+            // Handle clicking a search result
+            function handleHelpSearchResultClick(el) {
+                const modalId = el.dataset.modal;
+                const sectionId = el.dataset.section;
+
+                // Clear search
+                const input = document.getElementById('helpSearchInput');
+                const results = document.getElementById('helpSearchResults');
+                if (input) input.value = '';
+                if (results) results.classList.remove('active');
+
+                if (modalId) {
+                    // Close help modal, open target modal
+                    closeModal('helpModal');
+                    setTimeout(() => {
+                        openModal(modalId);
+                        // Try to scroll to section if specified
+                        if (sectionId) {
+                            setTimeout(() => {
+                                const section = document.getElementById(sectionId);
+                                if (section) {
+                                    section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                }
+                            }, 100);
+                        }
+                    }, 150);
+                } else if (sectionId) {
+                    // It's on the main page - close modal and focus the element
+                    closeModal('helpModal');
+                    setTimeout(() => {
+                        const element = document.getElementById(sectionId);
+                        if (element) {
+                            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            // Try to focus if it's focusable
+                            if (element.focus) element.focus();
+                        }
+                    }, 150);
+                }
+            }
+
+            // Initialize help search
+            function initHelpSearch() {
+                const input = document.getElementById('helpSearchInput');
+                const results = document.getElementById('helpSearchResults');
+
+                if (!input || !results) return;
+
+                // Load index
+                loadHelpSearchIndex();
+
+                // Search on input
+                input.addEventListener('input', (e) => {
+                    clearTimeout(helpSearchDebounceTimer);
+                    const query = e.target.value.trim();
+
+                    if (query.length < 2) {
+                        results.classList.remove('active');
+                        return;
+                    }
+
+                    helpSearchDebounceTimer = setTimeout(() => {
+                        const searchResults = searchHelp(query);
+                        renderHelpSearchResults(searchResults, query);
+                    }, 150);
+                });
+
+                // Close results on blur (with delay for click handling)
+                input.addEventListener('blur', () => {
+                    setTimeout(() => {
+                        results.classList.remove('active');
+                    }, 200);
+                });
+
+                // Reopen results on focus if there's a query
+                input.addEventListener('focus', () => {
+                    const query = input.value.trim();
+                    if (query.length >= 2) {
+                        const searchResults = searchHelp(query);
+                        renderHelpSearchResults(searchResults, query);
+                    }
+                });
+
+                // Keyboard navigation
+                input.addEventListener('keydown', (e) => {
+                    const resultEls = results.querySelectorAll('.help-search-result');
+                    if (resultEls.length === 0) return;
+
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        resultEls[0].focus();
+                    } else if (e.key === 'Escape') {
+                        results.classList.remove('active');
+                        input.value = '';
+                    }
+                });
+
+                // Arrow key navigation within results
+                results.addEventListener('keydown', (e) => {
+                    const resultEls = Array.from(results.querySelectorAll('.help-search-result'));
+                    const current = document.activeElement;
+                    const currentIndex = resultEls.indexOf(current);
+
+                    if (e.key === 'ArrowDown' && currentIndex < resultEls.length - 1) {
+                        e.preventDefault();
+                        resultEls[currentIndex + 1].focus();
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        if (currentIndex > 0) {
+                            resultEls[currentIndex - 1].focus();
+                        } else {
+                            input.focus();
+                        }
+                    } else if (e.key === 'Escape') {
+                        results.classList.remove('active');
+                        input.focus();
+                    }
+                });
+            }
+
+            // Init on DOM ready
+            document.addEventListener('DOMContentLoaded', initHelpSearch);
+
+            // ==========================================
+            // End Help Search Feature
+            // ==========================================
+
             // Global variable to store current history data
             let currentHistoryData = [];
             let filteredHistoryData = [];

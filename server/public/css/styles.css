@@ -1287,3 +1287,107 @@ button[type="reset"]:hover {
 .api-key-warning strong {
     color: #ef4444;
 }
+
+/* Help Search Feature */
+.help-search-container {
+    position: relative;
+}
+
+.help-search-below-header {
+    margin-bottom: 20px;
+}
+
+.help-search-container input {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 0.875rem;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 6px;
+    color: var(--text);
+    box-sizing: border-box;
+}
+
+.help-search-container input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.help-search-container input::placeholder {
+    color: var(--text-muted);
+}
+
+.help-search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 4px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    max-height: 400px;
+    overflow-y: auto;
+    z-index: 100;
+    display: none;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.help-search-results.active {
+    display: block;
+}
+
+.help-search-result {
+    padding: 12px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+}
+
+.help-search-result:last-child {
+    border-bottom: none;
+}
+
+.help-search-result:hover,
+.help-search-result:focus {
+    background: rgba(59, 130, 246, 0.15);
+    outline: none;
+}
+
+.help-search-result-title {
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 2px;
+}
+
+.help-search-result-location {
+    font-size: 0.75rem;
+    color: var(--primary);
+    margin-bottom: 4px;
+}
+
+.help-search-result-context {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.help-search-no-results {
+    padding: 16px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+
+.help-search-result mark {
+    background: rgba(59, 130, 246, 0.3);
+    color: inherit;
+    padding: 0 2px;
+    border-radius: 2px;
+}

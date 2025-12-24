@@ -13,6 +13,10 @@ esac
 
 echo "🚀 Deploying to ${1:-prod} ($SERVER)..."
 
+# 0. Build help search index from index.html
+echo "📚 Building help search index..."
+node scripts/build-help-index.js
+
 # Ensure remote directory exists
 ssh $SERVER "mkdir -p $REMOTE_DIR"
 
