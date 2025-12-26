@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>MeshOpt vs Simplygon: Enterprise vs Pay-Per-Use | MeshOpt</title>
+    <meta name="description" content="Compare MeshOpt and Simplygon for 3D optimization. See when enterprise Simplygon licensing makes sense vs simple pay-per-use API processing." />
+    <meta name="keywords" content="simplygon alternative, simplygon pricing, simplygon vs, mesh optimization software, 3d optimization api" />
+
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://webdeliveryengine.com/blog/meshopt-vs-simplygon.html" />
+    <meta property="og:title" content="MeshOpt vs Simplygon: Enterprise vs Pay-Per-Use" />
+    <meta property="og:description" content="Compare enterprise Simplygon licensing vs simple pay-per-use API." />
+
+    <link rel="canonical" href="https://webdeliveryengine.com/blog/meshopt-vs-simplygon.html" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <style>
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 32px 0;
+        }
+        .comparison-table th,
+        .comparison-table td {
+            padding: 16px;
+            text-align: left;
+            border: 1px solid var(--cp-border);
+        }
+        .comparison-table th {
+            background: rgba(0, 212, 255, 0.05);
+            font-family: var(--cp-font-display);
+            font-weight: 600;
+            color: var(--cp-text);
+        }
+        .comparison-table th:first-child {
+            width: 30%;
+        }
+        .comparison-table .header-simplygon {
+            color: #0078d4;
+        }
+        .comparison-table .header-meshopt {
+            color: var(--cp-accent);
+        }
+        .check {
+            color: var(--cp-success);
+        }
+        .partial {
+            color: var(--cp-warning);
+        }
+        .verdict-box {
+            background: rgba(0, 212, 255, 0.03);
+            border: 1px solid var(--cp-border);
+            border-left: 4px solid var(--cp-accent);
+            padding: 24px;
+            margin: 32px 0;
+        }
+        .verdict-box h4 {
+            font-family: var(--cp-font-display);
+            font-size: 0.9rem;
+            color: var(--cp-accent);
+            margin: 0 0 12px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .verdict-box p {
+            margin: 0;
+            color: var(--cp-text);
+            line-height: 1.6;
+        }
+        .verdict-box p + p {
+            margin-top: 12px;
+        }
+        .use-case-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin: 32px 0;
+        }
+        @media (max-width: 600px) {
+            .use-case-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .use-case-box {
+            background: #000;
+            border: 1px solid var(--cp-border);
+            padding: 24px;
+        }
+        .use-case-box.simplygon {
+            border-top: 3px solid #0078d4;
+        }
+        .use-case-box.meshopt {
+            border-top: 3px solid var(--cp-accent);
+        }
+        .use-case-box h4 {
+            font-family: var(--cp-font-display);
+            font-size: 0.9rem;
+            margin: 0 0 16px 0;
+        }
+        .use-case-box.simplygon h4 {
+            color: #0078d4;
+        }
+        .use-case-box.meshopt h4 {
+            color: var(--cp-accent);
+        }
+        .use-case-box ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .use-case-box li {
+            padding: 8px 0;
+            padding-left: 20px;
+            position: relative;
+            color: var(--cp-text-dim);
+            font-size: 0.9rem;
+        }
+        .use-case-box li::before {
+            content: '>';
+            position: absolute;
+            left: 0;
+            color: var(--cp-text-dim);
+            font-family: var(--cp-font-display);
+        }
+        .pricing-note {
+            background: rgba(248, 81, 73, 0.05);
+            border: 1px solid var(--cp-border);
+            border-left: 4px solid var(--cp-warning);
+            padding: 20px;
+            margin: 24px 0;
+        }
+        .pricing-note h4 {
+            font-family: var(--cp-font-display);
+            font-size: 0.85rem;
+            color: var(--cp-warning);
+            margin: 0 0 8px 0;
+        }
+        .pricing-note p {
+            margin: 0;
+            color: var(--cp-text-dim);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body class="content-page">
+    <header class="site-header">
+        <a href="/" class="logo">MeshOpt</a>
+        <nav>
+            <a href="/">Optimizer</a>
+            <a href="/tools/">Tools</a>
+            <a href="/blog/">Blog</a>
+        </nav>
+    </header>
+
+    <main>
+        <nav class="breadcrumb">
+            <a href="/">Home</a>
+            <span class="separator">/</span>
+            <a href="/blog/">Blog</a>
+            <span class="separator">/</span>
+            <span class="current">MeshOpt vs Simplygon</span>
+        </nav>
+
+        <article>
+            <header class="article-header">
+                <h1>MeshOpt vs Simplygon: Enterprise vs Pay-Per-Use</h1>
+                <div class="article-meta">
+                    <span class="category">Comparison</span>
+                    <span>December 2025</span>
+                    <span>8 min read</span>
+                </div>
+            </header>
+
+            <div class="article-content">
+                <p>Simplygon is the gold standard for 3D optimization in AAA games and enterprise. It's used by major studios and powers optimization pipelines at companies like EA, Ubisoft, and Epic Games.</p>
+
+                <p>So why would anyone use something else?</p>
+
+                <p>Because Simplygon is built for enterprises with enterprise budgets. If you're not a AAA studio or Fortune 500 company, the pricing and complexity may not fit your needs.</p>
+
+                <h2>What is Simplygon?</h2>
+
+                <p>Simplygon (now owned by Microsoft) is an industry-leading mesh optimization SDK. It offers:</p>
+
+                <ul>
+                    <li>Advanced polygon reduction algorithms</li>
+                    <li>Automatic LOD chain generation</li>
+                    <li>Impostor/billboard generation</li>
+                    <li>Material baking and texture atlasing</li>
+                    <li>Deep integration with Unity, Unreal, and 3ds Max</li>
+                    <li>On-premise deployment or cloud processing</li>
+                </ul>
+
+                <p>It's powerful, battle-tested at massive scale, and trusted by the biggest names in gaming.</p>
+
+                <h2>Quick Comparison</h2>
+
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th class="header-simplygon">Simplygon</th>
+                            <th class="header-meshopt">MeshOpt</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Pricing model</td>
+                            <td>Enterprise license (custom quote)</td>
+                            <td>Pay-per-job ($0.10-0.50/model)</td>
+                        </tr>
+                        <tr>
+                            <td>Minimum commitment</td>
+                            <td>Annual contract (typically $10K+)</td>
+                            <td>None (free tier available)</td>
+                        </tr>
+                        <tr>
+                            <td>Setup time</td>
+                            <td>Days to weeks (SDK integration)</td>
+                            <td>Minutes (API key)</td>
+                        </tr>
+                        <tr>
+                            <td>Target audience</td>
+                            <td>AAA studios, enterprises</td>
+                            <td>Web devs, e-commerce, small teams</td>
+                        </tr>
+                        <tr>
+                            <td>Polygon reduction</td>
+                            <td><span class="check">Advanced (multiple algorithms)</span></td>
+                            <td>Standard decimation + remesh</td>
+                        </tr>
+                        <tr>
+                            <td>LOD generation</td>
+                            <td><span class="check">Automatic LOD chains</span></td>
+                            <td>Single output (manual LOD workflow)</td>
+                        </tr>
+                        <tr>
+                            <td>Impostor generation</td>
+                            <td><span class="check">Yes (billboard impostors)</span></td>
+                            <td>No</td>
+                        </tr>
+                        <tr>
+                            <td>Material baking</td>
+                            <td><span class="check">Advanced texture baking</span></td>
+                            <td>Basic (via remesh mode)</td>
+                        </tr>
+                        <tr>
+                            <td>Game engine plugins</td>
+                            <td><span class="check">Unity, Unreal, 3ds Max</span></td>
+                            <td>REST API (engine-agnostic)</td>
+                        </tr>
+                        <tr>
+                            <td>Deployment</td>
+                            <td>On-premise or Azure</td>
+                            <td>Cloud only</td>
+                        </tr>
+                        <tr>
+                            <td>Output formats</td>
+                            <td>Many (FBX, OBJ, etc.)</td>
+                            <td>GLB/GLTF focus (web-first)</td>
+                        </tr>
+                        <tr>
+                            <td>Support</td>
+                            <td>Dedicated account team</td>
+                            <td>Email + documentation</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h2>The Pricing Reality</h2>
+
+                <div class="pricing-note">
+                    <h4>Simplygon Pricing</h4>
+                    <p>Simplygon doesn't publish pricing. You contact sales, go through a qualification process, and receive a custom quote. Based on industry reports and user discussions, annual licenses typically start at $10,000-15,000 and scale based on usage, seats, and features. Some enterprise deals run into six figures.</p>
+                </div>
+
+                <p>This makes sense for a AAA studio processing millions of assets. But for a web agency optimizing 50 product models per month, or an indie developer with a single project, it's prohibitive.</p>
+
+                <p>MeshOpt's pricing is transparent: pay per job, starting around $0.10-0.50 per model depending on complexity. Process 100 models for roughly $20. No contracts, no minimums, no sales calls.</p>
+
+                <div class="verdict-box">
+                    <h4>Cost Example</h4>
+                    <p><strong>Scenario:</strong> E-commerce site with 200 product models to optimize</p>
+                    <p><strong>Simplygon:</strong> Minimum annual license (~$10,000+) just to start</p>
+                    <p><strong>MeshOpt:</strong> 200 models × ~$0.20 = $40 total</p>
+                </div>
+
+                <h2>Where Simplygon Wins</h2>
+
+                <h3>AAA Game Production</h3>
+
+                <p>If you're building a AAA game with thousands of assets, each needing multiple LOD levels, impostors for distant rendering, and deep integration with Unreal or Unity - Simplygon is purpose-built for this. The annual license pays for itself in engineering time saved.</p>
+
+                <h3>Automatic LOD Chains</h3>
+
+                <p>Simplygon excels at generating complete LOD chains automatically. Input one high-poly model, get LOD0 through LOD4 with appropriate polygon counts and smooth transitions. This is critical for open-world games where the same asset appears at many distances.</p>
+
+                <h3>On-Premise Security</h3>
+
+                <p>For studios with strict IP protection requirements, Simplygon can run entirely on-premise. Your assets never leave your network. MeshOpt is cloud-only - your files are processed on our servers (and deleted after processing, but still transmitted).</p>
+
+                <h3>Advanced Features</h3>
+
+                <p>Impostor generation, visibility-based optimization, aggregate LOD merging - Simplygon has features that simply don't exist in simpler tools. If you need them, you need them.</p>
+
+                <h2>Where MeshOpt Wins</h2>
+
+                <h3>Accessibility</h3>
+
+                <p>No sales calls. No enterprise contracts. No SDK integration. Sign up, get an API key, start processing. A solo developer can be optimizing models in 5 minutes.</p>
+
+                <h3>Web-First Focus</h3>
+
+                <p>MeshOpt is built specifically for web, mobile, and AR delivery. GLB/GLTF output with Draco compression, texture optimization for web performance, file sizes tuned for HTTP delivery. Simplygon targets game engines; MeshOpt targets browsers.</p>
+
+                <h3>Transparent, Scalable Pricing</h3>
+
+                <p>Process 10 models or 10,000 - pay only for what you use. No awkward conversations with sales about whether your project qualifies for their smallest tier. No annual commitment if your project ends.</p>
+
+                <h3>Simple REST API</h3>
+
+                <p>One HTTP endpoint. Upload file, get optimized file back. Integrate with any language, any platform, any CI/CD system. No SDK installation, no version compatibility issues, no platform-specific builds.</p>
+
+                <pre><code>curl -X POST https://webdeliveryengine.com/optimize \
+  -H "X-API-Key: sk_your_key" \
+  -F "file=@model.glb" \
+  -F "quality=50" \
+  --output optimized.glb</code></pre>
+
+                <h3>E-commerce and Small Teams</h3>
+
+                <p>If you're a Shopify merchant, web agency, or small studio, you likely need reliable optimization without enterprise complexity. MeshOpt fits this use case; Simplygon doesn't target it.</p>
+
+                <h2>Use Case Guide</h2>
+
+                <div class="use-case-grid">
+                    <div class="use-case-box simplygon">
+                        <h4>Choose Simplygon When</h4>
+                        <ul>
+                            <li>Building AAA/AA games with large asset counts</li>
+                            <li>Need automatic LOD chain generation</li>
+                            <li>Require impostor/billboard systems</li>
+                            <li>Deep Unity/Unreal integration needed</li>
+                            <li>On-premise processing required (IP security)</li>
+                            <li>Budget allows $10K+/year commitment</li>
+                            <li>Have engineering resources for SDK integration</li>
+                        </ul>
+                    </div>
+                    <div class="use-case-box meshopt">
+                        <h4>Choose MeshOpt When</h4>
+                        <ul>
+                            <li>Optimizing for web, mobile, or AR delivery</li>
+                            <li>E-commerce product visualization</li>
+                            <li>Small team or solo developer</li>
+                            <li>Variable/project-based usage</li>
+                            <li>Need to start immediately (no sales process)</li>
+                            <li>Budget is per-project, not annual</li>
+                            <li>Want simple API without SDK complexity</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h2>Migration Considerations</h2>
+
+                <p>If you're currently evaluating Simplygon or considering alternatives:</p>
+
+                <h3>Coming from Simplygon</h3>
+
+                <p>If Simplygon's pricing no longer fits your budget or your needs have simplified:</p>
+
+                <ul>
+                    <li>MeshOpt handles the core use case (polygon reduction + texture optimization)</li>
+                    <li>You'll lose automatic LOD chains - handle manually or adjust workflow</li>
+                    <li>API integration is simpler but different - plan for migration time</li>
+                    <li>Test on representative assets before committing</li>
+                </ul>
+
+                <h3>Evaluating Both</h3>
+
+                <p>If you're starting fresh and considering both:</p>
+
+                <ul>
+                    <li>Get a Simplygon quote first to understand actual costs</li>
+                    <li>Test MeshOpt's free tier on your actual assets</li>
+                    <li>Consider your 2-year roadmap - will you need Simplygon's advanced features?</li>
+                    <li>Factor in integration time, not just license costs</li>
+                </ul>
+
+                <h2>Honest Assessment</h2>
+
+                <p>Simplygon is the more powerful tool. Period. It has features MeshOpt doesn't offer and likely never will. It's been refined over 15+ years for the most demanding production pipelines in gaming.</p>
+
+                <p>But power has costs: financial (enterprise licensing), complexity (SDK integration), and accessibility (sales process, minimum commitments).</p>
+
+                <p>MeshOpt exists for the large market of developers who need good optimization without enterprise overhead. If that's you, it's a valid choice. If you genuinely need Simplygon's capabilities, pay for them - they're worth it at that level.</p>
+
+                <p>The best tool is the one that fits your actual needs and constraints, not the one with the most impressive feature list.</p>
+            </div>
+
+            <div class="cta-box">
+                <h3>Try MeshOpt Free</h3>
+                <p>50 free credits to test on your models. No sales call required.</p>
+                <a href="/" class="btn">Get Free Credits</a>
+            </div>
+
+            <div class="email-capture">
+                <h3>Get 3D Optimization Updates</h3>
+                <p>New features, optimization tips, and industry comparisons.</p>
+                <form class="email-capture-form" id="emailForm">
+                    <input type="email" placeholder="your@email.com" required />
+                    <button type="submit">Subscribe</button>
+                </form>
+                <p class="text-small" style="margin-top: 16px; margin-bottom: 0; opacity: 0.5;">No spam. Unsubscribe anytime.</p>
+            </div>
+        </article>
+    </main>
+
+    <footer class="main-footer">
+        <p>&copy; 2025 Brian Ginn. All rights reserved.</p>
+        <a href="/">MeshOpt</a>
+        <a href="/tools/">Tools</a>
+        <a href="/blog/">Blog</a>
+    </footer>
+
+    <script>
+        document.getElementById('emailForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('Email signup coming soon! For now, try the optimizer at webdeliveryengine.com');
+        });
+    </script>
+</body>
+</html>
