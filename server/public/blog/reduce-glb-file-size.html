@@ -191,7 +191,7 @@ done</code></pre>
 
             <div class="cta-box">
                 <h3>Ready to Optimize Your Models?</h3>
-                <p>Get 50 free credits to try MeshOpt. No credit card required.</p>
+                <p>Get <span class="free-credits-count">50</span> free credits to try MeshOpt. No credit card required.</p>
                 <a href="/" class="btn">Start Optimizing</a>
             </div>
 
@@ -219,9 +219,20 @@ done</code></pre>
         // Email form placeholder
         document.getElementById('emailForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            // TODO: Integrate with Buttondown or email service
             alert('Email signup coming soon! For now, try the optimizer at webdeliveryengine.com');
         });
+
+        // Fetch dynamic pricing config
+        fetch('/config')
+            .then(res => res.json())
+            .then(data => {
+                if (data.pricing && data.pricing.free_initial_credits !== undefined) {
+                    document.querySelectorAll('.free-credits-count').forEach(el => {
+                        el.textContent = data.pricing.free_initial_credits;
+                    });
+                }
+            })
+            .catch(() => {}); // Fail silently, keep default
     </script>
 </body>
 </html>

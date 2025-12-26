@@ -394,14 +394,14 @@ done</code></pre>
 
                 <h2>Try Both</h2>
 
-                <p>Blender is free to download. MeshOpt has a free tier with 50 credits. Try both on the same model and see which fits your workflow.</p>
+                <p>Blender is free to download. MeshOpt has a free tier with <span class="free-credits-count">50</span> credits. Try both on the same model and see which fits your workflow.</p>
 
                 <p>Use our <a href="/tools/glb-inspector.html">GLB Inspector</a> to compare the results - check polygon counts, file sizes, and texture details from each approach.</p>
             </div>
 
             <div class="cta-box">
                 <h3>Try MeshOpt Free</h3>
-                <p>50 free credits to test on your models. See if automation fits your workflow.</p>
+                <p><span class="free-credits-count">50</span> free credits to test on your models. See if automation fits your workflow.</p>
                 <a href="/" class="btn">Get Free Credits</a>
             </div>
 
@@ -429,6 +429,18 @@ done</code></pre>
             e.preventDefault();
             alert('Email signup coming soon! For now, try the optimizer at webdeliveryengine.com');
         });
+
+        // Fetch dynamic pricing config
+        fetch('/config')
+            .then(res => res.json())
+            .then(data => {
+                if (data.pricing && data.pricing.free_initial_credits !== undefined) {
+                    document.querySelectorAll('.free-credits-count').forEach(el => {
+                        el.textContent = data.pricing.free_initial_credits;
+                    });
+                }
+            })
+            .catch(() => {});
     </script>
 </body>
 </html>

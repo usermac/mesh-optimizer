@@ -313,7 +313,7 @@ done</code></pre>
 
             <div class="cta-box">
                 <h3>Ready to Optimize for Shopify?</h3>
-                <p>Get 50 free credits to optimize your product models. Both GLB and USDZ output supported.</p>
+                <p>Get <span class="free-credits-count">50</span> free credits to optimize your product models. Both GLB and USDZ output supported.</p>
                 <a href="/" class="btn">Start Optimizing</a>
             </div>
 
@@ -341,6 +341,18 @@ done</code></pre>
             e.preventDefault();
             alert('Email signup coming soon! For now, try the optimizer at webdeliveryengine.com');
         });
+
+        // Fetch dynamic pricing config
+        fetch('/config')
+            .then(res => res.json())
+            .then(data => {
+                if (data.pricing && data.pricing.free_initial_credits !== undefined) {
+                    document.querySelectorAll('.free-credits-count').forEach(el => {
+                        el.textContent = data.pricing.free_initial_credits;
+                    });
+                }
+            })
+            .catch(() => {});
     </script>
 </body>
 </html>

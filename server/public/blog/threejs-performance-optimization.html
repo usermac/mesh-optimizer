@@ -456,7 +456,7 @@ fs.readdirSync(modelsDir)
 
             <div class="cta-box">
                 <h3>Optimize Models Before Loading</h3>
-                <p>Get 50 free credits to reduce polygon counts and compress textures. Your Three.js scenes will thank you.</p>
+                <p>Get <span class="free-credits-count">50</span> free credits to reduce polygon counts and compress textures. Your Three.js scenes will thank you.</p>
                 <a href="/" class="btn">Start Optimizing</a>
             </div>
 
@@ -484,6 +484,18 @@ fs.readdirSync(modelsDir)
             e.preventDefault();
             alert('Email signup coming soon! For now, try the optimizer at webdeliveryengine.com');
         });
+
+        // Fetch dynamic pricing config
+        fetch('/config')
+            .then(res => res.json())
+            .then(data => {
+                if (data.pricing && data.pricing.free_initial_credits !== undefined) {
+                    document.querySelectorAll('.free-credits-count').forEach(el => {
+                        el.textContent = data.pricing.free_initial_credits;
+                    });
+                }
+            })
+            .catch(() => {});
     </script>
 </body>
 </html>

@@ -446,7 +446,7 @@ main().catch(console.error);</code></pre>
 
             <div class="cta-box">
                 <h3>Convert & Optimize in One Step</h3>
-                <p>Upload your OBJ files (or ZIPs) and get optimized GLB output. 50 free credits to start.</p>
+                <p>Upload your OBJ files (or ZIPs) and get optimized GLB output. <span class="free-credits-count">50</span> free credits to start.</p>
                 <a href="/" class="btn">Start Converting</a>
             </div>
 
@@ -474,6 +474,18 @@ main().catch(console.error);</code></pre>
             e.preventDefault();
             alert('Email signup coming soon! For now, try the optimizer at webdeliveryengine.com');
         });
+
+        // Fetch dynamic pricing config
+        fetch('/config')
+            .then(res => res.json())
+            .then(data => {
+                if (data.pricing && data.pricing.free_initial_credits !== undefined) {
+                    document.querySelectorAll('.free-credits-count').forEach(el => {
+                        el.textContent = data.pricing.free_initial_credits;
+                    });
+                }
+            })
+            .catch(() => {});
     </script>
 </body>
 </html>

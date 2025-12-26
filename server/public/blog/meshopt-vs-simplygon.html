@@ -402,7 +402,7 @@
 
             <div class="cta-box">
                 <h3>Try MeshOpt Free</h3>
-                <p>50 free credits to test on your models. No sales call required.</p>
+                <p><span class="free-credits-count">50</span> free credits to test on your models. No sales call required.</p>
                 <a href="/" class="btn">Get Free Credits</a>
             </div>
 
@@ -430,6 +430,18 @@
             e.preventDefault();
             alert('Email signup coming soon! For now, try the optimizer at webdeliveryengine.com');
         });
+
+        // Fetch dynamic pricing config
+        fetch('/config')
+            .then(res => res.json())
+            .then(data => {
+                if (data.pricing && data.pricing.free_initial_credits !== undefined) {
+                    document.querySelectorAll('.free-credits-count').forEach(el => {
+                        el.textContent = data.pricing.free_initial_credits;
+                    });
+                }
+            })
+            .catch(() => {});
     </script>
 </body>
 </html>

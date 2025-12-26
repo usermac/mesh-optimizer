@@ -1,5 +1,5 @@
 {
-  "generated": "2025-12-24T17:59:55.118Z",
+  "generated": "2025-12-26T23:30:15.479Z",
   "version": "1.0",
   "entries": [
     {
@@ -24,7 +24,12 @@
       "modalName": "Help & Guide",
       "section": null,
       "context": "Why is my model white/grey? If you uploaded an .obj file and the result has no color, you likely forgot the texture files! The Rule: OBJ files need their associated material file ( .mtl ) and texture",
-      "keywords": [".obj", ".mtl", ".jpg", ".png"]
+      "keywords": [
+        ".obj",
+        ".mtl",
+        ".jpg",
+        ".png"
+      ]
     },
     {
       "text": "How to fix it:",
@@ -32,7 +37,13 @@
       "modalName": "Help & Guide",
       "section": null,
       "context": "How to fix it: Option 1 (Recommended): Create a .zip file containing your model.obj , model.mtl , and all texture images. Drag the ZIP onto the upload area. This keeps everything organized together. O",
-      "keywords": [".zip", "model.obj", "model.mtl", ".obj", ".glb"]
+      "keywords": [
+        ".zip",
+        "model.obj",
+        "model.mtl",
+        ".obj",
+        ".glb"
+      ]
     },
     {
       "text": "Which Mode Should I Use?",
@@ -48,7 +59,9 @@
       "modalName": "Help & Guide",
       "section": null,
       "context": "Standard Decimation Cost: 1 Credit Best for: Reducing file size while keeping the exact same geometry structure. Good for CAD models or models that are already clean. How it works: It simply removes p",
-      "keywords": ["cost:"]
+      "keywords": [
+        "cost:"
+      ]
     },
     {
       "text": "Premium Remesh (Bake)",
@@ -56,7 +69,9 @@
       "modalName": "Help & Guide",
       "section": null,
       "context": "Premium Remesh (Bake) Cost: 2 Credits Best for: 3D Scans, Photogrammetry, and Organic shapes. How it works: It builds a brand new \"clean\" mesh (Retopology) and \"bakes\" the details from the high-qualit",
-      "keywords": ["cost:"]
+      "keywords": [
+        "cost:"
+      ]
     },
     {
       "text": "Supported File Formats",
@@ -80,7 +95,10 @@
       "modalName": "Help & Guide",
       "section": null,
       "context": "Pricing & Credits We use a simple credit system. You purchase a pack of credits, and they are deducted when you run a job. ALREADY HAVE CREDITS? BUYING MORE ADDS TO YOUR CREDIT BALANCE. - Failed Jobs:",
-      "keywords": ["re-runs:", "free"]
+      "keywords": [
+        "re-runs:",
+        "free"
+      ]
     },
     {
       "text": "Workflow Overview",
@@ -133,7 +151,9 @@
       "modalName": "API Documentation",
       "section": null,
       "context": "Response (Success - 200) { \"jobId\": \"1734012345678\", \"status\": \"processing\" } Header X-Credits-Remaining contains your updated balance.",
-      "keywords": ["x-credits-remaining"]
+      "keywords": [
+        "x-credits-remaining"
+      ]
     },
     {
       "text": "Error Responses",
@@ -141,7 +161,11 @@
       "modalName": "API Documentation",
       "section": null,
       "context": "Error Responses Status Meaning 400 Bad request (no valid 3D model, missing external buffers, etc.) 401 Unauthorized (invalid or missing API key) 402 Payment required (insufficient credits)",
-      "keywords": ["400", "401", "402"]
+      "keywords": [
+        "400",
+        "401",
+        "402"
+      ]
     },
     {
       "text": "GET /job/:id",
@@ -157,7 +181,9 @@
       "modalName": "API Documentation",
       "section": null,
       "context": "Response (Processing) { \"status\": \"Processing\" }",
-      "keywords": ["{ \"status\": \"processing\" }"]
+      "keywords": [
+        "{ \"status\": \"processing\" }"
+      ]
     },
     {
       "text": "Response (Completed)",
@@ -165,7 +191,11 @@
       "modalName": "API Documentation",
       "section": null,
       "context": "Response (Completed) { \"status\": { \"Completed\": { \"output_size\": 245678, \"glb_url\": \"/download/1734012345678/model_opt.glb\", \"usdz_url\": \"/download/1734012345678/model_opt.usdz\", \"expires_at\": \"2024-1",
-      "keywords": ["remesh_method", "\"quadriflow\"", "\"decimate\""]
+      "keywords": [
+        "remesh_method",
+        "\"quadriflow\"",
+        "\"decimate\""
+      ]
     },
     {
       "text": "Response (Failed)",
@@ -181,7 +211,9 @@
       "modalName": "API Documentation",
       "section": null,
       "context": "Webhooks If you provide a callback_url when submitting a job, we'll POST the result to your endpoint when the job completes or fails. This is ideal for batch processing where polling many jobs is impr",
-      "keywords": ["callback_url"]
+      "keywords": [
+        "callback_url"
+      ]
     },
     {
       "text": "Webhook Payload",
@@ -205,7 +237,9 @@
       "modalName": "API Documentation",
       "section": null,
       "context": "Response { \"credits\": 97 }",
-      "keywords": ["{ \"credits\": 97 }"]
+      "keywords": [
+        "{ \"credits\": 97 }"
+      ]
     },
     {
       "text": "GET /history",
@@ -229,7 +263,13 @@
       "modalName": "API Documentation",
       "section": null,
       "context": "Error Codes Status Meaning 400 Bad Request — No supported 3D model found in upload 401 Unauthorized — Missing or invalid API key 402 Payment Required — Insufficient credits 404 Not Found — Job ID or r",
-      "keywords": ["400", "401", "402", "404", "500"]
+      "keywords": [
+        "400",
+        "401",
+        "402",
+        "404",
+        "500"
+      ]
     },
     {
       "text": "Billing Notes",
@@ -237,7 +277,10 @@
       "modalName": "API Documentation",
       "section": null,
       "context": "Billing Notes - Decimate costs 1 credit per job - Remesh costs 2 credits per job",
-      "keywords": ["decimate", "remesh"]
+      "keywords": [
+        "decimate",
+        "remesh"
+      ]
     },
     {
       "text": "Quick Start Example",
@@ -268,7 +311,9 @@
       "modalName": "API Code Generator",
       "section": null,
       "context": "API Command cURL Python PowerShell Copy Copied to clipboard! PowerShell Note: Save as .ps1 and run with powershell -ExecutionPolicy Bypass -File script.ps1",
-      "keywords": [".ps1"]
+      "keywords": [
+        ".ps1"
+      ]
     },
     {
       "text": "Batch Example",
@@ -284,7 +329,9 @@
       "modalName": "Batch Script Generator",
       "section": null,
       "context": "Current Settings Loading... &#9888; Do not paste into AI chatbots. These scripts may contain your personal API key. Paste your file paths below (one per line). We'll generate a complete script that up",
-      "keywords": ["paste file paths above to generate script..."]
+      "keywords": [
+        "paste file paths above to generate script..."
+      ]
     },
     {
       "text": "Windows PowerShell Note",
@@ -292,7 +339,9 @@
       "modalName": "Batch Script Generator",
       "section": null,
       "context": "Windows PowerShell Note PowerShell's default execution policy may block unsigned scripts. To run this script, use one of these methods: - One-time bypass: powershell -ExecutionPolicy Bypass -File scri",
-      "keywords": ["./output/"]
+      "keywords": [
+        "./output/"
+      ]
     },
     {
       "text": "Buy Credits",
@@ -300,14 +349,17 @@
       "modalName": "Buy Credits",
       "section": null,
       "context": "Buy Credits &times; API Key (optional) Purchase Amount (Adjust the slider): $50 $10 $500 You Get: 100 Credits What can you do with these credits? 100 Decimates $0.50 each 80 + 4 Mixed (80/20) 20 Remeshes $2.50 each ✨ Bonus credits start at $50! Cancel 🔒 Secured by Stripe Pay with Stripe →",
-      "keywords": ["$50", "stripe"]
+      "keywords": [
+        "$50",
+        "stripe"
+      ]
     },
     {
       "text": "Transaction History",
       "modal": "historyModal",
       "modalName": "Transaction History",
       "section": null,
-      "context": "Transaction History Remaining Credits: -- &times; Download CSV &#9432; Date Activity Amount &copy; 2025 Brian Ginn. All rights reserved. Terms of Service Privacy Policy API Docs Contact & Enterprise ♿ Accessibility",
+      "context": "Transaction History Remaining Credits: -- &times; Download CSV &#9432; Date Activity Amount &copy; 2025 Brian Ginn. All rights reserved. Tools Blog Terms of Service Privacy Policy API Docs Contact & Enterprise ♿ Accessibility",
       "keywords": []
     },
     {
@@ -340,7 +392,9 @@
       "modalName": "Privacy Policy",
       "section": null,
       "context": "3. How We Use Your Information Service Provision: To provide the 3D optimization service, manage your credit balance, and authenticate your API requests. Communications: To send transaction receipts,",
-      "keywords": ["communications:"]
+      "keywords": [
+        "communications:"
+      ]
     },
     {
       "text": "4. 3D File Handling & Security",
@@ -348,7 +402,9 @@
       "modalName": "Privacy Policy",
       "section": null,
       "context": "4. 3D File Handling & Security Your Intellectual Property: You retain full ownership of all files you upload and the optimized files we generate. We claim no ownership rights. Processing: Files are tr",
-      "keywords": ["processing:"]
+      "keywords": [
+        "processing:"
+      ]
     },
     {
       "text": "5. Data Retention",
@@ -364,7 +420,10 @@
       "modalName": "Privacy Policy",
       "section": null,
       "context": "6. Third-Party Services Stripe: We use Stripe to process payments. We receive confirmation that payment succeeded and your email address. See Stripe's Privacy Policy . No Analytics or Tracking: We do",
-      "keywords": ["stripe:", "not"]
+      "keywords": [
+        "stripe:",
+        "not"
+      ]
     },
     {
       "text": "7. Your Rights",
@@ -372,7 +431,13 @@
       "modalName": "Privacy Policy",
       "section": null,
       "context": "7. Your Rights You have the right to: Access your personal data, Correct inaccurate data, Delete your account and data, Export your transaction history (available in the app), and Object to processing",
-      "keywords": ["access", "correct", "delete", "export", "object"]
+      "keywords": [
+        "access",
+        "correct",
+        "delete",
+        "export",
+        "object"
+      ]
     },
     {
       "text": "8. Security Measures",
@@ -388,7 +453,9 @@
       "modalName": "Privacy Policy",
       "section": null,
       "context": "9. Cookies & Tracking We use minimal session storage for authentication state. We do NOT use analytics cookies, advertising cookies, social media tracking pixels, cross-site tracking, or third-party c",
-      "keywords": ["not"]
+      "keywords": [
+        "not"
+      ]
     },
     {
       "text": "10. Changes to This Policy",
@@ -428,7 +495,9 @@
       "modalName": "Terms of Service",
       "section": null,
       "context": "3. Credits and Payment Credit System: The Service operates on a prepaid credit system. Credits are purchased through Stripe and deducted when optimization jobs are processed. Credit Expiration: Purcha",
-      "keywords": ["pricing:"]
+      "keywords": [
+        "pricing:"
+      ]
     },
     {
       "text": "4. Refund Policy",
@@ -444,7 +513,10 @@
       "modalName": "Terms of Service",
       "section": null,
       "context": "5. Your Content Ownership: You retain full ownership of all 3D files you upload and the optimized files we generate. We claim no intellectual property rights over your content. License to Process: By",
-      "keywords": ["ownership:", "deletion:"]
+      "keywords": [
+        "ownership:",
+        "deletion:"
+      ]
     },
     {
       "text": "6. Acceptable Use",
@@ -468,7 +540,9 @@
       "modalName": "Terms of Service",
       "section": null,
       "context": "8. Service Availability As-Is Basis: The Service is provided \"as is\" and \"as available\" without warranties of any kind, either express or implied. No Uptime Guarantee: We do not guarantee uninterrupte",
-      "keywords": ["modifications:"]
+      "keywords": [
+        "modifications:"
+      ]
     },
     {
       "text": "9. Limitation of Liability",
@@ -516,6 +590,14 @@
       "modalName": "Get Free Credits",
       "section": null,
       "context": "Get Free Credits &times; Try MeshOpt for free! Enter your email below and we'll send you an API key with -- free credits. &#10003; Check your email! We've sent your free API key. Paste it in the API KEY field to get started. &#10003; Welcome back! You already have an account. Your API key has been r",
+      "keywords": []
+    },
+    {
+      "text": "v1.0.3beta (2025-12-26)",
+      "modal": "changelogModal",
+      "modalName": "Changelog",
+      "section": null,
+      "context": "v1.0.3beta (2025-12-26) - GLB Inspector Enhanced: Added interactive 3D preview viewport with orbit controls, animation playback, scene hierarchy tree, and optimization recommendations. - New Tool - Po",
       "keywords": []
     },
     {
@@ -582,7 +664,13 @@
       "modalName": "Main Page",
       "section": "ratio",
       "context": "Adjust the quality ratio for decimation. Lower means less detail, higher means more detail.",
-      "keywords": ["quality", "ratio", "slider", "percentage", "detail"]
+      "keywords": [
+        "quality",
+        "ratio",
+        "slider",
+        "percentage",
+        "detail"
+      ]
     },
     {
       "text": "Target Faces",
@@ -590,7 +678,13 @@
       "modalName": "Main Page",
       "section": "targetFaces",
       "context": "Set the target number of faces for remesh mode.",
-      "keywords": ["faces", "target", "count", "polygon", "remesh"]
+      "keywords": [
+        "faces",
+        "target",
+        "count",
+        "polygon",
+        "remesh"
+      ]
     },
     {
       "text": "Texture Size",
@@ -614,7 +708,14 @@
       "modalName": "Main Page",
       "section": "apiKey",
       "context": "Enter your API key to authenticate. Keys start with sk_ or fr_.",
-      "keywords": ["api", "key", "authentication", "sk_", "fr_", "login"]
+      "keywords": [
+        "api",
+        "key",
+        "authentication",
+        "sk_",
+        "fr_",
+        "login"
+      ]
     },
     {
       "text": "Material and Textures",
@@ -622,7 +723,15 @@
       "modalName": "Main Page",
       "section": "objInputs",
       "context": "For OBJ files, add optional .mtl material file and texture images.",
-      "keywords": ["material", "mtl", "texture", "obj", "png", "jpg", "images"]
+      "keywords": [
+        "material",
+        "mtl",
+        "texture",
+        "obj",
+        "png",
+        "jpg",
+        "images"
+      ]
     }
   ]
 }
