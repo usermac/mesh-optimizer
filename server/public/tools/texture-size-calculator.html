@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Texture Size Calculator - Optimal Resolution Guide | MeshOpt</title>
+    <meta name="description" content="Calculate the optimal texture resolution for your 3D models. Get recommendations based on screen coverage, viewing distance, and memory constraints." />
+    <meta name="keywords" content="texture size, texture resolution, 3d texture optimization, gpu memory, texel density, pbr textures" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://webdeliveryengine.com/tools/texture-size-calculator.html" />
+    <meta property="og:title" content="Texture Size Calculator - Optimal Resolution Guide" />
+    <meta property="og:description" content="Calculate the optimal texture resolution based on screen coverage and memory constraints." />
+
+    <link rel="canonical" href="https://webdeliveryengine.com/tools/texture-size-calculator.html" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <style>
+        .calculator-form {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .form-group label {
+            font-family: var(--cp-font-display);
+            font-size: 0.75rem;
+            color: var(--cp-text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0;
+        }
+        .form-group select,
+        .form-group input {
+            background: #000;
+            border: 1px solid var(--cp-border);
+            color: var(--cp-text);
+            padding: 14px 16px;
+            font-family: var(--cp-font-display);
+            font-size: 0.95rem;
+            width: 100%;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+            border-radius: 0;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        .form-group select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2300d4ff' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            padding-right: 44px;
+            cursor: pointer;
+        }
+        .form-group select:focus,
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--cp-accent);
+        }
+        .form-group .hint {
+            font-size: 0.75rem;
+            color: var(--cp-text-dim);
+            margin-top: 4px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        @media (max-width: 500px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+        .calculate-btn {
+            background: var(--cp-accent);
+            color: #000;
+            border: none;
+            padding: 16px 32px;
+            font-family: var(--cp-font-display);
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 8px;
+        }
+        .calculate-btn:hover {
+            background: var(--cp-accent-secondary);
+        }
+
+        /* Slider styling */
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .slider-row input[type="range"] {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 4px;
+            background: var(--cp-border);
+            border: none;
+            padding: 0;
+            cursor: pointer;
+        }
+        .slider-row input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--cp-accent);
+            border-radius: 0;
+            cursor: pointer;
+        }
+        .slider-row input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: var(--cp-accent);
+            border: none;
+            border-radius: 0;
+            cursor: pointer;
+        }
+        .slider-value {
+            font-family: var(--cp-font-display);
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--cp-accent);
+            min-width: 60px;
+            text-align: right;
+        }
+
+        /* Results */
+        .texture-results {
+            background: #000;
+            border: 1px solid var(--cp-border);
+            padding: 32px;
+            margin-top: 32px;
+            position: relative;
+            display: none;
+        }
+        .texture-results.show {
+            display: block;
+            animation: fadeInUp 0.4s ease;
+        }
+        .texture-results::before {
+            content: 'RECOMMENDED TEXTURES';
+            position: absolute;
+            top: -10px;
+            left: 16px;
+            background: #000;
+            color: var(--cp-accent);
+            font-family: var(--cp-font-display);
+            font-size: 0.65rem;
+            font-weight: 600;
+            padding: 2px 8px;
+            letter-spacing: 2px;
+        }
+        .result-hero {
+            text-align: center;
+            padding: 32px 0;
+            border-bottom: 1px solid var(--cp-border);
+            margin-bottom: 24px;
+        }
+        .result-hero .label {
+            font-family: var(--cp-font-display);
+            font-size: 0.75rem;
+            color: var(--cp-text-dim);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+        .result-hero .size {
+            font-family: var(--cp-font-display);
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: var(--cp-accent);
+            line-height: 1;
+        }
+        .result-hero .size span {
+            font-size: 1.5rem;
+            color: var(--cp-text-dim);
+            font-weight: 400;
+        }
+        .result-hero .subtext {
+            font-size: 0.9rem;
+            color: var(--cp-text-dim);
+            margin-top: 12px;
+        }
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .result-item {
+            background: rgba(0, 212, 255, 0.03);
+            border: 1px solid var(--cp-border);
+            padding: 16px;
+            text-align: center;
+        }
+        .result-item .label {
+            font-family: var(--cp-font-display);
+            font-size: 0.65rem;
+            color: var(--cp-text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+        .result-item .value {
+            font-family: var(--cp-font-display);
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--cp-text);
+        }
+        .result-item .value.good { color: var(--cp-success); }
+        .result-item .value.warning { color: var(--cp-warning); }
+        .result-item .value.bad { color: var(--cp-danger); }
+        .result-item.secondary .value {
+            color: var(--cp-accent-secondary);
+        }
+
+        /* Size comparison */
+        .size-comparison {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            padding: 24px 0;
+            border-bottom: 1px solid var(--cp-border);
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .size-option {
+            text-align: center;
+            padding: 16px 24px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--cp-border);
+            min-width: 100px;
+            transition: all 0.2s;
+        }
+        .size-option.recommended {
+            border-color: var(--cp-accent);
+            background: rgba(0, 212, 255, 0.05);
+        }
+        .size-option.overkill {
+            opacity: 0.5;
+        }
+        .size-option .res {
+            font-family: var(--cp-font-display);
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--cp-text);
+            margin-bottom: 4px;
+        }
+        .size-option.recommended .res {
+            color: var(--cp-accent);
+        }
+        .size-option .mem {
+            font-size: 0.75rem;
+            color: var(--cp-text-dim);
+        }
+        .size-option .tag {
+            font-family: var(--cp-font-display);
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 8px;
+            padding: 4px 8px;
+            background: var(--cp-accent);
+            color: #000;
+        }
+        .size-option.overkill .tag {
+            background: var(--cp-text-dim);
+            color: #000;
+        }
+
+        /* Tips section */
+        .result-tips {
+            background: rgba(180, 248, 74, 0.03);
+            border: 1px solid var(--cp-border);
+            border-left: 3px solid var(--cp-accent-secondary);
+            padding: 20px;
+            margin-top: 24px;
+        }
+        .result-tips h4 {
+            font-family: var(--cp-font-display);
+            font-size: 0.8rem;
+            color: var(--cp-accent-secondary);
+            margin: 0 0 12px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .result-tips ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .result-tips li {
+            font-size: 0.9rem;
+            color: var(--cp-text);
+            padding: 8px 0;
+            padding-left: 20px;
+            position: relative;
+            line-height: 1.5;
+            border-bottom: 1px solid var(--cp-border);
+        }
+        .result-tips li:last-child {
+            border-bottom: none;
+        }
+        .result-tips li::before {
+            content: '>';
+            position: absolute;
+            left: 0;
+            color: var(--cp-accent-secondary);
+            font-family: var(--cp-font-display);
+        }
+
+        /* Presets */
+        .presets {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+        .preset-btn {
+            background: rgba(0, 212, 255, 0.05);
+            border: 1px solid var(--cp-border);
+            color: var(--cp-text-dim);
+            padding: 8px 16px;
+            font-family: var(--cp-font-display);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .preset-btn:hover {
+            border-color: var(--cp-accent);
+            color: var(--cp-accent);
+            background: rgba(0, 212, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="content-page">
+    <header class="site-header">
+        <a href="/" class="logo">MeshOpt</a>
+        <nav>
+            <a href="/">Optimizer</a>
+            <a href="/tools/">Tools</a>
+            <a href="/blog/">Blog</a>
+        </nav>
+    </header>
+
+    <main>
+        <nav class="breadcrumb">
+            <a href="/">Home</a>
+            <span class="separator">/</span>
+            <a href="/tools/">Tools</a>
+            <span class="separator">/</span>
+            <span class="current">Texture Size Calculator</span>
+        </nav>
+
+        <div class="article-header">
+            <h1>Texture Size Calculator</h1>
+            <p>Find the optimal texture resolution for your 3D models. Bigger isn't always better - oversized textures waste memory and bandwidth without visible improvement.</p>
+        </div>
+
+        <div class="tool-container">
+            <div class="presets">
+                <button class="preset-btn" data-preset="product-hero">Product Hero</button>
+                <button class="preset-btn" data-preset="ecommerce">E-commerce Grid</button>
+                <button class="preset-btn" data-preset="mobile-ar">Mobile AR</button>
+                <button class="preset-btn" data-preset="environment">Environment</button>
+                <button class="preset-btn" data-preset="game-prop">Game Prop</button>
+            </div>
+
+            <form class="calculator-form" id="calculatorForm">
+                <div class="form-group">
+                    <label>Screen Coverage</label>
+                    <div class="slider-container">
+                        <div class="slider-row">
+                            <input type="range" id="screenCoverage" min="5" max="100" value="50" />
+                            <span class="slider-value" id="coverageValue">50%</span>
+                        </div>
+                        <div class="hint">How much of the screen does the object fill? A hero product might fill 50-80%, a background prop might be 5-10%.</div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="screenRes">Target Screen Resolution</label>
+                        <select id="screenRes" name="screenRes">
+                            <option value="720">720p (Mobile low-end)</option>
+                            <option value="1080" selected>1080p (Full HD)</option>
+                            <option value="1440">1440p (2K)</option>
+                            <option value="2160">2160p (4K)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="platform">Platform</label>
+                        <select id="platform" name="platform">
+                            <option value="mobile">Mobile</option>
+                            <option value="desktop" selected>Desktop Web</option>
+                            <option value="vr">VR</option>
+                            <option value="console">Console/Native</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="textureCount">Textures Per Material</label>
+                        <select id="textureCount" name="textureCount">
+                            <option value="1">1 (Diffuse only)</option>
+                            <option value="2">2 (Diffuse + Normal)</option>
+                            <option value="3" selected>3 (Diffuse + Normal + Roughness)</option>
+                            <option value="5">5 (Full PBR set)</option>
+                            <option value="6">6+ (PBR + Emissive/AO)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="materialCount">Number of Materials</label>
+                        <input type="number" id="materialCount" value="1" min="1" max="20" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="memoryBudget">Texture Memory Budget</label>
+                    <select id="memoryBudget" name="memoryBudget">
+                        <option value="64">64 MB (Mobile strict)</option>
+                        <option value="128" selected>128 MB (Mobile standard)</option>
+                        <option value="256">256 MB (Desktop web)</option>
+                        <option value="512">512 MB (High-end)</option>
+                        <option value="1024">1 GB+ (Native apps)</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="calculate-btn">Calculate Optimal Size</button>
+            </form>
+
+            <div class="texture-results" id="results">
+                <div class="result-hero">
+                    <div class="label">Recommended Texture Size</div>
+                    <div class="size" id="recommendedSize">1024<span> x 1024</span></div>
+                    <div class="subtext" id="sizeReason">Based on screen coverage and platform constraints</div>
+                </div>
+
+                <div class="size-comparison" id="sizeComparison">
+                    <!-- Populated by JS -->
+                </div>
+
+                <div class="result-grid" id="resultGrid">
+                    <!-- Populated by JS -->
+                </div>
+
+                <div class="result-tips" id="resultTips">
+                    <h4>Optimization Tips</h4>
+                    <ul id="tipsList">
+                        <!-- Populated by JS -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="cta-box">
+            <h3>Need to Resize Textures?</h3>
+            <p>MeshOpt automatically optimizes textures during mesh processing - resizing, compressing, and converting to optimal formats.</p>
+            <a href="/" class="btn">Try MeshOpt Free</a>
+        </div>
+
+        <div class="email-capture">
+            <h3>Get 3D Optimization Tips</h3>
+            <p>Practical techniques for texture optimization and web delivery.</p>
+            <form class="email-capture-form" id="emailForm">
+                <input type="email" placeholder="your@email.com" required />
+                <button type="submit">Subscribe</button>
+            </form>
+            <p class="text-small" style="margin-top: 16px; margin-bottom: 0; opacity: 0.5;">No spam. Unsubscribe anytime.</p>
+        </div>
+
+        <section class="content-section">
+            <h2>Understanding Texture Sizes</h2>
+            <ul style="list-style: none; padding: 0; margin: 0;">
+                <li style="padding: 12px 0; border-bottom: 1px solid var(--cp-border); display: flex; gap: 16px;">
+                    <span style="color: var(--cp-accent); font-family: var(--cp-font-display); font-weight: 600; min-width: 100px;">256px</span>
+                    <span style="color: var(--cp-text-dim);">Tiny objects, distant props, icons. ~256KB uncompressed per texture.</span>
+                </li>
+                <li style="padding: 12px 0; border-bottom: 1px solid var(--cp-border); display: flex; gap: 16px;">
+                    <span style="color: var(--cp-accent); font-family: var(--cp-font-display); font-weight: 600; min-width: 100px;">512px</span>
+                    <span style="color: var(--cp-text-dim);">Small props, mobile games, thumbnails. ~1MB uncompressed per texture.</span>
+                </li>
+                <li style="padding: 12px 0; border-bottom: 1px solid var(--cp-border); display: flex; gap: 16px;">
+                    <span style="color: var(--cp-accent); font-family: var(--cp-font-display); font-weight: 600; min-width: 100px;">1024px</span>
+                    <span style="color: var(--cp-text-dim);">Standard for most web 3D. Good balance of quality and performance. ~4MB uncompressed.</span>
+                </li>
+                <li style="padding: 12px 0; border-bottom: 1px solid var(--cp-border); display: flex; gap: 16px;">
+                    <span style="color: var(--cp-accent); font-family: var(--cp-font-display); font-weight: 600; min-width: 100px;">2048px</span>
+                    <span style="color: var(--cp-text-dim);">Hero products, close-up views, desktop-only experiences. ~16MB uncompressed.</span>
+                </li>
+                <li style="padding: 12px 0; display: flex; gap: 16px;">
+                    <span style="color: var(--cp-accent); font-family: var(--cp-font-display); font-weight: 600; min-width: 100px;">4096px</span>
+                    <span style="color: var(--cp-text-dim);">Rarely needed for web. Film/archviz only. ~64MB uncompressed - will crash mobile devices.</span>
+                </li>
+            </ul>
+        </section>
+    </main>
+
+    <footer class="main-footer">
+        <p>&copy; 2025 Brian Ginn. All rights reserved.</p>
+        <a href="/">MeshOpt</a>
+        <a href="/tools/">Tools</a>
+        <a href="/blog/">Blog</a>
+    </footer>
+
+    <script>
+        // Texture sizes in pixels
+        const SIZES = [256, 512, 1024, 2048, 4096];
+
+        // Memory per texture (uncompressed RGBA)
+        function getMemoryMB(size) {
+            return (size * size * 4) / (1024 * 1024);
+        }
+
+        // Platform memory multipliers (compressed texture support)
+        const platformCompression = {
+            mobile: 0.25,    // Good compression support (ASTC, ETC2)
+            desktop: 0.5,    // Moderate compression (S3TC, BC)
+            vr: 0.25,        // Same as mobile for Quest
+            console: 0.5     // Moderate compression
+        };
+
+        // Calculate optimal texture size based on screen coverage
+        function calculateOptimalSize(screenCoverage, screenRes, platform) {
+            // The object takes up X% of the screen
+            // The screen is Y pixels
+            // Therefore the object is X% * Y pixels
+            const objectPixels = (screenCoverage / 100) * screenRes;
+
+            // Find the closest power-of-2 texture size
+            // We want roughly 1:1 texel density at max zoom
+            let optimal = 256;
+            for (const size of SIZES) {
+                if (size <= objectPixels * 1.5) {  // Allow some headroom
+                    optimal = size;
+                }
+            }
+
+            // Platform caps
+            const platformCaps = {
+                mobile: 1024,
+                desktop: 2048,
+                vr: 1024,
+                console: 4096
+            };
+
+            return Math.min(optimal, platformCaps[platform]);
+        }
+
+        // Slider update
+        const slider = document.getElementById('screenCoverage');
+        const coverageValue = document.getElementById('coverageValue');
+        slider.addEventListener('input', () => {
+            coverageValue.textContent = slider.value + '%';
+        });
+
+        function calculate() {
+            const screenCoverage = parseInt(document.getElementById('screenCoverage').value);
+            const screenRes = parseInt(document.getElementById('screenRes').value);
+            const platform = document.getElementById('platform').value;
+            const textureCount = parseInt(document.getElementById('textureCount').value);
+            const materialCount = parseInt(document.getElementById('materialCount').value);
+            const memoryBudget = parseInt(document.getElementById('memoryBudget').value);
+
+            const optimalSize = calculateOptimalSize(screenCoverage, screenRes, platform);
+            const compression = platformCompression[platform];
+
+            // Memory calculations
+            const memPerTexture = getMemoryMB(optimalSize) * compression;
+            const totalTextures = textureCount * materialCount;
+            const totalMemory = memPerTexture * totalTextures;
+            const memoryPercent = (totalMemory / memoryBudget) * 100;
+
+            // Check if we need to reduce size due to memory
+            let finalSize = optimalSize;
+            let memoryWarning = false;
+            if (memoryPercent > 80) {
+                memoryWarning = true;
+                // Try smaller sizes
+                for (let i = SIZES.indexOf(optimalSize) - 1; i >= 0; i--) {
+                    const testMem = getMemoryMB(SIZES[i]) * compression * totalTextures;
+                    if ((testMem / memoryBudget) * 100 <= 60) {
+                        finalSize = SIZES[i];
+                        break;
+                    }
+                }
+            }
+
+            const finalMemPerTex = getMemoryMB(finalSize) * compression;
+            const finalTotalMem = finalMemPerTex * totalTextures;
+            const finalMemPercent = (finalTotalMem / memoryBudget) * 100;
+
+            // Update hero
+            document.getElementById('recommendedSize').innerHTML =
+                `${finalSize}<span> x ${finalSize}</span>`;
+
+            let reason = '';
+            if (memoryWarning) {
+                reason = `Reduced from ${optimalSize}px due to memory constraints (${totalTextures} textures)`;
+            } else if (screenCoverage < 20) {
+                reason = 'Small screen coverage means smaller textures are sufficient';
+            } else if (screenCoverage > 70) {
+                reason = 'Large screen coverage requires higher resolution for sharp details';
+            } else {
+                reason = 'Balanced for your screen coverage and platform';
+            }
+            document.getElementById('sizeReason').textContent = reason;
+
+            // Size comparison
+            const comparisonEl = document.getElementById('sizeComparison');
+            let comparisonHtml = '';
+            for (const size of SIZES) {
+                const mem = getMemoryMB(size) * compression;
+                const isRecommended = size === finalSize;
+                const isOverkill = size > finalSize;
+                const classes = isRecommended ? 'recommended' : (isOverkill ? 'overkill' : '');
+
+                comparisonHtml += `
+                    <div class="size-option ${classes}">
+                        <div class="res">${size}px</div>
+                        <div class="mem">${mem.toFixed(1)} MB each</div>
+                        ${isRecommended ? '<div class="tag">Recommended</div>' : ''}
+                        ${isOverkill ? '<div class="tag">Overkill</div>' : ''}
+                    </div>
+                `;
+            }
+            comparisonEl.innerHTML = comparisonHtml;
+
+            // Stats grid
+            const memClass = finalMemPercent > 70 ? 'warning' : (finalMemPercent < 40 ? 'good' : '');
+            document.getElementById('resultGrid').innerHTML = `
+                <div class="result-item">
+                    <div class="label">Per Texture</div>
+                    <div class="value">${finalMemPerTex.toFixed(1)} MB</div>
+                </div>
+                <div class="result-item">
+                    <div class="label">Total Textures</div>
+                    <div class="value">${totalTextures}</div>
+                </div>
+                <div class="result-item">
+                    <div class="label">Total Memory</div>
+                    <div class="value ${memClass}">${finalTotalMem.toFixed(1)} MB</div>
+                </div>
+                <div class="result-item">
+                    <div class="label">Budget Used</div>
+                    <div class="value ${memClass}">${finalMemPercent.toFixed(0)}%</div>
+                </div>
+            `;
+
+            // Tips
+            const tips = [];
+            if (textureCount >= 5) {
+                tips.push('With a full PBR set, consider channel packing (e.g., roughness + metallic + AO in one RGB texture)');
+            }
+            if (materialCount > 3) {
+                tips.push('Multiple materials increase draw calls. Consider texture atlasing to combine materials');
+            }
+            if (finalSize >= 2048) {
+                tips.push('At 2K+ resolution, ensure you\'re using GPU-compressed formats (KTX2 with Basis/UASTC)');
+            }
+            if (platform === 'mobile' && finalSize > 1024) {
+                tips.push('Mobile devices may struggle with textures larger than 1024px. Test on real hardware');
+            }
+            if (screenCoverage < 15 && finalSize > 512) {
+                tips.push('For small screen coverage, 512px or even 256px textures are often sufficient');
+            }
+            if (finalMemPercent > 50) {
+                tips.push('You\'re using over half your texture budget. Leave room for UI, environment, and other assets');
+            }
+            if (tips.length === 0) {
+                tips.push('Your texture configuration looks well-optimized for the target platform');
+            }
+
+            document.getElementById('tipsList').innerHTML = tips.map(tip => `<li>${tip}</li>`).join('');
+
+            // Show results
+            document.getElementById('results').classList.add('show');
+        }
+
+        // Form submission
+        document.getElementById('calculatorForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            calculate();
+        });
+
+        // Presets
+        const presets = {
+            'product-hero': { coverage: 70, screenRes: '1080', platform: 'desktop', textureCount: '3', materialCount: 1, memoryBudget: '256' },
+            'ecommerce': { coverage: 30, screenRes: '1080', platform: 'desktop', textureCount: '3', materialCount: 1, memoryBudget: '128' },
+            'mobile-ar': { coverage: 50, screenRes: '1080', platform: 'mobile', textureCount: '3', materialCount: 1, memoryBudget: '64' },
+            'environment': { coverage: 10, screenRes: '1080', platform: 'desktop', textureCount: '3', materialCount: 5, memoryBudget: '256' },
+            'game-prop': { coverage: 15, screenRes: '1080', platform: 'mobile', textureCount: '2', materialCount: 1, memoryBudget: '128' }
+        };
+
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const preset = presets[this.dataset.preset];
+                document.getElementById('screenCoverage').value = preset.coverage;
+                document.getElementById('coverageValue').textContent = preset.coverage + '%';
+                document.getElementById('screenRes').value = preset.screenRes;
+                document.getElementById('platform').value = preset.platform;
+                document.getElementById('textureCount').value = preset.textureCount;
+                document.getElementById('materialCount').value = preset.materialCount;
+                document.getElementById('memoryBudget').value = preset.memoryBudget;
+                calculate();
+            });
+        });
+
+        // Email form
+        document.getElementById('emailForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('Email signup coming soon! For now, try the optimizer at webdeliveryengine.com');
+        });
+    </script>
+</body>
+</html>
