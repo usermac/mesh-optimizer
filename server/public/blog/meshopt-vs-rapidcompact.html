@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>MeshOpt vs RapidCompact: Choosing the Right Cloud 3D Optimizer | MeshOpt</title>
+    <meta name="description" content="Compare MeshOpt and RapidCompact for cloud-based 3D optimization. Both handle web delivery - see which fits your volume and budget." />
+    <meta name="keywords" content="rapidcompact alternative, rapidcompact pricing, rapidcompact vs, cloud 3d optimization, web 3d optimization" />
+
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://webdeliveryengine.com/blog/meshopt-vs-rapidcompact.html" />
+    <meta property="og:title" content="MeshOpt vs RapidCompact: Choosing the Right Cloud 3D Optimizer" />
+    <meta property="og:description" content="Compare two cloud-based 3D optimization platforms for web delivery." />
+
+    <link rel="canonical" href="https://webdeliveryengine.com/blog/meshopt-vs-rapidcompact.html" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <style>
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 32px 0;
+        }
+        .comparison-table th,
+        .comparison-table td {
+            padding: 16px;
+            text-align: left;
+            border: 1px solid var(--cp-border);
+        }
+        .comparison-table th {
+            background: rgba(0, 212, 255, 0.05);
+            font-family: var(--cp-font-display);
+            font-weight: 600;
+            color: var(--cp-text);
+        }
+        .comparison-table th:first-child {
+            width: 30%;
+        }
+        .comparison-table td:nth-child(2),
+        .comparison-table td:nth-child(3) {
+            width: 35%;
+        }
+        .comparison-table .header-rapidcompact {
+            color: #7b68ee;
+        }
+        .comparison-table .header-meshopt {
+            color: var(--cp-accent);
+        }
+        .check {
+            color: var(--cp-success);
+        }
+        .partial {
+            color: var(--cp-warning);
+        }
+        .verdict-box {
+            background: rgba(0, 212, 255, 0.03);
+            border: 1px solid var(--cp-border);
+            border-left: 4px solid var(--cp-accent);
+            padding: 24px;
+            margin: 32px 0;
+        }
+        .verdict-box h4 {
+            font-family: var(--cp-font-display);
+            font-size: 0.9rem;
+            color: var(--cp-accent);
+            margin: 0 0 12px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .verdict-box p {
+            margin: 0;
+            color: var(--cp-text);
+            line-height: 1.6;
+        }
+        .use-case-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin: 32px 0;
+        }
+        @media (max-width: 600px) {
+            .use-case-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .use-case-box {
+            background: #000;
+            border: 1px solid var(--cp-border);
+            padding: 24px;
+        }
+        .use-case-box.rapidcompact {
+            border-top: 3px solid #7b68ee;
+        }
+        .use-case-box.meshopt {
+            border-top: 3px solid var(--cp-accent);
+        }
+        .use-case-box h4 {
+            font-family: var(--cp-font-display);
+            font-size: 0.9rem;
+            margin: 0 0 16px 0;
+        }
+        .use-case-box.rapidcompact h4 {
+            color: #7b68ee;
+        }
+        .use-case-box.meshopt h4 {
+            color: var(--cp-accent);
+        }
+        .use-case-box ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .use-case-box li {
+            padding: 8px 0;
+            padding-left: 20px;
+            position: relative;
+            color: var(--cp-text-dim);
+            font-size: 0.9rem;
+        }
+        .use-case-box li::before {
+            content: '>';
+            position: absolute;
+            left: 0;
+            color: var(--cp-text-dim);
+            font-family: var(--cp-font-display);
+        }
+        .similar-box {
+            background: rgba(180, 248, 74, 0.03);
+            border: 1px solid rgba(180, 248, 74, 0.2);
+            padding: 20px;
+            margin: 24px 0;
+        }
+        .similar-box h4 {
+            font-family: var(--cp-font-display);
+            font-size: 0.85rem;
+            color: var(--cp-accent-secondary);
+            margin: 0 0 12px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .similar-box ul {
+            margin: 0;
+            padding-left: 20px;
+            color: var(--cp-text-dim);
+        }
+        .similar-box li {
+            margin: 8px 0;
+        }
+    </style>
+</head>
+<body class="content-page">
+    <header class="site-header">
+        <a href="/" class="logo">MeshOpt</a>
+        <nav>
+            <a href="/">Optimizer</a>
+            <a href="/tools/">Tools</a>
+            <a href="/blog/">Blog</a>
+        </nav>
+    </header>
+
+    <main>
+        <nav class="breadcrumb">
+            <a href="/">Home</a>
+            <span class="separator">/</span>
+            <a href="/blog/">Blog</a>
+            <span class="separator">/</span>
+            <span class="current">MeshOpt vs RapidCompact</span>
+        </nav>
+
+        <article>
+            <header class="article-header">
+                <h1>MeshOpt vs RapidCompact: Choosing the Right Cloud 3D Optimizer</h1>
+                <div class="article-meta">
+                    <span class="category">Comparison</span>
+                    <span>December 2025</span>
+                    <span>7 min read</span>
+                </div>
+            </header>
+
+            <div class="article-content">
+                <p>RapidCompact and MeshOpt are both cloud-based 3D optimization platforms focused on web delivery. Unlike comparisons with desktop tools like Blender or game-focused solutions like InstaLOD, these two serve similar markets.</p>
+
+                <p>So which one should you use? Here's an honest breakdown.</p>
+
+                <h2>What They Have in Common</h2>
+
+                <p>Before diving into differences, let's acknowledge the overlap:</p>
+
+                <div class="similar-box">
+                    <h4>Both Platforms Offer</h4>
+                    <ul>
+                        <li>Cloud-based processing (no local software)</li>
+                        <li>Web UI for drag-and-drop optimization</li>
+                        <li>REST API for automation</li>
+                        <li>GLB/GLTF as primary output format</li>
+                        <li>Polygon reduction (decimation)</li>
+                        <li>Texture compression and resizing</li>
+                        <li>Draco compression for GLB files</li>
+                        <li>Batch processing capabilities</li>
+                    </ul>
+                </div>
+
+                <p>If your needs are basic - upload GLB, reduce polygons, compress textures, download smaller GLB - both tools will work.</p>
+
+                <h2>Quick Comparison</h2>
+
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th class="header-rapidcompact">RapidCompact</th>
+                            <th class="header-meshopt">MeshOpt</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Target Market</td>
+                            <td>Enterprise, large e-commerce</td>
+                            <td>SMB, agencies, developers</td>
+                        </tr>
+                        <tr>
+                            <td>Pricing Model</td>
+                            <td>Enterprise contracts (contact sales)</td>
+                            <td>Pay-per-job (transparent pricing)</td>
+                        </tr>
+                        <tr>
+                            <td>Free Tier</td>
+                            <td>Limited trial</td>
+                            <td><span class="check">50 credits, no expiration</span></td>
+                        </tr>
+                        <tr>
+                            <td>Minimum Spend</td>
+                            <td>Enterprise minimum ($$$/month)</td>
+                            <td><span class="check">$0 (pay as you go)</span></td>
+                        </tr>
+                        <tr>
+                            <td>UV Optimization</td>
+                            <td><span class="check">UV repacking and atlas generation</span></td>
+                            <td>Preserves existing UVs</td>
+                        </tr>
+                        <tr>
+                            <td>Texture Atlas</td>
+                            <td><span class="check">Automatic atlas creation</span></td>
+                            <td>Not available</td>
+                        </tr>
+                        <tr>
+                            <td>LOD Generation</td>
+                            <td><span class="check">Multiple LOD levels</span></td>
+                            <td>Single output level</td>
+                        </tr>
+                        <tr>
+                            <td>Remeshing</td>
+                            <td>Decimation only</td>
+                            <td><span class="check">QuadriFlow retopology option</span></td>
+                        </tr>
+                        <tr>
+                            <td>Normal Baking</td>
+                            <td>Basic support</td>
+                            <td><span class="check">High-poly to low-poly baking</span></td>
+                        </tr>
+                        <tr>
+                            <td>USDZ Output</td>
+                            <td><span class="check">Direct conversion</span></td>
+                            <td><span class="check">Direct conversion</span></td>
+                        </tr>
+                        <tr>
+                            <td>Format Support</td>
+                            <td><span class="check">30+ formats</span></td>
+                            <td>OBJ, FBX, GLB, GLTF, ZIP</td>
+                        </tr>
+                        <tr>
+                            <td>Self-Hosted Option</td>
+                            <td><span class="check">On-premise deployment</span></td>
+                            <td>Cloud only</td>
+                        </tr>
+                        <tr>
+                            <td>API Documentation</td>
+                            <td>Enterprise access</td>
+                            <td><span class="check">Public, self-serve</span></td>
+                        </tr>
+                        <tr>
+                            <td>Signup Process</td>
+                            <td>Contact sales, demo call</td>
+                            <td><span class="check">Instant, self-serve</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h2>Where RapidCompact Wins</h2>
+
+                <h3>Enterprise Features</h3>
+
+                <p>RapidCompact is built for large organizations with complex requirements:</p>
+
+                <ul>
+                    <li><strong>UV Repacking</strong> - Automatically reorganize UV layouts for optimal texture usage</li>
+                    <li><strong>Texture Atlasing</strong> - Combine multiple textures into single atlas for fewer draw calls</li>
+                    <li><strong>Multi-Level LOD</strong> - Generate complete LOD chains in one pass</li>
+                    <li><strong>30+ Format Support</strong> - Handle legacy CAD formats, scans, and proprietary files</li>
+                    <li><strong>On-Premise Deployment</strong> - Run on your own infrastructure for data security</li>
+                </ul>
+
+                <p>If you're a large retailer processing 100,000+ SKUs with strict data governance requirements, RapidCompact's enterprise features matter.</p>
+
+                <h3>Established Track Record</h3>
+
+                <p>RapidCompact (from DGG - Darmstadt Graphics Group) has been in the 3D optimization space longer and has case studies with major automotive and retail brands. For enterprise procurement processes that require vendor stability and references, this matters.</p>
+
+                <h3>Comprehensive Format Support</h3>
+
+                <p>Need to process CAD files from Catia, Solidworks, or legacy formats? RapidCompact's broader format support handles more source types without pre-conversion.</p>
+
+                <h2>Where MeshOpt Wins</h2>
+
+                <h3>Transparent, Accessible Pricing</h3>
+
+                <p>RapidCompact requires contacting sales and negotiating enterprise contracts. MeshOpt's pricing is:</p>
+
+                <ul>
+                    <li>Published on the website</li>
+                    <li>No minimums or commitments</li>
+                    <li>Pay only for what you use</li>
+                    <li>50 free credits to start</li>
+                </ul>
+
+                <p>For freelancers, small agencies, and indie developers, "contact sales" is often a blocker. MeshOpt works for one-person shops and Fortune 500s equally.</p>
+
+                <h3>Instant Access</h3>
+
+                <p>No demo calls. No sales qualification. No procurement process.</p>
+
+                <pre><code># Start using the API in 5 minutes
+curl -X POST https://webdeliveryengine.com/optimize \
+    -H "X-API-Key: YOUR_KEY" \
+    -F "file=@model.glb" \
+    -F "quality=50" \
+    --output optimized.glb</code></pre>
+
+                <p>Sign up, get API key, start processing. Enterprise software often takes weeks to onboard.</p>
+
+                <h3>QuadriFlow Remeshing</h3>
+
+                <p>MeshOpt offers true retopology via QuadriFlow - not just decimation, but generating clean quad-based topology with normal map baking. This is valuable for:</p>
+
+                <ul>
+                    <li>Photogrammetry scans with messy topology</li>
+                    <li>CAD exports with poor triangulation</li>
+                    <li>Assets that need animation-ready topology</li>
+                </ul>
+
+                <p>RapidCompact focuses on decimation (reducing existing polygons) rather than remeshing (creating new topology).</p>
+
+                <h3>Cost at Lower Volumes</h3>
+
+                <p>Enterprise pricing means enterprise minimums. If you're processing 50-500 models per month, MeshOpt's pay-per-job model is significantly cheaper than enterprise contract minimums.</p>
+
+                <div class="verdict-box">
+                    <h4>Volume Economics</h4>
+                    <p>Enterprise contracts often start at $500-2,000/month minimum regardless of usage. At MeshOpt's pay-per-job rates, that covers 5,000-20,000 optimizations. Unless you're consistently at that volume, pay-per-job wins.</p>
+                </div>
+
+                <h2>Different Target Markets</h2>
+
+                <p>The fundamental difference is target customer:</p>
+
+                <div class="use-case-grid">
+                    <div class="use-case-box rapidcompact">
+                        <h4>RapidCompact's Sweet Spot</h4>
+                        <ul>
+                            <li>Enterprise e-commerce (10K+ SKUs)</li>
+                            <li>Automotive configurators</li>
+                            <li>Companies requiring on-premise</li>
+                            <li>Complex CAD-to-web pipelines</li>
+                            <li>Teams with procurement budgets</li>
+                            <li>Need for texture atlasing</li>
+                            <li>Multi-level LOD requirements</li>
+                        </ul>
+                    </div>
+                    <div class="use-case-box meshopt">
+                        <h4>MeshOpt's Sweet Spot</h4>
+                        <ul>
+                            <li>Agencies and freelancers</li>
+                            <li>Indie game developers</li>
+                            <li>Small-medium e-commerce</li>
+                            <li>Three.js / web 3D developers</li>
+                            <li>Variable or project-based volume</li>
+                            <li>Photogrammetry cleanup</li>
+                            <li>Quick turnaround needs</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h2>API Comparison</h2>
+
+                <p>Both offer REST APIs, but the experience differs:</p>
+
+                <h3>RapidCompact API</h3>
+                <ul>
+                    <li>Documentation requires enterprise account</li>
+                    <li>Comprehensive options for complex workflows</li>
+                    <li>Webhook callbacks for async processing</li>
+                    <li>Extensive parameter control</li>
+                </ul>
+
+                <h3>MeshOpt API</h3>
+                <ul>
+                    <li>Public documentation, instant access</li>
+                    <li>Simple parameters (quality slider)</li>
+                    <li>Synchronous responses for immediate results</li>
+                    <li>Minimal learning curve</li>
+                </ul>
+
+                <pre><code># MeshOpt: Simple API call
+response = requests.post(
+    'https://webdeliveryengine.com/optimize',
+    headers={'X-API-Key': API_KEY},
+    files={'file': open('model.glb', 'rb')},
+    data={'quality': 50}
+)
+optimized_model = response.content</code></pre>
+
+                <p>MeshOpt prioritizes simplicity. RapidCompact prioritizes configurability.</p>
+
+                <h2>When to Choose Each</h2>
+
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Scenario</th>
+                            <th class="header-rapidcompact">RapidCompact</th>
+                            <th class="header-meshopt">MeshOpt</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>You process 50,000+ models/year</td>
+                            <td><span class="check">Enterprise pricing makes sense</span></td>
+                            <td>Works, but volume pricing available</td>
+                        </tr>
+                        <tr>
+                            <td>You process &lt;1,000 models/year</td>
+                            <td>Likely overkill</td>
+                            <td><span class="check">Pay-per-job ideal</span></td>
+                        </tr>
+                        <tr>
+                            <td>Need texture atlasing</td>
+                            <td><span class="check">Built-in</span></td>
+                            <td>Not available</td>
+                        </tr>
+                        <tr>
+                            <td>Need true remeshing</td>
+                            <td>Decimation only</td>
+                            <td><span class="check">QuadriFlow retopology</span></td>
+                        </tr>
+                        <tr>
+                            <td>Data must stay on-premise</td>
+                            <td><span class="check">Self-hosted option</span></td>
+                            <td>Cloud only</td>
+                        </tr>
+                        <tr>
+                            <td>Need to start today</td>
+                            <td>Sales process required</td>
+                            <td><span class="check">Instant self-serve</span></td>
+                        </tr>
+                        <tr>
+                            <td>Budget under $500/month</td>
+                            <td>May not qualify</td>
+                            <td><span class="check">No minimums</span></td>
+                        </tr>
+                        <tr>
+                            <td>Processing CAD formats</td>
+                            <td><span class="check">Native support</span></td>
+                            <td>Requires pre-conversion</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h2>The Honest Take</h2>
+
+                <p>RapidCompact is a mature enterprise platform with features MeshOpt doesn't have (UV repacking, atlasing, LOD chains, on-premise). If you're a large organization with complex requirements and enterprise budgets, it's worth evaluating.</p>
+
+                <p>MeshOpt is built for accessibility. No sales calls, no minimums, no complexity. If you want to optimize 3D models for the web without enterprise overhead, it just works.</p>
+
+                <p>They're both legitimate tools serving different market segments.</p>
+
+                <h2>Try Before You Decide</h2>
+
+                <p>MeshOpt offers 50 free credits - no credit card, no sales call. Process some real models and see if it meets your needs. Use our <a href="/tools/glb-inspector.html">GLB Inspector</a> to analyze the results.</p>
+
+                <p>If you need enterprise features like texture atlasing or on-premise deployment, RapidCompact may be worth the sales conversation.</p>
+            </div>
+
+            <div class="cta-box">
+                <h3>Try MeshOpt Free</h3>
+                <p>50 free credits. Instant access. See if simple web optimization fits your workflow.</p>
+                <a href="/" class="btn">Get Free Credits</a>
+            </div>
+
+            <div class="email-capture">
+                <h3>Get 3D Optimization Tips</h3>
+                <p>Practical techniques for web and mobile 3D delivery.</p>
+                <form class="email-capture-form" id="emailForm">
+                    <input type="email" placeholder="your@email.com" required />
+                    <button type="submit">Subscribe</button>
+                </form>
+                <p class="text-small" style="margin-top: 16px; margin-bottom: 0; opacity: 0.5;">No spam. Unsubscribe anytime.</p>
+            </div>
+        </article>
+    </main>
+
+    <footer class="main-footer">
+        <p>&copy; 2025 Brian Ginn. All rights reserved.</p>
+        <a href="/">MeshOpt</a>
+        <a href="/tools/">Tools</a>
+        <a href="/blog/">Blog</a>
+    </footer>
+
+    <script>
+        document.getElementById('emailForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('Email signup coming soon! For now, try the optimizer at webdeliveryengine.com');
+        });
+    </script>
+</body>
+</html>
