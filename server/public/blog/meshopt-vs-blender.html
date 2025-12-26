@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>MeshOpt vs Blender: When to Use Each for 3D Optimization | MeshOpt</title>
+    <meta name="description" content="Compare MeshOpt and Blender for 3D model optimization. See when manual Blender work makes sense vs automated API processing." />
+    <meta name="keywords" content="meshopt vs blender, blender decimation, blender alternative, automate blender, batch 3d optimization" />
+
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://webdeliveryengine.com/blog/meshopt-vs-blender.html" />
+    <meta property="og:title" content="MeshOpt vs Blender: When to Use Each" />
+    <meta property="og:description" content="Compare MeshOpt and Blender for 3D model optimization." />
+
+    <link rel="canonical" href="https://webdeliveryengine.com/blog/meshopt-vs-blender.html" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <style>
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 32px 0;
+        }
+        .comparison-table th,
+        .comparison-table td {
+            padding: 16px;
+            text-align: left;
+            border: 1px solid var(--cp-border);
+        }
+        .comparison-table th {
+            background: rgba(0, 212, 255, 0.05);
+            font-family: var(--cp-font-display);
+            font-weight: 600;
+            color: var(--cp-text);
+        }
+        .comparison-table th:first-child {
+            width: 30%;
+        }
+        .comparison-table td:nth-child(2),
+        .comparison-table td:nth-child(3) {
+            width: 35%;
+        }
+        .comparison-table .header-blender {
+            color: #ea7600;
+        }
+        .comparison-table .header-meshopt {
+            color: var(--cp-accent);
+        }
+        .check {
+            color: var(--cp-success);
+        }
+        .partial {
+            color: var(--cp-warning);
+        }
+        .verdict-box {
+            background: rgba(0, 212, 255, 0.03);
+            border: 1px solid var(--cp-border);
+            border-left: 4px solid var(--cp-accent);
+            padding: 24px;
+            margin: 32px 0;
+        }
+        .verdict-box h4 {
+            font-family: var(--cp-font-display);
+            font-size: 0.9rem;
+            color: var(--cp-accent);
+            margin: 0 0 12px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .verdict-box p {
+            margin: 0;
+            color: var(--cp-text);
+            line-height: 1.6;
+        }
+        .use-case-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin: 32px 0;
+        }
+        @media (max-width: 600px) {
+            .use-case-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .use-case-box {
+            background: #000;
+            border: 1px solid var(--cp-border);
+            padding: 24px;
+        }
+        .use-case-box.blender {
+            border-top: 3px solid #ea7600;
+        }
+        .use-case-box.meshopt {
+            border-top: 3px solid var(--cp-accent);
+        }
+        .use-case-box h4 {
+            font-family: var(--cp-font-display);
+            font-size: 0.9rem;
+            margin: 0 0 16px 0;
+        }
+        .use-case-box.blender h4 {
+            color: #ea7600;
+        }
+        .use-case-box.meshopt h4 {
+            color: var(--cp-accent);
+        }
+        .use-case-box ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .use-case-box li {
+            padding: 8px 0;
+            padding-left: 20px;
+            position: relative;
+            color: var(--cp-text-dim);
+            font-size: 0.9rem;
+        }
+        .use-case-box li::before {
+            content: '>';
+            position: absolute;
+            left: 0;
+            color: var(--cp-text-dim);
+            font-family: var(--cp-font-display);
+        }
+    </style>
+</head>
+<body class="content-page">
+    <header class="site-header">
+        <a href="/" class="logo">MeshOpt</a>
+        <nav>
+            <a href="/">Optimizer</a>
+            <a href="/tools/">Tools</a>
+            <a href="/blog/">Blog</a>
+        </nav>
+    </header>
+
+    <main>
+        <nav class="breadcrumb">
+            <a href="/">Home</a>
+            <span class="separator">/</span>
+            <a href="/blog/">Blog</a>
+            <span class="separator">/</span>
+            <span class="current">MeshOpt vs Blender</span>
+        </nav>
+
+        <article>
+            <header class="article-header">
+                <h1>MeshOpt vs Blender: When to Use Each</h1>
+                <div class="article-meta">
+                    <span class="category">Comparison</span>
+                    <span>December 2025</span>
+                    <span>7 min read</span>
+                </div>
+            </header>
+
+            <div class="article-content">
+                <p>If you're optimizing 3D models for web delivery, you've probably used Blender. It's free, powerful, and can do almost anything. So why would you use a paid service like MeshOpt?</p>
+
+                <p>The honest answer: it depends on your workflow. Here's a direct comparison to help you decide.</p>
+
+                <h2>Quick Comparison</h2>
+
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th class="header-blender">Blender</th>
+                            <th class="header-meshopt">MeshOpt</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Price</td>
+                            <td>Free (open source)</td>
+                            <td>Pay per job (free tier available)</td>
+                        </tr>
+                        <tr>
+                            <td>Learning curve</td>
+                            <td>Steep (weeks to months)</td>
+                            <td>Minimal (API or drag-drop)</td>
+                        </tr>
+                        <tr>
+                            <td>Manual control</td>
+                            <td><span class="check">Full control over every setting</span></td>
+                            <td>Preset-based with quality slider</td>
+                        </tr>
+                        <tr>
+                            <td>Batch processing</td>
+                            <td>Requires Python scripting</td>
+                            <td><span class="check">Built-in (API or shell scripts)</span></td>
+                        </tr>
+                        <tr>
+                            <td>Processing time</td>
+                            <td>5-30 min per model (manual)</td>
+                            <td><span class="check">~10 seconds per model</span></td>
+                        </tr>
+                        <tr>
+                            <td>Consistency</td>
+                            <td>Varies by operator</td>
+                            <td><span class="check">Identical settings every time</span></td>
+                        </tr>
+                        <tr>
+                            <td>CI/CD integration</td>
+                            <td>Complex (headless Blender)</td>
+                            <td><span class="check">Simple REST API</span></td>
+                        </tr>
+                        <tr>
+                            <td>Decimation</td>
+                            <td><span class="check">Multiple methods (Collapse, Planar, etc.)</span></td>
+                            <td>Optimized for web delivery</td>
+                        </tr>
+                        <tr>
+                            <td>Retopology</td>
+                            <td><span class="check">Full manual control + modifiers</span></td>
+                            <td>Automated QuadriFlow remeshing</td>
+                        </tr>
+                        <tr>
+                            <td>Texture editing</td>
+                            <td><span class="check">Full editing capabilities</span></td>
+                            <td>Resize and compress only</td>
+                        </tr>
+                        <tr>
+                            <td>Format support</td>
+                            <td><span class="check">Nearly everything</span></td>
+                            <td>OBJ, FBX, GLB/GLTF, ZIP</td>
+                        </tr>
+                        <tr>
+                            <td>Runs on</td>
+                            <td>Your machine (needs GPU)</td>
+                            <td>Cloud (no local resources)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h2>Where Blender Wins</h2>
+
+                <p>Blender is the better choice when:</p>
+
+                <h3>You Need Creative Control</h3>
+
+                <p>Blender gives you complete control over every vertex, every material, every setting. If you need to:</p>
+
+                <ul>
+                    <li>Manually adjust edge loops for animation</li>
+                    <li>Create custom LODs with specific detail in specific areas</li>
+                    <li>Fix modeling issues before optimization</li>
+                    <li>Rebake textures or materials</li>
+                </ul>
+
+                <p>...then Blender is the right tool. No automated system can make creative decisions.</p>
+
+                <h3>You're Working on One-Off Hero Assets</h3>
+
+                <p>For a single high-value model - a game protagonist, a flagship product, a hero image - the time investment in manual Blender work pays off. You can spend 2 hours getting every detail perfect because this one model will be seen by millions.</p>
+
+                <h3>You Already Know Blender</h3>
+
+                <p>If Blender is already part of your daily workflow and you're fast with it, adding another tool may not be worth the context switch. Blender's Python API can automate repetitive tasks once you've invested in learning it.</p>
+
+                <h3>Budget is Zero</h3>
+
+                <p>Blender is free. If you have more time than money, and the volume is low enough to handle manually, Blender costs nothing but your hours.</p>
+
+                <h2>Where MeshOpt Wins</h2>
+
+                <p>MeshOpt makes more sense when:</p>
+
+                <h3>You Have Volume</h3>
+
+                <p>50 product SKUs. 200 legacy OBJ files. 1,000 scanned assets. At scale, manual optimization becomes a bottleneck. The math changes:</p>
+
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>Models</th>
+                            <th>Blender (15 min each)</th>
+                            <th>MeshOpt API</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>10</td>
+                            <td>2.5 hours</td>
+                            <td>~2 minutes</td>
+                        </tr>
+                        <tr>
+                            <td>50</td>
+                            <td>12.5 hours</td>
+                            <td>~8 minutes</td>
+                        </tr>
+                        <tr>
+                            <td>200</td>
+                            <td>50 hours (1+ weeks)</td>
+                            <td>~30 minutes</td>
+                        </tr>
+                        <tr>
+                            <td>1,000</td>
+                            <td>250 hours (6+ weeks)</td>
+                            <td>~2.5 hours</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p>At volume, the API pays for itself in the first batch.</p>
+
+                <h3>You Need Consistency</h3>
+
+                <p>Manual work varies. Monday's optimization looks different from Friday's. Different team members have different standards. For e-commerce catalogs or branded experiences where every model should feel the same, automated processing guarantees identical settings.</p>
+
+                <h3>You Want Pipeline Integration</h3>
+
+                <p>If your 3D assets flow through a build pipeline - CI/CD, automated deployment, content management systems - an API fits naturally. Blender can be run headless, but it's complex to set up and maintain.</p>
+
+                <pre><code># In your build script
+for model in ./models/*.glb; do
+    curl -X POST https://webdeliveryengine.com/optimize \
+        -H "X-API-Key: $API_KEY" \
+        -F "file=@$model" \
+        -F "quality=50" \
+        --output "./dist/$(basename $model)"
+done</code></pre>
+
+                <h3>Your Team Isn't 3D-Specialized</h3>
+
+                <p>Web developers, marketing teams, content managers - not everyone knows Blender. MeshOpt's web UI is drag-and-drop simple. Upload, select quality, download. No training required.</p>
+
+                <h3>You're on Deadline</h3>
+
+                <p>When the project ships next week and 30 models need optimization, there's no time to learn Blender's decimation settings or debug a Python script. Upload, process, done.</p>
+
+                <h2>The Hybrid Approach</h2>
+
+                <p>Many teams use both:</p>
+
+                <ol>
+                    <li><strong>Blender</strong> for hero assets, creative work, and complex fixes</li>
+                    <li><strong>MeshOpt</strong> for bulk processing, pipeline automation, and "good enough" optimization at scale</li>
+                </ol>
+
+                <p>They're not mutually exclusive. Use the right tool for each job.</p>
+
+                <div class="use-case-grid">
+                    <div class="use-case-box blender">
+                        <h4>Use Blender When</h4>
+                        <ul>
+                            <li>Creating or editing the model itself</li>
+                            <li>Manual retopology is required</li>
+                            <li>Custom LOD authoring needed</li>
+                            <li>Texture baking or material work</li>
+                            <li>Single high-value asset</li>
+                            <li>Budget is zero</li>
+                        </ul>
+                    </div>
+                    <div class="use-case-box meshopt">
+                        <h4>Use MeshOpt When</h4>
+                        <ul>
+                            <li>Processing batches of models</li>
+                            <li>Integrating into build pipelines</li>
+                            <li>Non-3D team members need access</li>
+                            <li>Consistency across catalog is key</li>
+                            <li>Speed matters more than control</li>
+                            <li>Cloud processing preferred</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h2>Cost Comparison</h2>
+
+                <p>Blender is free, but your time isn't.</p>
+
+                <div class="verdict-box">
+                    <h4>The Real Calculation</h4>
+                    <p>If your time is worth $50/hour and you're optimizing 100 models:</p>
+                    <p style="margin-top: 12px;"><strong>Blender:</strong> 25 hours × $50 = $1,250 in time</p>
+                    <p><strong>MeshOpt:</strong> 100 credits × ~$0.10 = $10 + 30 min of your time</p>
+                    <p style="margin-top: 12px;">For hobbyists and learners, Blender makes sense. For professionals billing clients, automation usually wins.</p>
+                </div>
+
+                <h2>Making the Decision</h2>
+
+                <p>Ask yourself:</p>
+
+                <ol>
+                    <li><strong>How many models?</strong> Under 10 = Blender is fine. Over 50 = seriously consider automation.</li>
+                    <li><strong>How often?</strong> One-time project = manual is OK. Ongoing pipeline = automate.</li>
+                    <li><strong>Who's doing it?</strong> 3D artist = Blender. Web dev = probably wants an API.</li>
+                    <li><strong>How critical is each model?</strong> Hero asset = manual attention. Catalog item = batch process.</li>
+                </ol>
+
+                <p>There's no universal answer. The right tool depends on your specific situation.</p>
+
+                <h2>Try Both</h2>
+
+                <p>Blender is free to download. MeshOpt has a free tier with 50 credits. Try both on the same model and see which fits your workflow.</p>
+
+                <p>Use our <a href="/tools/glb-inspector.html">GLB Inspector</a> to compare the results - check polygon counts, file sizes, and texture details from each approach.</p>
+            </div>
+
+            <div class="cta-box">
+                <h3>Try MeshOpt Free</h3>
+                <p>50 free credits to test on your models. See if automation fits your workflow.</p>
+                <a href="/" class="btn">Get Free Credits</a>
+            </div>
+
+            <div class="email-capture">
+                <h3>Get 3D Workflow Tips</h3>
+                <p>Techniques for faster asset pipelines, whether you use Blender, automation, or both.</p>
+                <form class="email-capture-form" id="emailForm">
+                    <input type="email" placeholder="your@email.com" required />
+                    <button type="submit">Subscribe</button>
+                </form>
+                <p class="text-small" style="margin-top: 16px; margin-bottom: 0; opacity: 0.5;">No spam. Unsubscribe anytime.</p>
+            </div>
+        </article>
+    </main>
+
+    <footer class="main-footer">
+        <p>&copy; 2025 Brian Ginn. All rights reserved.</p>
+        <a href="/">MeshOpt</a>
+        <a href="/tools/">Tools</a>
+        <a href="/blog/">Blog</a>
+    </footer>
+
+    <script>
+        document.getElementById('emailForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('Email signup coming soon! For now, try the optimizer at webdeliveryengine.com');
+        });
+    </script>
+</body>
+</html>
