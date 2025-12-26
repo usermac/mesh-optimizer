@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>How to Convert OBJ to GLB (Single Files & Batch) | MeshOpt</title>
+    <meta name="description" content="Convert OBJ files to GLB format for web and AR delivery. Covers single file conversion, batch processing, and handling MTL/texture dependencies." />
+    <meta name="keywords" content="obj to glb, convert obj glb, obj glb converter, batch convert obj, obj to gltf, 3d file conversion" />
+
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://webdeliveryengine.com/blog/convert-obj-to-glb.html" />
+    <meta property="og:title" content="How to Convert OBJ to GLB (Single Files & Batch)" />
+    <meta property="og:description" content="Convert OBJ files to GLB format for web and AR delivery." />
+
+    <link rel="canonical" href="https://webdeliveryengine.com/blog/convert-obj-to-glb.html" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body class="content-page">
+    <header class="site-header">
+        <a href="/" class="logo">MeshOpt</a>
+        <nav>
+            <a href="/">Optimizer</a>
+            <a href="/tools/">Tools</a>
+            <a href="/blog/">Blog</a>
+        </nav>
+    </header>
+
+    <main>
+        <nav class="breadcrumb">
+            <a href="/">Home</a>
+            <span class="separator">/</span>
+            <a href="/blog/">Blog</a>
+            <span class="separator">/</span>
+            <span class="current">Convert OBJ to GLB</span>
+        </nav>
+
+        <article>
+            <header class="article-header">
+                <h1>How to Convert OBJ to GLB (Single Files & Batch)</h1>
+                <div class="article-meta">
+                    <span class="category">Guide</span>
+                    <span>December 2025</span>
+                    <span>9 min read</span>
+                </div>
+            </header>
+
+            <div class="article-content">
+                <p>You've inherited a folder of 500 OBJ files from a client. Or your 3D asset library is all OBJ from years of legacy workflows. Now you need them as GLB for a web project, and the deadline is next week.</p>
+
+                <p>OBJ to GLB conversion sounds simple until you actually try it. Missing textures, broken materials, file path issues - there's a reason "OBJ hell" is a common phrase among 3D developers.</p>
+
+                <p>Here's how to handle it properly, whether you're converting one file or a thousand.</p>
+
+                <h2>Why Convert OBJ to GLB?</h2>
+
+                <p>OBJ was designed in the 1980s. It's lasted this long because it's simple and universal - almost every 3D tool can read and write OBJ. But for modern web delivery, it has serious limitations:</p>
+
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th>OBJ</th>
+                            <th>GLB</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>File structure</td>
+                            <td>Multiple files (OBJ + MTL + textures)</td>
+                            <td>Single binary file</td>
+                        </tr>
+                        <tr>
+                            <td>Compression</td>
+                            <td>None (text format)</td>
+                            <td>Draco mesh compression</td>
+                        </tr>
+                        <tr>
+                            <td>PBR materials</td>
+                            <td>Limited (no metallic/roughness)</td>
+                            <td>Full PBR support</td>
+                        </tr>
+                        <tr>
+                            <td>Animations</td>
+                            <td>Not supported</td>
+                            <td>Fully supported</td>
+                        </tr>
+                        <tr>
+                            <td>Web loading</td>
+                            <td>Requires multiple requests</td>
+                            <td>Single request</td>
+                        </tr>
+                        <tr>
+                            <td>AR compatibility</td>
+                            <td>Not supported</td>
+                            <td>Direct support</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p>For any web, mobile, or AR application, GLB is the standard. OBJ is for archival and interchange, not delivery.</p>
+
+                <h2>The OBJ File Structure Problem</h2>
+
+                <p>An OBJ file alone contains only geometry. Everything else lives in separate files:</p>
+
+                <pre><code>product/
+├── model.obj          # Geometry only
+├── model.mtl          # Material definitions
+├── diffuse.jpg        # Referenced by MTL
+├── normal.png         # Referenced by MTL
+└── roughness.png      # Referenced by MTL</code></pre>
+
+                <p>The MTL file references textures by path. If those paths are wrong (absolute paths from another machine, or relative paths that don't match your folder structure), the conversion fails silently - you get geometry with no materials.</p>
+
+                <p>This is where most OBJ conversions break.</p>
+
+                <h2>Manual Conversion: Blender</h2>
+
+                <p>Blender is the most reliable free option for OBJ to GLB conversion.</p>
+
+                <h3>Step 1: Import the OBJ</h3>
+
+                <p>File → Import → Wavefront (.obj). Check "Split by Object" and "Split by Group" if you want to preserve object hierarchy.</p>
+
+                <h3>Step 2: Fix Material Paths</h3>
+
+                <p>If textures are missing:</p>
+
+                <ol>
+                    <li>Select the object</li>
+                    <li>Go to the Material tab in Properties</li>
+                    <li>Expand the texture nodes</li>
+                    <li>Re-link each texture file manually</li>
+                </ol>
+
+                <p>For many objects, this is tedious. Blender's "Find Missing Files" (File → External Data → Find Missing Files) can help, but it's not always reliable.</p>
+
+                <h3>Step 3: Export as GLB</h3>
+
+                <p>File → Export → glTF 2.0 (.glb). Key settings:</p>
+
+                <ul>
+                    <li><strong>Format:</strong> glTF Binary (.glb)</li>
+                    <li><strong>Include:</strong> Check "Selected Objects" if you don't want the whole scene</li>
+                    <li><strong>Mesh:</strong> Enable Draco compression for smaller files</li>
+                    <li><strong>Materials:</strong> Ensure "Export Materials" is checked</li>
+                </ul>
+
+                <p>Time per file: 5-15 minutes depending on complexity and texture issues.</p>
+
+                <h3>Batch Conversion in Blender (Python)</h3>
+
+                <p>For multiple files, use Blender's Python scripting:</p>
+
+                <pre><code>import bpy
+import os
+import glob
+
+input_dir = "/path/to/obj/files"
+output_dir = "/path/to/glb/output"
+
+# Clear the scene
+bpy.ops.wm.read_factory_settings(use_empty=True)
+
+for obj_file in glob.glob(os.path.join(input_dir, "*.obj")):
+    # Clear scene
+    bpy.ops.object.select_all(action='SELECT')
+    bpy.ops.object.delete()
+
+    # Import OBJ
+    bpy.ops.wm.obj_import(filepath=obj_file)
+
+    # Export GLB
+    basename = os.path.splitext(os.path.basename(obj_file))[0]
+    output_path = os.path.join(output_dir, f"{basename}.glb")
+
+    bpy.ops.export_scene.gltf(
+        filepath=output_path,
+        export_format='GLB',
+        export_draco_mesh_compression_enable=True
+    )
+
+    print(f"Converted: {basename}")</code></pre>
+
+                <p>Run with: <code>blender --background --python convert_batch.py</code></p>
+
+                <p>This works, but doesn't handle missing textures - you'll still need to verify each output.</p>
+
+                <h2>Automated Conversion: API</h2>
+
+                <p>For reliable batch conversion with automatic texture handling:</p>
+
+                <h3>Single File (with textures in ZIP)</h3>
+
+                <p>The most reliable approach: bundle OBJ + MTL + textures into a ZIP:</p>
+
+                <pre><code># Create a ZIP with all dependencies
+zip -r model.zip model.obj model.mtl *.jpg *.png
+
+# Convert via API
+curl -X POST https://webdeliveryengine.com/optimize \
+  -H "X-API-Key: sk_your_key" \
+  -F "file=@model.zip" \
+  -F "mode=decimate" \
+  -F "quality=80" \
+  --output model.glb</code></pre>
+
+                <p>The API extracts the ZIP, resolves texture paths automatically, converts to GLB, and optionally optimizes in one step.</p>
+
+                <h3>Batch Processing Script</h3>
+
+                <pre><code>#!/bin/bash
+
+INPUT_DIR="./obj_files"
+OUTPUT_DIR="./glb_output"
+API_KEY="sk_your_key"
+
+mkdir -p "$OUTPUT_DIR"
+
+# Process each OBJ file
+for obj_file in "$INPUT_DIR"/*.obj; do
+    basename=$(basename "$obj_file" .obj)
+    mtl_file="$INPUT_DIR/${basename}.mtl"
+    zip_file="/tmp/${basename}.zip"
+
+    echo "Processing: $basename"
+
+    # Create ZIP with OBJ, MTL, and associated textures
+    cd "$INPUT_DIR"
+
+    # Find textures referenced in MTL (if it exists)
+    if [ -f "$mtl_file" ]; then
+        # Extract texture filenames from MTL
+        textures=$(grep -E "map_|bump|disp" "${basename}.mtl" | \
+                   awk '{print $2}' | \
+                   xargs -I {} basename {})
+
+        # Create ZIP with all files
+        zip -j "$zip_file" "${basename}.obj" "${basename}.mtl" $textures 2>/dev/null
+    else
+        # Just the OBJ if no MTL
+        zip -j "$zip_file" "${basename}.obj"
+    fi
+
+    cd - > /dev/null
+
+    # Convert via API
+    curl -s -X POST https://webdeliveryengine.com/optimize \
+        -H "X-API-Key: $API_KEY" \
+        -F "file=@$zip_file" \
+        -F "mode=decimate" \
+        -F "quality=80" \
+        --output "$OUTPUT_DIR/${basename}.glb"
+
+    # Cleanup
+    rm "$zip_file"
+
+    echo "Done: $basename.glb"
+done
+
+echo "Batch conversion complete!"</code></pre>
+
+                <h3>Node.js Batch Script</h3>
+
+                <pre><code>const fs = require('fs');
+const path = require('path');
+const archiver = require('archiver');
+const FormData = require('form-data');
+
+const INPUT_DIR = './obj_files';
+const OUTPUT_DIR = './glb_output';
+const API_KEY = process.env.MESHOPT_API_KEY;
+
+async function convertObjToGlb(objPath) {
+    const basename = path.basename(objPath, '.obj');
+    const dir = path.dirname(objPath);
+
+    // Create temp ZIP
+    const zipPath = `/tmp/${basename}.zip`;
+    const output = fs.createWriteStream(zipPath);
+    const archive = archiver('zip');
+
+    archive.pipe(output);
+
+    // Add OBJ file
+    archive.file(objPath, { name: `${basename}.obj` });
+
+    // Add MTL if exists
+    const mtlPath = path.join(dir, `${basename}.mtl`);
+    if (fs.existsSync(mtlPath)) {
+        archive.file(mtlPath, { name: `${basename}.mtl` });
+
+        // Parse MTL for texture references
+        const mtlContent = fs.readFileSync(mtlPath, 'utf8');
+        const textureRegex = /(?:map_|bump|disp)\s+(.+)/g;
+        let match;
+
+        while ((match = textureRegex.exec(mtlContent)) !== null) {
+            const textureName = path.basename(match[1].trim());
+            const texturePath = path.join(dir, textureName);
+
+            if (fs.existsSync(texturePath)) {
+                archive.file(texturePath, { name: textureName });
+            }
+        }
+    }
+
+    await archive.finalize();
+
+    // Wait for ZIP to be written
+    await new Promise(resolve => output.on('close', resolve));
+
+    // Upload to API
+    const form = new FormData();
+    form.append('file', fs.createReadStream(zipPath));
+    form.append('mode', 'decimate');
+    form.append('quality', '80');
+
+    const response = await fetch('https://webdeliveryengine.com/optimize', {
+        method: 'POST',
+        headers: { 'X-API-Key': API_KEY },
+        body: form
+    });
+
+    // Save GLB
+    const buffer = Buffer.from(await response.arrayBuffer());
+    const outputPath = path.join(OUTPUT_DIR, `${basename}.glb`);
+    fs.writeFileSync(outputPath, buffer);
+
+    // Cleanup
+    fs.unlinkSync(zipPath);
+
+    console.log(`Converted: ${basename}.glb`);
+}
+
+// Process all OBJ files
+async function main() {
+    fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+
+    const objFiles = fs.readdirSync(INPUT_DIR)
+        .filter(f => f.endsWith('.obj'))
+        .map(f => path.join(INPUT_DIR, f));
+
+    for (const objFile of objFiles) {
+        await convertObjToGlb(objFile);
+    }
+
+    console.log('Batch conversion complete!');
+}
+
+main().catch(console.error);</code></pre>
+
+                <h2>Common Problems & Solutions</h2>
+
+                <h3>Problem: White/Gray Model (No Textures)</h3>
+
+                <p>The textures didn't transfer. Check:</p>
+
+                <ul>
+                    <li>Is the MTL file present and correctly named?</li>
+                    <li>Are texture paths in MTL relative or absolute?</li>
+                    <li>Are all referenced texture files present?</li>
+                </ul>
+
+                <p><strong>Fix:</strong> Use the ZIP approach to bundle everything together. The API will resolve paths automatically.</p>
+
+                <h3>Problem: Model Appears Inside-Out</h3>
+
+                <p>OBJ files sometimes have inconsistent face winding (normals pointing inward).</p>
+
+                <p><strong>Fix:</strong> In Blender, select the mesh, go to Edit Mode, select all faces, and use Mesh → Normals → Recalculate Outside.</p>
+
+                <h3>Problem: Model is Rotated Wrong</h3>
+
+                <p>OBJ uses Y-up or Z-up depending on the source software. GLB is Y-up.</p>
+
+                <p><strong>Fix:</strong> Apply rotation in Blender before export, or handle it in your Three.js code:</p>
+
+                <pre><code>model.rotation.x = -Math.PI / 2; // Z-up to Y-up</code></pre>
+
+                <h3>Problem: Scale is Wrong</h3>
+
+                <p>OBJ has no unit system - a "1" could be 1 meter, 1 inch, or 1 mile.</p>
+
+                <p><strong>Fix:</strong> Scale in Blender before export, or handle in code. Check the source software's export settings.</p>
+
+                <h3>Problem: Multiple Objects Merged</h3>
+
+                <p>Some OBJ exporters combine everything into one mesh.</p>
+
+                <p><strong>Fix:</strong> Use "Split by Object" and "Split by Group" during OBJ import in Blender. Or accept the merge - fewer meshes means fewer draw calls.</p>
+
+                <h2>Conversion + Optimization</h2>
+
+                <p>Since you're already converting, this is the perfect time to optimize:</p>
+
+                <pre><code>curl -X POST https://webdeliveryengine.com/optimize \
+  -H "X-API-Key: sk_your_key" \
+  -F "file=@model.zip" \
+  -F "mode=decimate" \
+  -F "quality=50" \
+  --output model-optimized.glb</code></pre>
+
+                <p>One API call handles:</p>
+
+                <ol>
+                    <li>OBJ/MTL/texture parsing</li>
+                    <li>Polygon reduction</li>
+                    <li>Texture optimization</li>
+                    <li>Draco compression</li>
+                    <li>GLB export</li>
+                </ol>
+
+                <p>Your 30MB OBJ folder becomes a 2MB GLB ready for web delivery.</p>
+
+                <h2>Verifying Your Conversions</h2>
+
+                <p>After batch conversion, verify the results:</p>
+
+                <ol>
+                    <li>Use our <a href="/tools/glb-inspector.html">GLB Inspector</a> to check each file</li>
+                    <li>Look for missing materials (material count should match original)</li>
+                    <li>Check polygon counts are reasonable</li>
+                    <li>Verify textures loaded (texture count > 0 if original had textures)</li>
+                </ol>
+
+                <p>For large batches, spot-check 10-20% of files visually in a 3D viewer.</p>
+
+                <h2>Summary</h2>
+
+                <p>OBJ to GLB conversion is straightforward for single files with co-located textures. It gets complicated with:</p>
+
+                <ul>
+                    <li>Broken texture paths</li>
+                    <li>Missing MTL files</li>
+                    <li>Absolute paths from another machine</li>
+                    <li>Hundreds of files to process</li>
+                </ul>
+
+                <p>The ZIP approach solves most of these problems by bundling everything together and letting the conversion tool resolve paths.</p>
+
+                <p>For one-off conversions, Blender works fine. For batch processing legacy catalogs, an automated pipeline saves days of manual work.</p>
+            </div>
+
+            <div class="cta-box">
+                <h3>Convert & Optimize in One Step</h3>
+                <p>Upload your OBJ files (or ZIPs) and get optimized GLB output. 50 free credits to start.</p>
+                <a href="/" class="btn">Start Converting</a>
+            </div>
+
+            <div class="email-capture">
+                <h3>Get 3D Pipeline Tips</h3>
+                <p>Automation techniques for 3D asset workflows.</p>
+                <form class="email-capture-form" id="emailForm">
+                    <input type="email" placeholder="your@email.com" required />
+                    <button type="submit">Subscribe</button>
+                </form>
+                <p class="text-small" style="margin-top: 16px; margin-bottom: 0; opacity: 0.5;">No spam. Unsubscribe anytime.</p>
+            </div>
+        </article>
+    </main>
+
+    <footer class="main-footer">
+        <p>&copy; 2025 Brian Ginn. All rights reserved.</p>
+        <a href="/">MeshOpt</a>
+        <a href="/tools/">Tools</a>
+        <a href="/blog/">Blog</a>
+    </footer>
+
+    <script>
+        document.getElementById('emailForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('Email signup coming soon! For now, try the optimizer at webdeliveryengine.com');
+        });
+    </script>
+</body>
+</html>
