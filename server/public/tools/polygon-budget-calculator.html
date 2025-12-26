@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Polygon Budget Calculator - 3D Performance Targets | MeshOpt</title>
+    <meta name="description" content="Calculate the optimal polygon budget for your 3D project. Get recommended triangle counts, texture sizes, and file size limits for mobile, desktop, VR, and AR." />
+    <meta name="keywords" content="polygon budget, triangle count, 3d performance, webgl optimization, mobile 3d limits, vr polygon count" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://webdeliveryengine.com/tools/polygon-budget-calculator.html" />
+    <meta property="og:title" content="Polygon Budget Calculator - 3D Performance Targets" />
+    <meta property="og:description" content="Calculate optimal polygon budgets for mobile, desktop, VR, and AR 3D experiences." />
+
+    <link rel="canonical" href="https://webdeliveryengine.com/tools/polygon-budget-calculator.html" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <style>
+        /* Calculator specific styles */
+        .calculator-form {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .form-group label {
+            font-family: var(--cp-font-display);
+            font-size: 0.75rem;
+            color: var(--cp-text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0;
+        }
+        .form-group select,
+        .form-group input {
+            background: #000;
+            border: 1px solid var(--cp-border);
+            color: var(--cp-text);
+            padding: 14px 16px;
+            font-family: var(--cp-font-display);
+            font-size: 0.95rem;
+            width: 100%;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+            border-radius: 0;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        .form-group select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2300d4ff' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            padding-right: 44px;
+            cursor: pointer;
+        }
+        .form-group select:focus,
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--cp-accent);
+        }
+        .form-group select:hover,
+        .form-group input:hover {
+            border-color: var(--cp-accent);
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        @media (max-width: 500px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+        .calculate-btn {
+            background: var(--cp-accent);
+            color: #000;
+            border: none;
+            padding: 16px 32px;
+            font-family: var(--cp-font-display);
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 8px;
+        }
+        .calculate-btn:hover {
+            background: var(--cp-accent-secondary);
+        }
+
+        /* Results */
+        .budget-results {
+            background: #000;
+            border: 1px solid var(--cp-border);
+            padding: 32px;
+            margin-top: 32px;
+            position: relative;
+            display: none;
+        }
+        .budget-results.show {
+            display: block;
+            animation: fadeInUp 0.4s ease;
+        }
+        .budget-results::before {
+            content: 'RECOMMENDED BUDGET';
+            position: absolute;
+            top: -10px;
+            left: 16px;
+            background: #000;
+            color: var(--cp-accent);
+            font-family: var(--cp-font-display);
+            font-size: 0.65rem;
+            font-weight: 600;
+            padding: 2px 8px;
+            letter-spacing: 2px;
+        }
+        .budget-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .budget-item {
+            background: rgba(0, 212, 255, 0.03);
+            border: 1px solid var(--cp-border);
+            padding: 20px;
+            text-align: center;
+        }
+        .budget-item .label {
+            font-family: var(--cp-font-display);
+            font-size: 0.65rem;
+            color: var(--cp-text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 8px;
+        }
+        .budget-item .value {
+            font-family: var(--cp-font-display);
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--cp-accent);
+        }
+        .budget-item .unit {
+            font-size: 0.8rem;
+            color: var(--cp-text-dim);
+            font-weight: 400;
+            margin-left: 4px;
+        }
+        .budget-item.secondary .value {
+            color: var(--cp-accent-secondary);
+        }
+        .budget-notes {
+            border-top: 1px solid var(--cp-border);
+            padding-top: 24px;
+        }
+        .budget-notes h4 {
+            font-family: var(--cp-font-display);
+            font-size: 0.8rem;
+            color: var(--cp-text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 0 0 16px 0;
+        }
+        .budget-notes ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .budget-notes li {
+            font-size: 0.9rem;
+            color: var(--cp-text);
+            padding-left: 20px;
+            position: relative;
+            line-height: 1.5;
+        }
+        .budget-notes li::before {
+            content: '>';
+            position: absolute;
+            left: 0;
+            color: var(--cp-accent);
+            font-family: var(--cp-font-display);
+        }
+        .budget-notes li strong {
+            color: var(--cp-accent);
+        }
+
+        /* Platform info cards */
+        .platform-info {
+            background: rgba(180, 248, 74, 0.03);
+            border: 1px solid var(--cp-border);
+            border-left: 3px solid var(--cp-accent-secondary);
+            padding: 20px;
+            margin-top: 24px;
+        }
+        .platform-info h4 {
+            font-family: var(--cp-font-display);
+            font-size: 0.9rem;
+            color: var(--cp-accent-secondary);
+            margin: 0 0 8px 0;
+        }
+        .platform-info p {
+            font-size: 0.9rem;
+            color: var(--cp-text-dim);
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        /* Preset buttons */
+        .presets {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+        .preset-btn {
+            background: rgba(0, 212, 255, 0.05);
+            border: 1px solid var(--cp-border);
+            color: var(--cp-text-dim);
+            padding: 8px 16px;
+            font-family: var(--cp-font-display);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .preset-btn:hover {
+            border-color: var(--cp-accent);
+            color: var(--cp-accent);
+            background: rgba(0, 212, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="content-page">
+    <header class="site-header">
+        <a href="/" class="logo">MeshOpt</a>
+        <nav>
+            <a href="/">Optimizer</a>
+            <a href="/tools/">Tools</a>
+            <a href="/blog/">Blog</a>
+        </nav>
+    </header>
+
+    <main>
+        <nav class="breadcrumb">
+            <a href="/">Home</a>
+            <span class="separator">/</span>
+            <a href="/tools/">Tools</a>
+            <span class="separator">/</span>
+            <span class="current">Polygon Budget Calculator</span>
+        </nav>
+
+        <div class="article-header">
+            <h1>Polygon Budget Calculator</h1>
+            <p>Get recommended polygon counts, texture sizes, and file size limits for your target platform. These budgets ensure smooth 60fps performance.</p>
+        </div>
+
+        <div class="tool-container">
+            <div class="presets">
+                <button class="preset-btn" data-preset="shopify">Shopify AR</button>
+                <button class="preset-btn" data-preset="threejs">Three.js Web</button>
+                <button class="preset-btn" data-preset="mobile-game">Mobile Game</button>
+                <button class="preset-btn" data-preset="vr">VR Experience</button>
+                <button class="preset-btn" data-preset="ar-ios">iOS AR Quick Look</button>
+            </div>
+
+            <form class="calculator-form" id="calculatorForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="platform">Target Platform</label>
+                        <select id="platform" name="platform">
+                            <option value="mobile">Mobile (iOS/Android)</option>
+                            <option value="desktop">Desktop Browser</option>
+                            <option value="vr">VR Headset</option>
+                            <option value="ar">AR (Phone-based)</option>
+                            <option value="console">Console/High-end</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="useCase">Use Case</label>
+                        <select id="useCase" name="useCase">
+                            <option value="hero">Single Hero Model</option>
+                            <option value="product">Product Configurator (3-5 models)</option>
+                            <option value="gallery">Model Gallery (10+ models)</option>
+                            <option value="scene">Full 3D Scene</option>
+                            <option value="game">Game Level</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="frameRate">Target Frame Rate</label>
+                        <select id="frameRate" name="frameRate">
+                            <option value="30">30 FPS (Minimum acceptable)</option>
+                            <option value="60" selected>60 FPS (Smooth)</option>
+                            <option value="90">90 FPS (VR requirement)</option>
+                            <option value="120">120 FPS (High refresh displays)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="quality">Visual Quality Priority</label>
+                        <select id="quality" name="quality">
+                            <option value="performance">Performance First</option>
+                            <option value="balanced" selected>Balanced</option>
+                            <option value="quality">Quality First</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="modelCount">Number of Models On Screen</label>
+                    <input type="number" id="modelCount" name="modelCount" value="1" min="1" max="100" />
+                </div>
+
+                <button type="submit" class="calculate-btn">Calculate Budget</button>
+            </form>
+
+            <div class="budget-results" id="results">
+                <div class="budget-grid" id="budgetGrid">
+                    <!-- Populated by JS -->
+                </div>
+                <div class="budget-notes" id="budgetNotes">
+                    <!-- Populated by JS -->
+                </div>
+                <div class="platform-info" id="platformInfo">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <div class="cta-box">
+            <h3>Over Budget?</h3>
+            <p>MeshOpt can reduce polygon counts by up to 90% while preserving visual quality. Get your models within budget automatically.</p>
+            <a href="/" class="btn">Try MeshOpt Free</a>
+        </div>
+
+        <div class="email-capture">
+            <h3>Get 3D Optimization Tips</h3>
+            <p>Practical techniques for hitting performance targets on every platform.</p>
+            <form class="email-capture-form" id="emailForm">
+                <input type="email" placeholder="your@email.com" required />
+                <button type="submit">Subscribe</button>
+            </form>
+            <p class="text-small" style="margin-top: 16px; margin-bottom: 0; opacity: 0.5;">No spam. Unsubscribe anytime.</p>
+        </div>
+
+        <section class="content-section">
+            <h2>Understanding Polygon Budgets</h2>
+            <ul style="list-style: none; padding: 0; margin: 0;">
+                <li style="padding: 12px 0; border-bottom: 1px solid var(--cp-border); display: flex; gap: 16px;">
+                    <span style="color: var(--cp-accent); font-family: var(--cp-font-display); font-weight: 600; min-width: 140px;">Scene Budget</span>
+                    <span style="color: var(--cp-text-dim);">Total triangles for everything visible. Includes models, environment, and UI elements.</span>
+                </li>
+                <li style="padding: 12px 0; border-bottom: 1px solid var(--cp-border); display: flex; gap: 16px;">
+                    <span style="color: var(--cp-accent); font-family: var(--cp-font-display); font-weight: 600; min-width: 140px;">Per-Model Budget</span>
+                    <span style="color: var(--cp-text-dim);">Maximum triangles for a single model. Divide scene budget by visible model count.</span>
+                </li>
+                <li style="padding: 12px 0; border-bottom: 1px solid var(--cp-border); display: flex; gap: 16px;">
+                    <span style="color: var(--cp-accent); font-family: var(--cp-font-display); font-weight: 600; min-width: 140px;">Texture Memory</span>
+                    <span style="color: var(--cp-text-dim);">GPU memory for textures. Mobile devices have 1-2GB limits; exceed this and the app crashes.</span>
+                </li>
+                <li style="padding: 12px 0; border-bottom: 1px solid var(--cp-border); display: flex; gap: 16px;">
+                    <span style="color: var(--cp-accent); font-family: var(--cp-font-display); font-weight: 600; min-width: 140px;">Draw Calls</span>
+                    <span style="color: var(--cp-text-dim);">Commands sent to GPU. Each material/mesh combo = 1 draw call. Keep under 100 for mobile.</span>
+                </li>
+                <li style="padding: 12px 0; display: flex; gap: 16px;">
+                    <span style="color: var(--cp-accent); font-family: var(--cp-font-display); font-weight: 600; min-width: 140px;">File Size</span>
+                    <span style="color: var(--cp-text-dim);">Download size matters for web. Users abandon loads over 5 seconds. Target under 5MB for mobile.</span>
+                </li>
+            </ul>
+        </section>
+    </main>
+
+    <footer class="main-footer">
+        <p>&copy; 2025 Brian Ginn. All rights reserved.</p>
+        <a href="/">MeshOpt</a>
+        <a href="/tools/">Tools</a>
+        <a href="/blog/">Blog</a>
+    </footer>
+
+    <script>
+        // Budget calculation logic
+        const budgets = {
+            // Base budgets per platform (scene total at 60fps, balanced quality)
+            mobile: {
+                scenePolys: 100000,
+                maxTexture: 1024,
+                fileSize: 5,
+                drawCalls: 50,
+                textureMemory: 128
+            },
+            desktop: {
+                scenePolys: 500000,
+                maxTexture: 2048,
+                fileSize: 20,
+                drawCalls: 200,
+                textureMemory: 512
+            },
+            vr: {
+                scenePolys: 200000, // Need to render twice!
+                maxTexture: 2048,
+                fileSize: 50,
+                drawCalls: 100,
+                textureMemory: 256
+            },
+            ar: {
+                scenePolys: 75000,
+                maxTexture: 1024,
+                fileSize: 5,
+                drawCalls: 30,
+                textureMemory: 64
+            },
+            console: {
+                scenePolys: 2000000,
+                maxTexture: 4096,
+                fileSize: 100,
+                drawCalls: 500,
+                textureMemory: 2048
+            }
+        };
+
+        // Multipliers
+        const frameRateMultipliers = {
+            30: 1.5,
+            60: 1.0,
+            90: 0.6,
+            120: 0.45
+        };
+
+        const qualityMultipliers = {
+            performance: 0.7,
+            balanced: 1.0,
+            quality: 1.4
+        };
+
+        const useCaseOverhead = {
+            hero: 0.9,        // Single model gets most of budget
+            product: 0.7,     // Some overhead for UI/environment
+            gallery: 0.5,     // Need room for many models
+            scene: 0.4,       // Environment takes budget
+            game: 0.3         // Game logic, physics, etc need headroom
+        };
+
+        const platformInfo = {
+            mobile: {
+                title: 'Mobile Optimization Notes',
+                text: 'Mobile GPUs are 5-10x slower than desktop. Thermal throttling reduces performance further after 30 seconds of heavy load. Always test on real devices - simulators lie about performance.'
+            },
+            desktop: {
+                title: 'Desktop Browser Notes',
+                text: 'Desktop has more headroom, but WebGL still has overhead vs native. Integrated GPUs (most laptops) perform closer to mobile. Target the low end unless you know your audience has gaming hardware.'
+            },
+            vr: {
+                title: 'VR Performance Notes',
+                text: 'VR must render the scene TWICE (once per eye) at 90fps minimum. Dropped frames cause motion sickness. Budget is effectively halved compared to desktop. Quest 2/3 are mobile GPUs!'
+            },
+            ar: {
+                title: 'AR Performance Notes',
+                text: 'AR competes with camera feed, tracking, and environmental understanding for resources. Battery drain is a major concern. Apple AR Quick Look has a 10MB file size limit and recommends under 100K polygons.'
+            },
+            console: {
+                title: 'Console/High-end Notes',
+                text: 'Modern consoles and gaming PCs can handle high polygon counts, but draw calls still matter. Batch rendering and instancing become important at this scale.'
+            }
+        };
+
+        function formatNumber(num) {
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(1) + 'M';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(0) + 'K';
+            }
+            return num.toString();
+        }
+
+        function calculateBudget() {
+            const platform = document.getElementById('platform').value;
+            const useCase = document.getElementById('useCase').value;
+            const frameRate = parseInt(document.getElementById('frameRate').value);
+            const quality = document.getElementById('quality').value;
+            const modelCount = parseInt(document.getElementById('modelCount').value) || 1;
+
+            const base = budgets[platform];
+            const fpsMultiplier = frameRateMultipliers[frameRate];
+            const qualityMult = qualityMultipliers[quality];
+            const useCaseMult = useCaseOverhead[useCase];
+
+            // Calculate adjusted scene budget
+            const scenePolys = Math.round(base.scenePolys * fpsMultiplier * qualityMult * useCaseMult);
+            const perModelPolys = Math.round(scenePolys / modelCount);
+            const maxTexture = base.maxTexture;
+            const fileSize = Math.round(base.fileSize * qualityMult);
+            const drawCalls = Math.round(base.drawCalls * useCaseMult);
+            const textureMemory = base.textureMemory;
+
+            // Build results HTML
+            const budgetGrid = document.getElementById('budgetGrid');
+            budgetGrid.innerHTML = `
+                <div class="budget-item">
+                    <div class="label">Scene Budget</div>
+                    <div class="value">${formatNumber(scenePolys)}<span class="unit">tris</span></div>
+                </div>
+                <div class="budget-item">
+                    <div class="label">Per Model</div>
+                    <div class="value">${formatNumber(perModelPolys)}<span class="unit">tris</span></div>
+                </div>
+                <div class="budget-item secondary">
+                    <div class="label">Max Texture</div>
+                    <div class="value">${maxTexture}<span class="unit">px</span></div>
+                </div>
+                <div class="budget-item secondary">
+                    <div class="label">File Size</div>
+                    <div class="value">${fileSize}<span class="unit">MB</span></div>
+                </div>
+                <div class="budget-item">
+                    <div class="label">Draw Calls</div>
+                    <div class="value">${drawCalls}<span class="unit">max</span></div>
+                </div>
+                <div class="budget-item">
+                    <div class="label">Texture Memory</div>
+                    <div class="value">${textureMemory}<span class="unit">MB</span></div>
+                </div>
+            `;
+
+            // Build notes
+            const notes = [];
+            if (perModelPolys < 10000) {
+                notes.push(`At <strong>${formatNumber(perModelPolys)} triangles per model</strong>, you'll need aggressive optimization. Consider baking details into normal maps.`);
+            } else if (perModelPolys < 30000) {
+                notes.push(`<strong>${formatNumber(perModelPolys)} triangles per model</strong> is achievable with standard decimation. Most e-commerce models work well at this level.`);
+            } else {
+                notes.push(`<strong>${formatNumber(perModelPolys)} triangles per model</strong> gives you room for high detail. Focus optimization on textures and file size.`);
+            }
+
+            if (frameRate >= 90) {
+                notes.push(`Targeting <strong>${frameRate}fps</strong> requires strict budgets. Every frame matters - profile early and often.`);
+            }
+
+            if (modelCount > 5) {
+                notes.push(`With <strong>${modelCount} models</strong> on screen, consider LOD (Level of Detail) systems to swap in lower-poly versions for distant objects.`);
+            }
+
+            if (platform === 'ar') {
+                notes.push(`For <strong>Apple AR Quick Look</strong>, keep files under 10MB and use USDZ format. Our GLB Inspector can verify your model meets requirements.`);
+            }
+
+            const budgetNotes = document.getElementById('budgetNotes');
+            budgetNotes.innerHTML = `
+                <h4>Recommendations</h4>
+                <ul>
+                    ${notes.map(note => `<li>${note}</li>`).join('')}
+                </ul>
+            `;
+
+            // Platform info
+            const info = platformInfo[platform];
+            const platformInfoEl = document.getElementById('platformInfo');
+            platformInfoEl.innerHTML = `
+                <h4>${info.title}</h4>
+                <p>${info.text}</p>
+            `;
+
+            // Show results
+            document.getElementById('results').classList.add('show');
+        }
+
+        // Form submission
+        document.getElementById('calculatorForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            calculateBudget();
+        });
+
+        // Presets
+        const presets = {
+            'shopify': { platform: 'ar', useCase: 'hero', frameRate: '60', quality: 'balanced', modelCount: 1 },
+            'threejs': { platform: 'desktop', useCase: 'scene', frameRate: '60', quality: 'balanced', modelCount: 5 },
+            'mobile-game': { platform: 'mobile', useCase: 'game', frameRate: '60', quality: 'performance', modelCount: 10 },
+            'vr': { platform: 'vr', useCase: 'scene', frameRate: '90', quality: 'balanced', modelCount: 5 },
+            'ar-ios': { platform: 'ar', useCase: 'hero', frameRate: '60', quality: 'quality', modelCount: 1 }
+        };
+
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const preset = presets[this.dataset.preset];
+                document.getElementById('platform').value = preset.platform;
+                document.getElementById('useCase').value = preset.useCase;
+                document.getElementById('frameRate').value = preset.frameRate;
+                document.getElementById('quality').value = preset.quality;
+                document.getElementById('modelCount').value = preset.modelCount;
+                calculateBudget();
+            });
+        });
+
+        // Email form
+        document.getElementById('emailForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('Email signup coming soon! For now, try the optimizer at webdeliveryengine.com');
+        });
+    </script>
+</body>
+</html>
