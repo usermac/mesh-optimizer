@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>How to Optimize 3D Models for Shopify AR | MeshOpt</title>
+    <meta name="description" content="Meet Shopify's AR requirements with properly optimized 3D models. Learn file size limits, polygon counts, and texture requirements for smooth AR Quick Look experiences." />
+    <meta name="keywords" content="shopify ar, shopify 3d, shopify ar requirements, optimize 3d shopify, usdz shopify, glb shopify" />
+
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://webdeliveryengine.com/blog/optimize-3d-models-shopify-ar.html" />
+    <meta property="og:title" content="How to Optimize 3D Models for Shopify AR" />
+    <meta property="og:description" content="Meet Shopify's AR requirements with properly optimized 3D models." />
+
+    <link rel="canonical" href="https://webdeliveryengine.com/blog/optimize-3d-models-shopify-ar.html" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body class="content-page">
+    <header class="site-header">
+        <a href="/" class="logo">MeshOpt</a>
+        <nav>
+            <a href="/">Optimizer</a>
+            <a href="/tools/">Tools</a>
+            <a href="/blog/">Blog</a>
+        </nav>
+    </header>
+
+    <main>
+        <nav class="breadcrumb">
+            <a href="/">Home</a>
+            <span class="separator">/</span>
+            <a href="/blog/">Blog</a>
+            <span class="separator">/</span>
+            <span class="current">Shopify AR Optimization</span>
+        </nav>
+
+        <article>
+            <header class="article-header">
+                <h1>How to Optimize 3D Models for Shopify AR</h1>
+                <div class="article-meta">
+                    <span class="category">Guide</span>
+                    <span>December 2025</span>
+                    <span>10 min read</span>
+                </div>
+            </header>
+
+            <div class="article-content">
+                <p>You've added 3D models to your Shopify store, but when customers tap "View in your space," nothing happens. Or worse - the AR experience loads so slowly that they give up before seeing your product in their living room.</p>
+
+                <p>Shopify's AR feature is powerful, but it has strict requirements that most 3D models don't meet out of the box. Here's everything you need to know to get your products working smoothly in AR.</p>
+
+                <h2>Shopify's 3D/AR Requirements</h2>
+
+                <p>Shopify accepts two file formats for 3D models:</p>
+
+                <ul>
+                    <li><strong>GLB</strong> - For 3D viewer on product pages (all platforms)</li>
+                    <li><strong>USDZ</strong> - For AR Quick Look on iOS devices</li>
+                </ul>
+
+                <p>For the best experience, you need both. The GLB powers the interactive 3D viewer, while the USDZ enables the "View in AR" button on iPhones and iPads.</p>
+
+                <h3>File Size Limits</h3>
+
+                <p>Shopify's official limits are generous - up to 500MB per file. But those limits are for what Shopify will accept, not what will actually work well:</p>
+
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>Metric</th>
+                            <th>Shopify Limit</th>
+                            <th>Recommended</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>GLB file size</td>
+                            <td>500 MB</td>
+                            <td>&lt; 15 MB</td>
+                        </tr>
+                        <tr>
+                            <td>USDZ file size</td>
+                            <td>500 MB</td>
+                            <td>&lt; 10 MB</td>
+                        </tr>
+                        <tr>
+                            <td>Polygon count</td>
+                            <td>No hard limit</td>
+                            <td>&lt; 100,000</td>
+                        </tr>
+                        <tr>
+                            <td>Texture size</td>
+                            <td>No hard limit</td>
+                            <td>&lt; 2048px</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p>Why the gap? Because AR runs on phones. A 50MB model might upload fine but will take 30 seconds to load on a cellular connection - and your customer is long gone by then.</p>
+
+                <h3>Apple AR Quick Look Requirements</h3>
+
+                <p>The USDZ format powers AR on iOS, and Apple has its own recommendations:</p>
+
+                <ul>
+                    <li><strong>Polygon count:</strong> Under 100,000 triangles for smooth performance</li>
+                    <li><strong>Texture size:</strong> 2048x2048 maximum per texture</li>
+                    <li><strong>File size:</strong> Under 10MB for quick loading</li>
+                    <li><strong>Materials:</strong> PBR (Physically Based Rendering) only</li>
+                    <li><strong>Animations:</strong> Supported but add to file size</li>
+                </ul>
+
+                <p>Exceed these and you'll see stuttering, crashes on older iPhones, or the AR experience simply refusing to load.</p>
+
+                <h2>Common Problems (And How to Fix Them)</h2>
+
+                <h3>Problem: "View in AR" Button Does Nothing</h3>
+
+                <p>This usually means your USDZ file is missing or corrupted. Check that:</p>
+
+                <ul>
+                    <li>You've uploaded both GLB and USDZ versions</li>
+                    <li>The USDZ was created correctly (not just renamed from GLB)</li>
+                    <li>The file isn't corrupted - test it locally first</li>
+                </ul>
+
+                <p>You can test USDZ files by AirDropping them to an iPhone or opening them in macOS Finder (which has built-in Quick Look support).</p>
+
+                <h3>Problem: AR Loads But Looks Wrong</h3>
+
+                <p>Materials often break during conversion. USDZ only supports PBR materials with specific texture types:</p>
+
+                <ul>
+                    <li>Base Color (Diffuse/Albedo)</li>
+                    <li>Normal Map</li>
+                    <li>Roughness</li>
+                    <li>Metallic</li>
+                    <li>Ambient Occlusion</li>
+                    <li>Emissive</li>
+                </ul>
+
+                <p>If your source model uses non-PBR materials (like Blender's Principled BSDF with unsupported nodes), they won't translate correctly.</p>
+
+                <h3>Problem: AR is Slow or Stutters</h3>
+
+                <p>Your model is too heavy. Use our <a href="/tools/glb-inspector.html">GLB Inspector</a> to check polygon count and texture sizes. If you're over the recommended limits, optimization is required.</p>
+
+                <h2>The Manual Optimization Process</h2>
+
+                <p>If you're comfortable with Blender, here's the workflow:</p>
+
+                <h3>Step 1: Reduce Polygon Count</h3>
+
+                <p>Import your model and apply a Decimate modifier. For e-commerce products, you can often reduce by 70-80% without visible quality loss - customers are viewing on phone screens, not 4K monitors.</p>
+
+                <pre><code># Target: 30,000-50,000 triangles for hero products
+# Target: 10,000-20,000 triangles for secondary products</code></pre>
+
+                <h3>Step 2: Resize Textures</h3>
+
+                <p>Open each texture and resize to 1024x1024 or 2048x2048 maximum. For most products, 1024px is sufficient - remember, it's being viewed on a 6-inch phone screen.</p>
+
+                <h3>Step 3: Export GLB with Compression</h3>
+
+                <p>When exporting to GLB, enable Draco compression for geometry. This can reduce file size by 80-90% with minimal quality impact.</p>
+
+                <h3>Step 4: Convert to USDZ</h3>
+
+                <p>This is where it gets tricky. Apple's Reality Converter is the official tool, but it only runs on macOS. Alternatives:</p>
+
+                <ul>
+                    <li><strong>Reality Converter</strong> (macOS only) - Apple's official tool, best compatibility</li>
+                    <li><strong>Blender USDZ export</strong> - Works but can have material issues</li>
+                    <li><strong>Online converters</strong> - Hit or miss quality</li>
+                </ul>
+
+                <p>Total time for one product: 45-90 minutes if you know what you're doing. Multiply by your SKU count.</p>
+
+                <h2>The Automated Approach</h2>
+
+                <p>Here's the same process via API:</p>
+
+                <pre><code>curl -X POST https://webdeliveryengine.com/optimize \
+  -H "X-API-Key: sk_your_key" \
+  -F "file=@product.glb" \
+  -F "mode=decimate" \
+  -F "quality=50" \
+  --output product-optimized.glb</code></pre>
+
+                <p>That handles polygon reduction, texture optimization, and Draco compression in one call. Processing takes about 10 seconds.</p>
+
+                <p>For USDZ conversion:</p>
+
+                <pre><code>curl -X POST https://webdeliveryengine.com/convert \
+  -H "X-API-Key: sk_your_key" \
+  -F "file=@product-optimized.glb" \
+  -F "output_format=usdz" \
+  --output product.usdz</code></pre>
+
+                <p>Now you have both formats ready for Shopify upload.</p>
+
+                <h3>Batch Processing for Catalogs</h3>
+
+                <p>For stores with hundreds of products:</p>
+
+                <pre><code>#!/bin/bash
+for file in ./products/*.glb; do
+  name=$(basename "$file" .glb)
+
+  # Optimize GLB
+  curl -X POST https://webdeliveryengine.com/optimize \
+    -H "X-API-Key: sk_your_key" \
+    -F "file=@$file" \
+    -F "mode=decimate" \
+    -F "quality=50" \
+    --output "./output/${name}.glb"
+
+  # Convert to USDZ
+  curl -X POST https://webdeliveryengine.com/convert \
+    -H "X-API-Key: sk_your_key" \
+    -F "file=@./output/${name}.glb" \
+    -F "output_format=usdz" \
+    --output "./output/${name}.usdz"
+
+  echo "Processed: $name"
+done</code></pre>
+
+                <h2>Quality Settings for Different Products</h2>
+
+                <p>Not every product needs the same level of detail:</p>
+
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>Product Type</th>
+                            <th>Target Polys</th>
+                            <th>Texture Size</th>
+                            <th>Quality Setting</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Hero/Featured</td>
+                            <td>50-100K</td>
+                            <td>2048px</td>
+                            <td>70-80%</td>
+                        </tr>
+                        <tr>
+                            <td>Standard Products</td>
+                            <td>20-50K</td>
+                            <td>1024px</td>
+                            <td>50-60%</td>
+                        </tr>
+                        <tr>
+                            <td>Simple/Small Items</td>
+                            <td>5-20K</td>
+                            <td>512px</td>
+                            <td>30-40%</td>
+                        </tr>
+                        <tr>
+                            <td>Furniture (Large)</td>
+                            <td>30-60K</td>
+                            <td>2048px</td>
+                            <td>50-60%</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h2>Testing Your AR Experience</h2>
+
+                <p>Before uploading to Shopify, test locally:</p>
+
+                <ol>
+                    <li><strong>GLB:</strong> Open in <a href="https://gltf-viewer.donmccurdy.com/" rel="noopener noreferrer" target="_blank">glTF Viewer</a> or our <a href="/tools/glb-inspector.html">GLB Inspector</a></li>
+                    <li><strong>USDZ:</strong> AirDrop to an iPhone, or open in macOS Finder</li>
+                    <li><strong>Performance:</strong> Test on an older device (iPhone 8 or similar) to catch performance issues</li>
+                </ol>
+
+                <p>If it runs smoothly on older hardware, it'll work great for your customers.</p>
+
+                <h2>Uploading to Shopify</h2>
+
+                <p>Once your files are optimized:</p>
+
+                <ol>
+                    <li>Go to Products in Shopify admin</li>
+                    <li>Select the product</li>
+                    <li>Scroll to 3D models section</li>
+                    <li>Upload both GLB and USDZ files</li>
+                    <li>Preview on mobile to verify AR works</li>
+                </ol>
+
+                <p>Shopify will automatically show the 3D viewer on product pages and enable "View in AR" for iOS customers.</p>
+
+                <h2>Summary</h2>
+
+                <p>Shopify AR is a powerful sales tool - products with AR see significantly higher conversion rates. But the technology only works if your 3D models are properly optimized.</p>
+
+                <p>Key takeaways:</p>
+
+                <ul>
+                    <li>Keep GLB files under 15MB, USDZ under 10MB</li>
+                    <li>Target under 100K polygons for smooth AR performance</li>
+                    <li>Use 1024-2048px textures maximum</li>
+                    <li>Test on real devices before uploading</li>
+                    <li>Automate the process if you have more than a handful of products</li>
+                </ul>
+
+                <p>The difference between a 50MB model that crashes and a 3MB model that loads instantly is the difference between a frustrated customer and a sale.</p>
+            </div>
+
+            <div class="cta-box">
+                <h3>Ready to Optimize for Shopify?</h3>
+                <p>Get 50 free credits to optimize your product models. Both GLB and USDZ output supported.</p>
+                <a href="/" class="btn">Start Optimizing</a>
+            </div>
+
+            <div class="email-capture">
+                <h3>Get E-commerce 3D Tips</h3>
+                <p>Optimization techniques specifically for product visualization and AR.</p>
+                <form class="email-capture-form" id="emailForm">
+                    <input type="email" placeholder="your@email.com" required />
+                    <button type="submit">Subscribe</button>
+                </form>
+                <p class="text-small" style="margin-top: 16px; margin-bottom: 0; opacity: 0.5;">No spam. Unsubscribe anytime.</p>
+            </div>
+        </article>
+    </main>
+
+    <footer class="main-footer">
+        <p>&copy; 2025 Brian Ginn. All rights reserved.</p>
+        <a href="/">MeshOpt</a>
+        <a href="/tools/">Tools</a>
+        <a href="/blog/">Blog</a>
+    </footer>
+
+    <script>
+        document.getElementById('emailForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('Email signup coming soon! For now, try the optimizer at webdeliveryengine.com');
+        });
+    </script>
+</body>
+</html>
