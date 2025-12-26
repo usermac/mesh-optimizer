@@ -5,17 +5,393 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>GLB Inspector - Free 3D File Analyzer | MeshOpt</title>
-    <meta name="description" content="Free online GLB/GLTF inspector. Analyze polygon count, textures, materials, and file size of your 3D models instantly in your browser." />
-    <meta name="keywords" content="glb inspector, gltf analyzer, 3d file info, polygon count, texture size, glb metadata" />
+    <meta name="description" content="Free online GLB/GLTF inspector. Analyze polygon count, textures, materials, animations, and file size of your 3D models instantly in your browser." />
+    <meta name="keywords" content="glb inspector, gltf analyzer, 3d file info, polygon count, texture size, glb metadata, animation inspector" />
 
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://webdeliveryengine.com/tools/glb-inspector.html" />
     <meta property="og:title" content="GLB Inspector - Free 3D File Analyzer" />
-    <meta property="og:description" content="Analyze polygon count, textures, materials, and file size of your 3D models instantly." />
+    <meta property="og:description" content="Analyze polygon count, textures, materials, animations, and file size of your 3D models instantly." />
 
     <link rel="canonical" href="https://webdeliveryengine.com/tools/glb-inspector.html" />
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="stylesheet" href="/css/styles.css" />
+    <style>
+        /* 3D Preview Viewport */
+        .preview-container {
+            position: relative;
+            background: #000;
+            border: 1px solid var(--cp-border);
+            margin-top: 32px;
+            overflow: hidden;
+        }
+        .preview-container::before {
+            content: '3D PREVIEW';
+            position: absolute;
+            top: -10px;
+            left: 16px;
+            background: #000;
+            color: var(--cp-accent);
+            font-family: var(--cp-font-display);
+            font-size: 0.65rem;
+            font-weight: 600;
+            padding: 2px 8px;
+            letter-spacing: 2px;
+            z-index: 10;
+        }
+        #previewCanvas {
+            width: 100%;
+            height: 400px;
+            display: block;
+        }
+        .preview-controls {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            display: flex;
+            gap: 8px;
+            z-index: 10;
+        }
+        .preview-controls button {
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid var(--cp-border);
+            color: var(--cp-text-dim);
+            font-family: var(--cp-font-display);
+            font-size: 0.7rem;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .preview-controls button:hover {
+            background: rgba(0, 212, 255, 0.1);
+            border-color: var(--cp-accent);
+            color: var(--cp-accent);
+        }
+        .preview-controls button.active {
+            background: var(--cp-accent);
+            color: #000;
+            border-color: var(--cp-accent);
+        }
+        .preview-hint {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            font-family: var(--cp-font-display);
+            font-size: 0.7rem;
+            color: var(--cp-text-dim);
+            opacity: 0.6;
+        }
+
+        /* Animation Section */
+        .animation-section {
+            background: #000;
+            border: 1px solid var(--cp-border);
+            padding: 24px;
+            margin-top: 24px;
+            position: relative;
+        }
+        .animation-section::before {
+            content: 'ANIMATIONS';
+            position: absolute;
+            top: -10px;
+            left: 16px;
+            background: #000;
+            color: var(--cp-accent-secondary);
+            font-family: var(--cp-font-display);
+            font-size: 0.65rem;
+            font-weight: 600;
+            padding: 2px 8px;
+            letter-spacing: 2px;
+        }
+        .animation-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .animation-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: rgba(180, 248, 74, 0.03);
+            border: 1px solid var(--cp-border);
+            transition: all 0.2s;
+        }
+        .animation-item:hover {
+            border-color: var(--cp-accent-secondary);
+            background: rgba(180, 248, 74, 0.06);
+        }
+        .animation-item .name {
+            font-family: var(--cp-font-display);
+            font-weight: 600;
+            color: var(--cp-text);
+        }
+        .animation-item .meta {
+            display: flex;
+            gap: 16px;
+            font-family: var(--cp-font-display);
+            font-size: 0.8rem;
+            color: var(--cp-text-dim);
+        }
+        .animation-item .meta span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .animation-item .meta .value {
+            color: var(--cp-accent-secondary);
+        }
+        .animation-item button {
+            background: transparent;
+            border: 1px solid var(--cp-accent-secondary);
+            color: var(--cp-accent-secondary);
+            padding: 6px 12px;
+            font-family: var(--cp-font-display);
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .animation-item button:hover {
+            background: var(--cp-accent-secondary);
+            color: #000;
+        }
+        .animation-item button.playing {
+            background: var(--cp-accent-secondary);
+            color: #000;
+        }
+        .skeleton-info {
+            margin-top: 16px;
+            padding: 16px;
+            background: rgba(0, 212, 255, 0.03);
+            border-left: 3px solid var(--cp-accent);
+        }
+        .skeleton-info .label {
+            font-family: var(--cp-font-display);
+            font-size: 0.7rem;
+            color: var(--cp-text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+        .skeleton-info .value {
+            font-family: var(--cp-font-display);
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--cp-accent);
+        }
+        .no-animations {
+            color: var(--cp-text-dim);
+            font-style: italic;
+            padding: 12px 0;
+        }
+
+        /* Scene Hierarchy */
+        .hierarchy-section {
+            background: #000;
+            border: 1px solid var(--cp-border);
+            padding: 24px;
+            margin-top: 24px;
+            position: relative;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .hierarchy-section::before {
+            content: 'SCENE GRAPH';
+            position: absolute;
+            top: -10px;
+            left: 16px;
+            background: #000;
+            color: var(--cp-accent);
+            font-family: var(--cp-font-display);
+            font-size: 0.65rem;
+            font-weight: 600;
+            padding: 2px 8px;
+            letter-spacing: 2px;
+        }
+        .hierarchy-tree {
+            font-family: var(--cp-font-display);
+            font-size: 0.85rem;
+            line-height: 1.8;
+        }
+        .hierarchy-node {
+            padding-left: 0;
+        }
+        .hierarchy-node-content {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 8px;
+            cursor: pointer;
+            transition: background 0.1s;
+            border-radius: 2px;
+        }
+        .hierarchy-node-content:hover {
+            background: rgba(0, 212, 255, 0.05);
+        }
+        .hierarchy-node-toggle {
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--cp-accent);
+            font-size: 0.7rem;
+            flex-shrink: 0;
+        }
+        .hierarchy-node-toggle.empty {
+            opacity: 0.3;
+        }
+        .hierarchy-node-icon {
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+        }
+        .hierarchy-node-icon.mesh { color: var(--cp-accent-secondary); }
+        .hierarchy-node-icon.bone { color: #ff9f43; }
+        .hierarchy-node-icon.light { color: #ffd93d; }
+        .hierarchy-node-icon.camera { color: #a29bfe; }
+        .hierarchy-node-icon.group { color: var(--cp-text-dim); }
+        .hierarchy-node-name {
+            color: var(--cp-text);
+        }
+        .hierarchy-node-type {
+            font-size: 0.7rem;
+            color: var(--cp-text-dim);
+            margin-left: auto;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .hierarchy-node-children {
+            margin-left: 20px;
+            border-left: 1px solid var(--cp-border);
+            display: none;
+        }
+        .hierarchy-node-children.expanded {
+            display: block;
+        }
+
+        /* Recommendations */
+        .recommendations-section {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.02) 0%, rgba(180, 248, 74, 0.02) 100%);
+            border: 1px solid var(--cp-border);
+            padding: 24px;
+            margin-top: 24px;
+            position: relative;
+        }
+        .recommendations-section::before {
+            content: 'OPTIMIZATION TIPS';
+            position: absolute;
+            top: -10px;
+            left: 16px;
+            background: var(--cp-bg);
+            color: var(--cp-accent);
+            font-family: var(--cp-font-display);
+            font-size: 0.65rem;
+            font-weight: 600;
+            padding: 2px 8px;
+            letter-spacing: 2px;
+        }
+        .recommendation-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .recommendation-item {
+            display: flex;
+            gap: 16px;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.3);
+            border-left: 3px solid var(--cp-text-dim);
+        }
+        .recommendation-item.critical {
+            border-left-color: var(--cp-danger);
+            background: rgba(248, 81, 73, 0.05);
+        }
+        .recommendation-item.warning {
+            border-left-color: var(--cp-warning);
+            background: rgba(210, 153, 34, 0.05);
+        }
+        .recommendation-item.good {
+            border-left-color: var(--cp-success);
+            background: rgba(63, 185, 80, 0.05);
+        }
+        .recommendation-icon {
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        .recommendation-item.critical .recommendation-icon { color: var(--cp-danger); }
+        .recommendation-item.warning .recommendation-icon { color: var(--cp-warning); }
+        .recommendation-item.good .recommendation-icon { color: var(--cp-success); }
+        .recommendation-content h4 {
+            font-family: var(--cp-font-display);
+            font-size: 0.9rem;
+            margin: 0 0 6px 0;
+            color: var(--cp-text);
+        }
+        .recommendation-content p {
+            font-size: 0.9rem;
+            color: var(--cp-text-dim);
+            margin: 0;
+            line-height: 1.5;
+        }
+        .all-good {
+            text-align: center;
+            padding: 24px;
+            color: var(--cp-success);
+        }
+        .all-good .icon {
+            font-size: 2rem;
+            margin-bottom: 12px;
+        }
+        .all-good p {
+            color: var(--cp-text-dim);
+            margin-top: 8px;
+        }
+
+        /* Tab navigation */
+        .inspector-tabs {
+            display: flex;
+            gap: 0;
+            margin-top: 32px;
+            border-bottom: 1px solid var(--cp-border);
+        }
+        .inspector-tab {
+            background: transparent;
+            border: 1px solid var(--cp-border);
+            border-bottom: none;
+            color: var(--cp-text-dim);
+            font-family: var(--cp-font-display);
+            font-size: 0.75rem;
+            font-weight: 500;
+            padding: 12px 24px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            margin-right: -1px;
+        }
+        .inspector-tab:hover {
+            color: var(--cp-accent);
+            background: rgba(0, 212, 255, 0.05);
+        }
+        .inspector-tab.active {
+            background: var(--cp-bg);
+            color: var(--cp-accent);
+            border-color: var(--cp-accent);
+            border-bottom: 1px solid var(--cp-bg);
+            margin-bottom: -1px;
+        }
+        .inspector-tab-panel {
+            display: none;
+        }
+        .inspector-tab-panel.active {
+            display: block;
+        }
+    </style>
 </head>
 <body class="content-page">
     <header class="site-header">
@@ -38,7 +414,7 @@
 
         <div class="article-header">
             <h1>GLB Inspector</h1>
-            <p>Analyze your 3D models instantly. See polygon counts, textures, materials, and file size breakdown - all processed locally in your browser.</p>
+            <p>Analyze your 3D models instantly. See polygon counts, textures, materials, animations, and scene hierarchy - all processed locally in your browser.</p>
         </div>
 
         <div class="tool-container">
@@ -55,15 +431,55 @@
                 <input type="file" id="fileInput" class="d-none" accept=".glb,.gltf" />
             </div>
 
-            <div id="results" class="tool-output" style="display: none;">
-                <h3>Analysis Results</h3>
-                <div class="tool-output-grid" id="outputGrid">
-                    <!-- Results populated by JS -->
+            <div id="results" style="display: none;">
+                <!-- Stats Grid -->
+                <div class="tool-output">
+                    <h3>Analysis Results</h3>
+                    <div class="tool-output-grid" id="outputGrid"></div>
+                    <div id="detailsSection" style="margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--cp-border);">
+                        <h4 style="font-family: var(--cp-font-display); font-size: 0.8rem; margin-bottom: 16px; color: var(--cp-text-dim); text-transform: uppercase; letter-spacing: 1px;">Materials & Textures</h4>
+                        <div id="materialsInfo" style="font-size: 0.9rem; line-height: 1.8;"></div>
+                    </div>
                 </div>
 
-                <div id="detailsSection" style="margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--cp-border);">
-                    <h4 style="font-family: var(--cp-font-display); font-size: 0.8rem; margin-bottom: 16px; color: var(--cp-text-dim); text-transform: uppercase; letter-spacing: 1px;">Materials & Textures</h4>
-                    <div id="materialsInfo" style="font-size: 0.9rem; line-height: 1.8;"></div>
+                <!-- 3D Preview -->
+                <div class="preview-container" id="previewContainer">
+                    <canvas id="previewCanvas"></canvas>
+                    <div class="preview-controls">
+                        <button id="btnWireframe" title="Toggle wireframe">Wireframe</button>
+                        <button id="btnReset" title="Reset camera">Reset</button>
+                        <button id="btnAutoRotate" class="active" title="Toggle auto-rotation">Auto Rotate</button>
+                    </div>
+                    <div class="preview-hint">Drag to orbit, scroll to zoom</div>
+                </div>
+
+                <!-- Tabs for detailed info -->
+                <div class="inspector-tabs">
+                    <button class="inspector-tab active" data-tab="animations">Animations</button>
+                    <button class="inspector-tab" data-tab="hierarchy">Hierarchy</button>
+                    <button class="inspector-tab" data-tab="recommendations">Recommendations</button>
+                </div>
+
+                <!-- Animation Panel -->
+                <div class="inspector-tab-panel active" id="panel-animations">
+                    <div class="animation-section" style="margin-top: 0; border-top: none;">
+                        <div id="animationsList"></div>
+                        <div id="skeletonInfo"></div>
+                    </div>
+                </div>
+
+                <!-- Hierarchy Panel -->
+                <div class="inspector-tab-panel" id="panel-hierarchy">
+                    <div class="hierarchy-section" style="margin-top: 0; border-top: none;">
+                        <div class="hierarchy-tree" id="hierarchyTree"></div>
+                    </div>
+                </div>
+
+                <!-- Recommendations Panel -->
+                <div class="inspector-tab-panel" id="panel-recommendations">
+                    <div class="recommendations-section" style="margin-top: 0; border-top: none;">
+                        <div class="recommendation-list" id="recommendationsList"></div>
+                    </div>
                 </div>
             </div>
 
@@ -105,6 +521,10 @@
                     <span style="color: var(--cp-accent); font-family: var(--cp-font-display); font-weight: 600; min-width: 140px;">Textures</span>
                     <span style="color: var(--cp-text-dim);">Texture count and memory. Large textures are often the biggest bottleneck.</span>
                 </li>
+                <li style="padding: 12px 0; border-bottom: 1px solid var(--cp-border); display: flex; gap: 16px;">
+                    <span style="color: var(--cp-accent); font-family: var(--cp-font-display); font-weight: 600; min-width: 140px;">Animations</span>
+                    <span style="color: var(--cp-text-dim);">Animation clips, duration, and bone count for skeletal animations.</span>
+                </li>
                 <li style="padding: 12px 0; display: flex; gap: 16px;">
                     <span style="color: var(--cp-accent); font-family: var(--cp-font-display); font-weight: 600; min-width: 140px;">File Size</span>
                     <span style="color: var(--cp-text-dim);">Compressed GLB size. For web delivery, aim for under 5MB.</span>
@@ -132,7 +552,9 @@
     <script type="module">
         import * as THREE from 'three';
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
+        // DOM Elements
         const dropzone = document.getElementById('dropzone');
         const fileInput = document.getElementById('fileInput');
         const dropText = document.getElementById('dropText');
@@ -143,6 +565,125 @@
         const outputGrid = document.getElementById('outputGrid');
         const materialsInfo = document.getElementById('materialsInfo');
         const errorMessage = document.getElementById('errorMessage');
+        const animationsList = document.getElementById('animationsList');
+        const skeletonInfo = document.getElementById('skeletonInfo');
+        const hierarchyTree = document.getElementById('hierarchyTree');
+        const recommendationsList = document.getElementById('recommendationsList');
+        const previewCanvas = document.getElementById('previewCanvas');
+
+        // Three.js preview variables
+        let scene, camera, renderer, controls, currentModel, mixer, clock;
+        let animationActions = [];
+        let isAutoRotating = true;
+        let isWireframe = false;
+
+        function initPreview() {
+            const container = document.getElementById('previewContainer');
+            const width = container.clientWidth;
+            const height = 400;
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0a0a);
+
+            camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+            camera.position.set(3, 2, 3);
+
+            renderer = new THREE.WebGLRenderer({ canvas: previewCanvas, antialias: true });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.outputColorSpace = THREE.SRGBColorSpace;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1;
+
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.autoRotate = isAutoRotating;
+            controls.autoRotateSpeed = 1;
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+            dirLight.position.set(5, 10, 7.5);
+            scene.add(dirLight);
+
+            const dirLight2 = new THREE.DirectionalLight(0x00d4ff, 0.3);
+            dirLight2.position.set(-5, -5, -5);
+            scene.add(dirLight2);
+
+            // Grid helper
+            const gridHelper = new THREE.GridHelper(10, 20, 0x1e2a3a, 0x1e2a3a);
+            scene.add(gridHelper);
+
+            clock = new THREE.Clock();
+
+            animate();
+
+            // Handle resize
+            window.addEventListener('resize', () => {
+                const newWidth = container.clientWidth;
+                camera.aspect = newWidth / height;
+                camera.updateProjectionMatrix();
+                renderer.setSize(newWidth, height);
+            });
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+            if (mixer) mixer.update(delta);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        function loadModelToPreview(gltf) {
+            // Remove previous model
+            if (currentModel) {
+                scene.remove(currentModel);
+                currentModel.traverse((child) => {
+                    if (child.geometry) child.geometry.dispose();
+                    if (child.material) {
+                        if (Array.isArray(child.material)) {
+                            child.material.forEach(m => m.dispose());
+                        } else {
+                            child.material.dispose();
+                        }
+                    }
+                });
+            }
+
+            currentModel = gltf.scene;
+            scene.add(currentModel);
+
+            // Center and scale model
+            const box = new THREE.Box3().setFromObject(currentModel);
+            const size = box.getSize(new THREE.Vector3());
+            const center = box.getCenter(new THREE.Vector3());
+
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const scale = 2 / maxDim;
+            currentModel.scale.setScalar(scale);
+
+            currentModel.position.sub(center.multiplyScalar(scale));
+            currentModel.position.y -= (box.min.y * scale);
+
+            // Reset camera
+            camera.position.set(3, 2, 3);
+            controls.target.set(0, 0.5, 0);
+            controls.update();
+
+            // Setup animations
+            animationActions = [];
+            if (gltf.animations.length > 0) {
+                mixer = new THREE.AnimationMixer(currentModel);
+                gltf.animations.forEach((clip, index) => {
+                    const action = mixer.clipAction(clip);
+                    animationActions.push({ action, clip, index });
+                });
+            }
+        }
 
         function formatBytes(bytes) {
             if (bytes === 0) return '0 B';
@@ -156,6 +697,11 @@
             return num.toLocaleString();
         }
 
+        function formatDuration(seconds) {
+            if (seconds < 1) return `${Math.round(seconds * 1000)}ms`;
+            return `${seconds.toFixed(2)}s`;
+        }
+
         function showError(message) {
             errorMessage.textContent = message;
             errorMessage.classList.add('show');
@@ -166,13 +712,57 @@
             errorMessage.classList.remove('show');
         }
 
+        function buildHierarchyTree(node, depth = 0) {
+            const nodeType = getNodeType(node);
+            const hasChildren = node.children && node.children.length > 0;
+            const icons = {
+                mesh: '&#9632;',
+                bone: '&#9670;',
+                light: '&#9788;',
+                camera: '&#8965;',
+                group: '&#9679;'
+            };
+
+            let html = `
+                <div class="hierarchy-node" style="padding-left: ${depth * 0}px;">
+                    <div class="hierarchy-node-content" onclick="this.parentElement.querySelector('.hierarchy-node-children')?.classList.toggle('expanded'); this.querySelector('.hierarchy-node-toggle').textContent = this.querySelector('.hierarchy-node-toggle').textContent === '+' ? '-' : '+';">
+                        <span class="hierarchy-node-toggle ${hasChildren ? '' : 'empty'}">${hasChildren ? '+' : ' '}</span>
+                        <span class="hierarchy-node-icon ${nodeType}">${icons[nodeType] || icons.group}</span>
+                        <span class="hierarchy-node-name">${node.name || 'Unnamed'}</span>
+                        <span class="hierarchy-node-type">${nodeType}</span>
+                    </div>
+            `;
+
+            if (hasChildren) {
+                html += `<div class="hierarchy-node-children">`;
+                node.children.forEach(child => {
+                    html += buildHierarchyTree(child, depth + 1);
+                });
+                html += `</div>`;
+            }
+
+            html += `</div>`;
+            return html;
+        }
+
+        function getNodeType(node) {
+            if (node.isMesh) return 'mesh';
+            if (node.isBone) return 'bone';
+            if (node.isLight) return 'light';
+            if (node.isCamera) return 'camera';
+            return 'group';
+        }
+
         function analyzeGLTF(gltf, fileSizeBytes) {
             let totalVertices = 0;
             let totalTriangles = 0;
             let meshCount = 0;
+            let boneCount = 0;
             const materials = new Set();
             const textures = new Map();
             let textureMemory = 0;
+            const animations = [];
+            let maxTextureSize = 0;
 
             gltf.scene.traverse((node) => {
                 if (node.isMesh) {
@@ -211,12 +801,31 @@
                                             memSize
                                         });
                                         textureMemory += memSize;
+                                        maxTextureSize = Math.max(maxTextureSize, width, height);
                                     }
                                 }
                             });
                         });
                     }
                 }
+
+                if (node.isBone) {
+                    boneCount++;
+                }
+            });
+
+            // Collect animation info
+            gltf.animations.forEach(clip => {
+                let keyframeCount = 0;
+                clip.tracks.forEach(track => {
+                    keyframeCount += track.times.length;
+                });
+                animations.push({
+                    name: clip.name || 'Unnamed',
+                    duration: clip.duration,
+                    tracks: clip.tracks.length,
+                    keyframes: keyframeCount
+                });
             });
 
             return {
@@ -226,11 +835,134 @@
                 materials: Array.from(materials),
                 textures: Array.from(textures.values()),
                 textureMemory,
-                fileSize: fileSizeBytes
+                maxTextureSize,
+                fileSize: fileSizeBytes,
+                animations,
+                boneCount,
+                scene: gltf.scene
             };
         }
 
-        function displayResults(data) {
+        function generateRecommendations(data) {
+            const recommendations = [];
+
+            // Polygon count check
+            if (data.totalTriangles > 200000) {
+                recommendations.push({
+                    type: 'critical',
+                    icon: '!',
+                    title: 'Very High Polygon Count',
+                    message: `${formatNumber(data.totalTriangles)} triangles will cause poor performance on most devices. Consider using MeshOpt to reduce to under 100K for web delivery.`
+                });
+            } else if (data.totalTriangles > 100000) {
+                recommendations.push({
+                    type: 'warning',
+                    icon: '!',
+                    title: 'High Polygon Count',
+                    message: `${formatNumber(data.totalTriangles)} triangles may affect mobile performance. Consider optimization for mobile-first experiences.`
+                });
+            } else if (data.totalTriangles < 50000) {
+                recommendations.push({
+                    type: 'good',
+                    icon: '&#10003;',
+                    title: 'Good Polygon Count',
+                    message: 'Triangle count is well-optimized for web and mobile delivery.'
+                });
+            }
+
+            // File size check
+            if (data.fileSize > 20 * 1024 * 1024) {
+                recommendations.push({
+                    type: 'critical',
+                    icon: '!',
+                    title: 'File Too Large',
+                    message: `${formatBytes(data.fileSize)} is too large for web delivery. Aim for under 5MB, or 10MB maximum for desktop-only experiences.`
+                });
+            } else if (data.fileSize > 10 * 1024 * 1024) {
+                recommendations.push({
+                    type: 'warning',
+                    icon: '!',
+                    title: 'Large File Size',
+                    message: `${formatBytes(data.fileSize)} may cause slow loading. Consider texture compression and mesh optimization.`
+                });
+            } else if (data.fileSize < 5 * 1024 * 1024) {
+                recommendations.push({
+                    type: 'good',
+                    icon: '&#10003;',
+                    title: 'Good File Size',
+                    message: 'File size is suitable for web delivery with reasonable load times.'
+                });
+            }
+
+            // Texture size check
+            if (data.maxTextureSize > 4096) {
+                recommendations.push({
+                    type: 'critical',
+                    icon: '!',
+                    title: 'Oversized Textures',
+                    message: `Textures larger than 4K (${data.maxTextureSize}px) cause memory issues. Resize to 2K or 1K for better compatibility.`
+                });
+            } else if (data.maxTextureSize > 2048) {
+                recommendations.push({
+                    type: 'warning',
+                    icon: '!',
+                    title: 'Large Textures',
+                    message: 'Consider using 1K or 2K textures for mobile support. Large textures increase memory usage significantly.'
+                });
+            }
+
+            // Texture memory
+            if (data.textureMemory > 100 * 1024 * 1024) {
+                recommendations.push({
+                    type: 'critical',
+                    icon: '!',
+                    title: 'Excessive Texture Memory',
+                    message: `${formatBytes(data.textureMemory)} texture memory will crash mobile devices. Reduce texture count and sizes.`
+                });
+            } else if (data.textureMemory > 50 * 1024 * 1024) {
+                recommendations.push({
+                    type: 'warning',
+                    icon: '!',
+                    title: 'High Texture Memory',
+                    message: `${formatBytes(data.textureMemory)} texture memory may cause issues on low-end devices.`
+                });
+            }
+
+            // Draw calls (mesh + material count)
+            const drawCallEstimate = data.meshCount * data.materials.length;
+            if (drawCallEstimate > 50) {
+                recommendations.push({
+                    type: 'warning',
+                    icon: '!',
+                    title: 'Many Draw Calls',
+                    message: `${data.meshCount} meshes with ${data.materials.length} materials may cause performance issues. Consider combining meshes and atlas textures.`
+                });
+            }
+
+            // Bone count for animations
+            if (data.boneCount > 100) {
+                recommendations.push({
+                    type: 'warning',
+                    icon: '!',
+                    title: 'Complex Skeleton',
+                    message: `${data.boneCount} bones is high for web. Consider simplifying the rig for better performance.`
+                });
+            }
+
+            // Materials check
+            if (data.materials.length > 10) {
+                recommendations.push({
+                    type: 'warning',
+                    icon: '!',
+                    title: 'Many Materials',
+                    message: `${data.materials.length} materials increases draw calls. Consider using texture atlases to combine materials.`
+                });
+            }
+
+            return recommendations;
+        }
+
+        function displayResults(data, gltf) {
             hideError();
 
             const polyClass = data.totalTriangles > 100000 ? 'warning' : (data.totalTriangles < 50000 ? 'success' : '');
@@ -263,6 +995,7 @@
                 </div>
             `;
 
+            // Materials & Textures details
             let detailsHtml = '';
             if (data.materials.length > 0) {
                 detailsHtml += '<div style="margin-bottom: 16px;"><span style="color: var(--cp-accent); font-weight: 600;">Materials:</span> ' + data.materials.join(', ') + '</div>';
@@ -282,6 +1015,95 @@
                 </div>`;
             }
             materialsInfo.innerHTML = detailsHtml || '<p style="color: var(--cp-text-dim);">No materials or textures found.</p>';
+
+            // Animations
+            if (data.animations.length > 0) {
+                let animHtml = '<div class="animation-list">';
+                data.animations.forEach((anim, idx) => {
+                    animHtml += `
+                        <div class="animation-item">
+                            <div>
+                                <span class="name">${anim.name}</span>
+                            </div>
+                            <div class="meta">
+                                <span>Duration: <span class="value">${formatDuration(anim.duration)}</span></span>
+                                <span>Tracks: <span class="value">${anim.tracks}</span></span>
+                                <span>Keyframes: <span class="value">${formatNumber(anim.keyframes)}</span></span>
+                            </div>
+                            <button class="play-animation" data-index="${idx}">Play</button>
+                        </div>
+                    `;
+                });
+                animHtml += '</div>';
+                animationsList.innerHTML = animHtml;
+
+                // Play button handlers
+                document.querySelectorAll('.play-animation').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const index = parseInt(e.target.dataset.index);
+                        const isPlaying = e.target.classList.contains('playing');
+
+                        // Stop all animations
+                        animationActions.forEach(({ action }) => action.stop());
+                        document.querySelectorAll('.play-animation').forEach(b => {
+                            b.classList.remove('playing');
+                            b.textContent = 'Play';
+                        });
+
+                        if (!isPlaying && animationActions[index]) {
+                            animationActions[index].action.reset().play();
+                            e.target.classList.add('playing');
+                            e.target.textContent = 'Stop';
+                        }
+                    });
+                });
+            } else {
+                animationsList.innerHTML = '<p class="no-animations">No animations found in this model.</p>';
+            }
+
+            // Skeleton info
+            if (data.boneCount > 0) {
+                skeletonInfo.innerHTML = `
+                    <div class="skeleton-info">
+                        <div class="label">Skeleton Bones</div>
+                        <div class="value">${data.boneCount}</div>
+                    </div>
+                `;
+            } else {
+                skeletonInfo.innerHTML = '';
+            }
+
+            // Scene Hierarchy
+            hierarchyTree.innerHTML = buildHierarchyTree(data.scene);
+
+            // Recommendations
+            const recommendations = generateRecommendations(data);
+            if (recommendations.length > 0) {
+                let recHtml = '';
+                recommendations.forEach(rec => {
+                    recHtml += `
+                        <div class="recommendation-item ${rec.type}">
+                            <span class="recommendation-icon">${rec.icon}</span>
+                            <div class="recommendation-content">
+                                <h4>${rec.title}</h4>
+                                <p>${rec.message}</p>
+                            </div>
+                        </div>
+                    `;
+                });
+                recommendationsList.innerHTML = recHtml;
+            } else {
+                recommendationsList.innerHTML = `
+                    <div class="all-good">
+                        <div class="icon">&#10003;</div>
+                        <strong>Looking Great!</strong>
+                        <p>Your model is well-optimized for web delivery.</p>
+                    </div>
+                `;
+            }
+
+            // Load into 3D preview
+            loadModelToPreview(gltf);
 
             results.style.display = 'block';
             results.style.animation = 'fadeInUp 0.4s ease';
@@ -310,7 +1132,7 @@
                 url,
                 (gltf) => {
                     const data = analyzeGLTF(gltf, file.size);
-                    displayResults(data);
+                    displayResults(data, gltf);
                     URL.revokeObjectURL(url);
                 },
                 undefined,
@@ -322,6 +1144,45 @@
             );
         }
 
+        // Initialize preview on page load
+        initPreview();
+
+        // Tab switching
+        document.querySelectorAll('.inspector-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.inspector-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.inspector-tab-panel').forEach(p => p.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(`panel-${tab.dataset.tab}`).classList.add('active');
+            });
+        });
+
+        // Preview controls
+        document.getElementById('btnWireframe').addEventListener('click', (e) => {
+            isWireframe = !isWireframe;
+            e.target.classList.toggle('active', isWireframe);
+            if (currentModel) {
+                currentModel.traverse((child) => {
+                    if (child.isMesh) {
+                        child.material.wireframe = isWireframe;
+                    }
+                });
+            }
+        });
+
+        document.getElementById('btnReset').addEventListener('click', () => {
+            camera.position.set(3, 2, 3);
+            controls.target.set(0, 0.5, 0);
+            controls.update();
+        });
+
+        document.getElementById('btnAutoRotate').addEventListener('click', (e) => {
+            isAutoRotating = !isAutoRotating;
+            controls.autoRotate = isAutoRotating;
+            e.target.classList.toggle('active', isAutoRotating);
+        });
+
+        // Dropzone events
         dropzone.addEventListener('dragover', (e) => {
             e.preventDefault();
             dropzone.classList.add('dragging');
