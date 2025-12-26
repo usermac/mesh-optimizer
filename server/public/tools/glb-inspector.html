@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>GLB Inspector - Free 3D File Analyzer | MeshOpt</title>
+    <meta name="description" content="Free online GLB/GLTF inspector. Analyze polygon count, textures, materials, and file size of your 3D models instantly in your browser." />
+    <meta name="keywords" content="glb inspector, gltf analyzer, 3d file info, polygon count, texture size, glb metadata" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://webdeliveryengine.com/tools/glb-inspector.html" />
+    <meta property="og:title" content="GLB Inspector - Free 3D File Analyzer" />
+    <meta property="og:description" content="Analyze polygon count, textures, materials, and file size of your 3D models instantly." />
+
+    <link rel="canonical" href="https://webdeliveryengine.com/tools/glb-inspector.html" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body class="content-page">
+    <header class="site-header">
+        <a href="/" class="logo">MeshOpt</a>
+        <nav>
+            <a href="/">Optimizer</a>
+            <a href="/tools/">Tools</a>
+            <a href="/blog/">Blog</a>
+        </nav>
+    </header>
+
+    <main>
+        <nav class="breadcrumb">
+            <a href="/">Home</a>
+            <span class="separator">/</span>
+            <a href="/tools/">Tools</a>
+            <span class="separator">/</span>
+            <span class="current">GLB Inspector</span>
+        </nav>
+
+        <div class="article-header">
+            <h1>GLB Inspector</h1>
+            <p>Analyze your 3D models instantly. See polygon counts, textures, materials, and file size breakdown - all processed locally in your browser.</p>
+        </div>
+
+        <div class="tool-container">
+            <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Upload GLB or GLTF file">
+                <div id="dropText">
+                    <span style="font-size: 2rem; display: block; margin-bottom: 12px; opacity: 0.5;">+</span>
+                    Drop your GLB or GLTF file here<br />
+                    <span class="text-small" style="opacity: 0.5;">or click to select</span>
+                </div>
+                <div id="fileInfo" class="file-info" style="display: none;">
+                    <span id="fileName"></span>
+                    <span id="fileSize" class="file-size"></span>
+                </div>
+                <input type="file" id="fileInput" class="d-none" accept=".glb,.gltf" />
+            </div>
+
+            <div id="results" class="tool-output" style="display: none;">
+                <h3>Analysis Results</h3>
+                <div class="tool-output-grid" id="outputGrid">
+                    <!-- Results populated by JS -->
+                </div>
+
+                <div id="detailsSection" style="margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--cp-border);">
+                    <h4 style="font-family: var(--cp-font-display); font-size: 0.8rem; margin-bottom: 16px; color: var(--cp-text-dim); text-transform: uppercase; letter-spacing: 1px;">Materials & Textures</h4>
+                    <div id="materialsInfo" style="font-size: 0.9rem; line-height: 1.8;"></div>
+                </div>
+            </div>
+
+            <div id="errorMessage" class="alert error" style="margin-top: 20px;"></div>
+        </div>
+
+        <div class="cta-box">
+            <h3>Ready to Optimize?</h3>
+            <p>MeshOpt can reduce your file size by up to 90% while preserving visual quality.</p>
+            <a href="/" class="btn">Try MeshOpt Free</a>
+        </div>
+
+        <div class="email-capture">
+            <h3>Get 3D Optimization Tips</h3>
+            <p>Learn how to prepare your models for web and mobile delivery.</p>
+            <form class="email-capture-form" id="emailForm">
+                <input type="email" placeholder="your@email.com" required />
+                <button type="submit">Subscribe</button>
+            </form>
+            <p class="text-small" style="margin-top: 16px; margin-bottom: 0; opacity: 0.5;">No spam. Unsubscribe anytime.</p>
+        </div>
+
+        <section class="content-section">
+            <h2>What This Tool Shows You</h2>
+            <ul style="list-style: none; padding: 0; margin: 0;">
+                <li style="padding: 12px 0; border-bottom: 1px solid var(--cp-border); display: flex; gap: 16px;">
+                    <span style="color: var(--cp-accent); font-family: var(--cp-font-display); font-weight: 600; min-width: 140px;">Total Polygons</span>
+                    <span style="color: var(--cp-text-dim);">Triangle count across all meshes. Critical for performance on web and mobile.</span>
+                </li>
+                <li style="padding: 12px 0; border-bottom: 1px solid var(--cp-border); display: flex; gap: 16px;">
+                    <span style="color: var(--cp-accent); font-family: var(--cp-font-display); font-weight: 600; min-width: 140px;">Mesh Count</span>
+                    <span style="color: var(--cp-text-dim);">Number of separate mesh objects. More meshes = more draw calls.</span>
+                </li>
+                <li style="padding: 12px 0; border-bottom: 1px solid var(--cp-border); display: flex; gap: 16px;">
+                    <span style="color: var(--cp-accent); font-family: var(--cp-font-display); font-weight: 600; min-width: 140px;">Materials</span>
+                    <span style="color: var(--cp-text-dim);">Each material adds rendering overhead. Consolidate when possible.</span>
+                </li>
+                <li style="padding: 12px 0; border-bottom: 1px solid var(--cp-border); display: flex; gap: 16px;">
+                    <span style="color: var(--cp-accent); font-family: var(--cp-font-display); font-weight: 600; min-width: 140px;">Textures</span>
+                    <span style="color: var(--cp-text-dim);">Texture count and memory. Large textures are often the biggest bottleneck.</span>
+                </li>
+                <li style="padding: 12px 0; display: flex; gap: 16px;">
+                    <span style="color: var(--cp-accent); font-family: var(--cp-font-display); font-weight: 600; min-width: 140px;">File Size</span>
+                    <span style="color: var(--cp-text-dim);">Compressed GLB size. For web delivery, aim for under 5MB.</span>
+                </li>
+            </ul>
+        </section>
+    </main>
+
+    <footer class="main-footer">
+        <p>&copy; 2025 Brian Ginn. All rights reserved.</p>
+        <a href="/">MeshOpt</a>
+        <a href="/tools/">Tools</a>
+        <a href="/blog/">Blog</a>
+    </footer>
+
+    <!-- Three.js for GLB parsing -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+        const dropText = document.getElementById('dropText');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const results = document.getElementById('results');
+        const outputGrid = document.getElementById('outputGrid');
+        const materialsInfo = document.getElementById('materialsInfo');
+        const errorMessage = document.getElementById('errorMessage');
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function formatNumber(num) {
+            return num.toLocaleString();
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+            results.style.display = 'none';
+        }
+
+        function hideError() {
+            errorMessage.classList.remove('show');
+        }
+
+        function analyzeGLTF(gltf, fileSizeBytes) {
+            let totalVertices = 0;
+            let totalTriangles = 0;
+            let meshCount = 0;
+            const materials = new Set();
+            const textures = new Map();
+            let textureMemory = 0;
+
+            gltf.scene.traverse((node) => {
+                if (node.isMesh) {
+                    meshCount++;
+                    const geometry = node.geometry;
+
+                    if (geometry.index) {
+                        totalTriangles += geometry.index.count / 3;
+                    } else if (geometry.attributes.position) {
+                        totalTriangles += geometry.attributes.position.count / 3;
+                    }
+
+                    if (geometry.attributes.position) {
+                        totalVertices += geometry.attributes.position.count;
+                    }
+
+                    if (node.material) {
+                        const mats = Array.isArray(node.material) ? node.material : [node.material];
+                        mats.forEach(mat => {
+                            materials.add(mat.name || 'Unnamed Material');
+
+                            const textureProps = ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap', 'emissiveMap'];
+                            textureProps.forEach(prop => {
+                                if (mat[prop] && mat[prop].image) {
+                                    const tex = mat[prop];
+                                    const key = tex.uuid;
+                                    if (!textures.has(key)) {
+                                        const img = tex.image;
+                                        const width = img.width || 0;
+                                        const height = img.height || 0;
+                                        const memSize = width * height * 4;
+                                        textures.set(key, {
+                                            name: tex.name || prop,
+                                            width,
+                                            height,
+                                            memSize
+                                        });
+                                        textureMemory += memSize;
+                                    }
+                                }
+                            });
+                        });
+                    }
+                }
+            });
+
+            return {
+                totalTriangles: Math.round(totalTriangles),
+                totalVertices,
+                meshCount,
+                materials: Array.from(materials),
+                textures: Array.from(textures.values()),
+                textureMemory,
+                fileSize: fileSizeBytes
+            };
+        }
+
+        function displayResults(data) {
+            hideError();
+
+            const polyClass = data.totalTriangles > 100000 ? 'warning' : (data.totalTriangles < 50000 ? 'success' : '');
+            const sizeClass = data.fileSize > 10 * 1024 * 1024 ? 'warning' : (data.fileSize < 5 * 1024 * 1024 ? 'success' : '');
+
+            outputGrid.innerHTML = `
+                <div class="tool-output-item">
+                    <div class="label">Triangles</div>
+                    <div class="value ${polyClass}">${formatNumber(data.totalTriangles)}</div>
+                </div>
+                <div class="tool-output-item">
+                    <div class="label">Vertices</div>
+                    <div class="value">${formatNumber(data.totalVertices)}</div>
+                </div>
+                <div class="tool-output-item">
+                    <div class="label">Meshes</div>
+                    <div class="value">${data.meshCount}</div>
+                </div>
+                <div class="tool-output-item">
+                    <div class="label">Materials</div>
+                    <div class="value">${data.materials.length}</div>
+                </div>
+                <div class="tool-output-item">
+                    <div class="label">Textures</div>
+                    <div class="value">${data.textures.length}</div>
+                </div>
+                <div class="tool-output-item">
+                    <div class="label">File Size</div>
+                    <div class="value ${sizeClass}">${formatBytes(data.fileSize)}</div>
+                </div>
+            `;
+
+            let detailsHtml = '';
+            if (data.materials.length > 0) {
+                detailsHtml += '<div style="margin-bottom: 16px;"><span style="color: var(--cp-accent); font-weight: 600;">Materials:</span> ' + data.materials.join(', ') + '</div>';
+            }
+            if (data.textures.length > 0) {
+                detailsHtml += '<div style="margin-bottom: 8px;"><span style="color: var(--cp-accent); font-weight: 600;">Textures:</span></div>';
+                detailsHtml += '<div style="display: grid; gap: 8px;">';
+                data.textures.forEach(tex => {
+                    detailsHtml += `<div style="display: flex; justify-content: space-between; padding: 8px 12px; background: rgba(0,212,255,0.03); border: 1px solid var(--cp-border);">
+                        <span>${tex.name}</span>
+                        <span style="color: var(--cp-text-dim);">${tex.width}x${tex.height} (${formatBytes(tex.memSize)})</span>
+                    </div>`;
+                });
+                detailsHtml += '</div>';
+                detailsHtml += `<div style="margin-top: 16px; padding: 12px; background: rgba(180,248,74,0.05); border-left: 3px solid var(--cp-accent-secondary);">
+                    <span style="color: var(--cp-accent-secondary); font-weight: 600;">Total texture memory:</span> ${formatBytes(data.textureMemory)}
+                </div>`;
+            }
+            materialsInfo.innerHTML = detailsHtml || '<p style="color: var(--cp-text-dim);">No materials or textures found.</p>';
+
+            results.style.display = 'block';
+            results.style.animation = 'fadeInUp 0.4s ease';
+        }
+
+        function handleFile(file) {
+            if (!file) return;
+
+            const validTypes = ['.glb', '.gltf'];
+            const ext = '.' + file.name.split('.').pop().toLowerCase();
+
+            if (!validTypes.includes(ext)) {
+                showError('Please upload a GLB or GLTF file.');
+                return;
+            }
+
+            dropText.style.display = 'none';
+            fileInfo.style.display = 'block';
+            fileName.textContent = file.name;
+            fileSize.textContent = formatBytes(file.size);
+
+            const loader = new GLTFLoader();
+            const url = URL.createObjectURL(file);
+
+            loader.load(
+                url,
+                (gltf) => {
+                    const data = analyzeGLTF(gltf, file.size);
+                    displayResults(data);
+                    URL.revokeObjectURL(url);
+                },
+                undefined,
+                (error) => {
+                    console.error('Error loading GLB:', error);
+                    showError('Failed to parse file. Make sure it\'s a valid GLB or GLTF.');
+                    URL.revokeObjectURL(url);
+                }
+            );
+        }
+
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('dragging');
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('dragging');
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('dragging');
+            const file = e.dataTransfer.files[0];
+            handleFile(file);
+        });
+
+        dropzone.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        dropzone.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                fileInput.click();
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFile(e.target.files[0]);
+        });
+
+        document.getElementById('emailForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            alert('Email signup coming soon! For now, try the optimizer at webdeliveryengine.com');
+        });
+    </script>
+</body>
+</html>

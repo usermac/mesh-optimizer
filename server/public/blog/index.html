@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>3D Optimization Blog | MeshOpt</title>
+    <meta name="description" content="Practical guides for optimizing 3D models for web, mobile, and AR. Learn polygon reduction, texture compression, and delivery best practices." />
+    <meta name="keywords" content="3d optimization, glb optimization, web 3d, three.js performance, ar optimization" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://webdeliveryengine.com/blog/" />
+    <meta property="og:title" content="3D Optimization Blog | MeshOpt" />
+    <meta property="og:description" content="Practical guides for optimizing 3D models for web, mobile, and AR." />
+
+    <link rel="canonical" href="https://webdeliveryengine.com/blog/" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body class="content-page">
+    <header class="site-header">
+        <a href="/" class="logo">MeshOpt</a>
+        <nav>
+            <a href="/">Optimizer</a>
+            <a href="/tools/">Tools</a>
+            <a href="/blog/">Blog</a>
+        </nav>
+    </header>
+
+    <main>
+        <nav class="breadcrumb">
+            <a href="/">Home</a>
+            <span class="separator">/</span>
+            <span class="current">Blog</span>
+        </nav>
+
+        <div class="article-header">
+            <h1>3D Optimization Blog</h1>
+            <p>Practical guides for preparing 3D assets for web and mobile delivery. No fluff, just techniques that work.</p>
+        </div>
+
+        <div class="cards-grid">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                    <span style="background: var(--cp-accent-dim); color: var(--cp-accent); padding: 4px 10px; font-family: var(--cp-font-display); font-size: 0.65rem; font-weight: 600; letter-spacing: 1px; border: 1px solid rgba(0,212,255,0.3);">GUIDE</span>
+                    <span style="font-family: var(--cp-font-display); font-size: 0.7rem; color: var(--cp-text-dim);">DEC 2025</span>
+                </div>
+                <h3><a href="/blog/reduce-glb-file-size.html">How to Reduce GLB File Size for Web Delivery</a></h3>
+                <p>Practical techniques to shrink your GLB files from 50MB to 3MB. Covers polygon reduction, texture optimization, and Draco compression.</p>
+                <div class="card-meta" style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--cp-border);">8 min read</div>
+            </div>
+
+            <div class="card" style="opacity: 0.4; border-style: dashed;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                    <span style="background: rgba(125,133,144,0.15); color: var(--cp-text-dim); padding: 4px 10px; font-family: var(--cp-font-display); font-size: 0.65rem; font-weight: 600; letter-spacing: 1px; border: 1px solid var(--cp-border);">SOON</span>
+                </div>
+                <h3>Optimize 3D Models for Shopify AR</h3>
+                <p>Meet Shopify's AR requirements and deliver smooth Quick Look experiences on iOS devices.</p>
+            </div>
+
+            <div class="card" style="opacity: 0.4; border-style: dashed;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                    <span style="background: rgba(125,133,144,0.15); color: var(--cp-text-dim); padding: 4px 10px; font-family: var(--cp-font-display); font-size: 0.65rem; font-weight: 600; letter-spacing: 1px; border: 1px solid var(--cp-border);">SOON</span>
+                </div>
+                <h3>Three.js Performance: 3D Model Optimization</h3>
+                <p>Hit 60fps in your Three.js scenes with properly optimized geometry and textures.</p>
+            </div>
+
+            <div class="card" style="opacity: 0.4; border-style: dashed;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                    <span style="background: rgba(125,133,144,0.15); color: var(--cp-text-dim); padding: 4px 10px; font-family: var(--cp-font-display); font-size: 0.65rem; font-weight: 600; letter-spacing: 1px; border: 1px solid var(--cp-border);">SOON</span>
+                </div>
+                <h3>Batch Convert OBJ to GLB</h3>
+                <p>Automate your conversion pipeline for hundreds of legacy OBJ files.</p>
+            </div>
+        </div>
+
+        <div class="email-capture">
+            <h3>Get New Articles in Your Inbox</h3>
+            <p>Practical 3D optimization tips. No spam, no fluff.</p>
+            <form class="email-capture-form" id="emailForm">
+                <input type="email" placeholder="your@email.com" required />
+                <button type="submit">Subscribe</button>
+            </form>
+            <p class="text-small" style="margin-top: 16px; margin-bottom: 0; opacity: 0.5;">Unsubscribe anytime.</p>
+        </div>
+    </main>
+
+    <footer class="main-footer">
+        <p>&copy; 2025 Brian Ginn. All rights reserved.</p>
+        <a href="/">MeshOpt</a>
+        <a href="/tools/">Tools</a>
+        <a href="/blog/">Blog</a>
+    </footer>
+
+    <script>
+        document.getElementById('emailForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('Email signup coming soon! For now, try the optimizer at webdeliveryengine.com');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>How to Reduce GLB File Size for Web Delivery | MeshOpt</title>
+    <meta name="description" content="Learn practical techniques to reduce GLB file size for faster web loading. From manual Blender optimization to automated API solutions." />
+    <meta name="keywords" content="reduce glb file size, optimize glb, glb compression, 3d web optimization, three.js performance" />
+
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://webdeliveryengine.com/blog/reduce-glb-file-size.html" />
+    <meta property="og:title" content="How to Reduce GLB File Size for Web Delivery" />
+    <meta property="og:description" content="Practical techniques to reduce GLB file size for faster web loading." />
+
+    <link rel="canonical" href="https://webdeliveryengine.com/blog/reduce-glb-file-size.html" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body class="content-page">
+    <header class="site-header">
+        <a href="/" class="logo">MeshOpt</a>
+        <nav>
+            <a href="/">Optimizer</a>
+            <a href="/tools/">Tools</a>
+            <a href="/blog/">Blog</a>
+        </nav>
+    </header>
+
+    <main>
+        <nav class="breadcrumb">
+            <a href="/">Home</a>
+            <span class="separator">/</span>
+            <a href="/blog/">Blog</a>
+            <span class="separator">/</span>
+            <span class="current">Reduce GLB File Size</span>
+        </nav>
+
+        <article>
+            <header class="article-header">
+                <h1>How to Reduce GLB File Size for Web Delivery</h1>
+                <div class="article-meta">
+                    <span class="category">Guide</span>
+                    <span>December 2025</span>
+                    <span>8 min read</span>
+                </div>
+            </header>
+
+            <div class="article-content">
+                <p>Your 3D artist just sent you a Dropbox link. Inside is a 47MB GLB file that's supposed to be your product's hero model. You drop it into your Three.js scene and watch your loading spinner run for 15 seconds. On mobile, it never loads at all - the browser just gives up.</p>
+
+                <p>This is the reality of 3D on the web. The models that look incredible in Blender are often completely unusable in a browser. And somewhere between "this looks amazing" and "this actually loads," you're stuck doing the optimization work that nobody warned you about.</p>
+
+                <h2>Why GLB Files Get So Large</h2>
+
+                <p>Before we fix the problem, let's understand why it happens. GLB file size comes from three sources:</p>
+
+                <ul>
+                    <li><strong>Geometry</strong> - Polygon count. A photogrammetry scan can easily have 2 million triangles. A CAD export might have 500,000. For web delivery, you often need under 50,000.</li>
+                    <li><strong>Textures</strong> - This is usually the biggest culprit. A single 4K texture is 16MB uncompressed. Artists often include 4-6 textures per material: diffuse, normal, roughness, metalness, AO, and emissive.</li>
+                    <li><strong>Embedded Data</strong> - Animation data, morph targets, and multiple LOD levels all add size.</li>
+                </ul>
+
+                <p>The good news: most of this can be reduced without visible quality loss. The bad news: doing it manually is tedious.</p>
+
+                <h2>The Manual Approach (Blender)</h2>
+
+                <p>If you're comfortable with Blender, here's the standard workflow:</p>
+
+                <h3>Step 1: Reduce Polygon Count</h3>
+
+                <p>Import your model, select the mesh, and apply a Decimate modifier. Start with a ratio of 0.5 (50% reduction) and preview the result. For organic models, the Collapse method works well. For hard-surface models like products, try Planar with a low angle limit.</p>
+
+                <pre><code># Blender Python - apply decimate
+import bpy
+obj = bpy.context.active_object
+mod = obj.modifiers.new(name="Decimate", type='DECIMATE')
+mod.ratio = 0.3  # 70% reduction
+bpy.ops.object.modifier_apply(modifier="Decimate")</code></pre>
+
+                <h3>Step 2: Resize Textures</h3>
+
+                <p>Open each texture in an image editor. Most web models don't need textures larger than 1024x1024. Some can get away with 512x512. Resize them all, being careful to maintain the naming conventions so Blender can still find them.</p>
+
+                <h3>Step 3: Re-export with Draco Compression</h3>
+
+                <p>When exporting to GLB, enable Draco mesh compression in the export settings. This can reduce geometry data by 90% with minimal quality loss.</p>
+
+                <p>Total time for one model: 30-60 minutes if you know what you're doing. Multiply that by 50 product SKUs and you've got a serious bottleneck.</p>
+
+                <h2>The Automated Approach (API)</h2>
+
+                <p>Here's the same workflow as a single API call:</p>
+
+                <pre><code>curl -X POST https://webdeliveryengine.com/optimize \
+  -H "X-API-Key: sk_your_key" \
+  -F "file=@product-model.glb" \
+  -F "mode=decimate" \
+  -F "quality=50" \
+  --output optimized.glb</code></pre>
+
+                <p>That's it. The API handles polygon reduction, texture optimization, and Draco compression automatically. A 47MB file becomes 3MB. The whole process takes about 10 seconds.</p>
+
+                <p>For batch processing, you can loop through a directory:</p>
+
+                <pre><code>#!/bin/bash
+for file in ./models/*.glb; do
+  curl -X POST https://webdeliveryengine.com/optimize \
+    -H "X-API-Key: sk_your_key" \
+    -F "file=@$file" \
+    -F "mode=decimate" \
+    -F "quality=50" \
+    --output "./optimized/$(basename $file)"
+done</code></pre>
+
+                <h2>Choosing the Right Quality Level</h2>
+
+                <p>The quality parameter (1-100) controls the polygon reduction ratio. Here's what we've found works well:</p>
+
+                <ul>
+                    <li><strong>80-100%</strong> - Minor cleanup. Good for already-optimized models that just need a slight trim.</li>
+                    <li><strong>50-80%</strong> - Standard web optimization. Maintains visual quality while hitting web performance targets.</li>
+                    <li><strong>20-50%</strong> - Aggressive reduction. For thumbnails, distant objects, or mobile-first experiences.</li>
+                    <li><strong>Under 20%</strong> - Extreme. Only for silhouettes or placeholder geometry.</li>
+                </ul>
+
+                <p>For most e-commerce and product visualization use cases, 50% quality gives you the best balance. The model is visually indistinguishable from the original at typical viewing distances.</p>
+
+                <h2>When to Use Remesh Instead</h2>
+
+                <p>Decimation works by removing vertices while trying to preserve the shape. It's fast but can produce messy topology. For hero assets where you need clean geometry - models that will be animated, or that need perfect edge flow for subdivision - consider remeshing instead.</p>
+
+                <p>Remeshing rebuilds the entire mesh with clean quad topology. It takes longer but produces better results for complex organic shapes like characters or scanned objects.</p>
+
+                <pre><code>curl -X POST https://webdeliveryengine.com/optimize \
+  -H "X-API-Key: sk_your_key" \
+  -F "file=@character.glb" \
+  -F "mode=remesh" \
+  -F "target_faces=5000" \
+  --output character-optimized.glb</code></pre>
+
+                <h2>Performance Targets for Web 3D</h2>
+
+                <p>Here are the benchmarks we recommend for smooth 60fps performance:</p>
+
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>Target</th>
+                            <th>Desktop</th>
+                            <th>Mobile</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Total Triangles</td>
+                            <td>&lt; 500,000</td>
+                            <td>&lt; 100,000</td>
+                        </tr>
+                        <tr>
+                            <td>Single Model Triangles</td>
+                            <td>&lt; 100,000</td>
+                            <td>&lt; 30,000</td>
+                        </tr>
+                        <tr>
+                            <td>Texture Size</td>
+                            <td>2048x2048 max</td>
+                            <td>1024x1024 max</td>
+                        </tr>
+                        <tr>
+                            <td>Total File Size</td>
+                            <td>&lt; 20MB</td>
+                            <td>&lt; 5MB</td>
+                        </tr>
+                        <tr>
+                            <td>Draw Calls</td>
+                            <td>&lt; 100</td>
+                            <td>&lt; 50</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p>Use our <a href="/tools/glb-inspector.html">GLB Inspector</a> to check your models against these targets before deployment.</p>
+
+                <h2>Summary</h2>
+
+                <p>Large GLB files kill web 3D experiences. The fix is straightforward: reduce polygons, compress textures, enable Draco. You can do this manually in Blender, spending 30-60 minutes per model, or you can automate it with an API call that takes 10 seconds.</p>
+
+                <p>If you're dealing with more than a handful of models, automation isn't just convenient - it's the only way to ship on time.</p>
+            </div>
+
+            <div class="cta-box">
+                <h3>Ready to Optimize Your Models?</h3>
+                <p>Get 50 free credits to try MeshOpt. No credit card required.</p>
+                <a href="/" class="btn">Start Optimizing</a>
+            </div>
+
+            <div class="email-capture">
+                <h3>Get More 3D Optimization Tips</h3>
+                <p>Practical techniques for web and mobile 3D delivery. No fluff.</p>
+                <form class="email-capture-form" id="emailForm">
+                    <input type="email" placeholder="your@email.com" required />
+                    <button type="submit">Subscribe</button>
+                </form>
+                <p class="text-small" style="margin-top: 16px; margin-bottom: 0; opacity: 0.5;">No spam. Unsubscribe anytime.</p>
+                <!-- TODO: Connect to Buttondown or email service -->
+            </div>
+        </article>
+    </main>
+
+    <footer class="main-footer">
+        <p>&copy; 2025 Brian Ginn. All rights reserved.</p>
+        <a href="/">MeshOpt</a>
+        <a href="/tools/">Tools</a>
+        <a href="/blog/">Blog</a>
+    </footer>
+
+    <script>
+        // Email form placeholder
+        document.getElementById('emailForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            // TODO: Integrate with Buttondown or email service
+            alert('Email signup coming soon! For now, try the optimizer at webdeliveryengine.com');
+        });
+    </script>
+</body>
+</html>
