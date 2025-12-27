@@ -1106,11 +1106,15 @@
                 `;
             }
 
-            // Load into 3D preview
-            loadModelToPreview(gltf);
-
+            // Show results first so container has dimensions
             results.style.display = 'block';
             results.style.animation = 'fadeInUp 0.4s ease';
+
+            // Then initialize and load 3D preview
+            if (!renderer) {
+                initPreview();
+            }
+            loadModelToPreview(gltf);
         }
 
         function handleFile(file) {
@@ -1147,9 +1151,6 @@
                 }
             );
         }
-
-        // Initialize preview on page load
-        initPreview();
 
         // Tab switching
         document.querySelectorAll('.inspector-tab').forEach(tab => {
