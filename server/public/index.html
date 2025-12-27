@@ -199,6 +199,7 @@
                 <div>
                     <label for="textureSize">Texture Size (px)</label>
                     <select id="textureSize" aria-label="Select texture size in pixels">
+                        <option value="512">512</option>
                         <option value="1024">1024</option>
                         <option value="2048" selected>2048</option>
                         <option value="4096">4096</option>
@@ -230,7 +231,7 @@
                         class="font-bold text-small"
                         >Help & Guide</a
                     >
-                    <button type="button" id="changelogLink" class="text-small text-muted" style="background:none; border:none; padding:0; margin:0; cursor:pointer; font-family: inherit;">v1.0.3beta <span class="text-primary">(2025-12-26)</span></button>
+                    <button type="button" id="changelogLink" class="text-small text-muted" style="background:none; border:none; padding:0; margin:0; cursor:pointer; font-family: inherit;">v1.0.4beta <span class="text-primary">(2025-12-27)</span></button>
                 </div>
             </header>
 
@@ -1000,7 +1001,7 @@
                                     <tr><td><code>mode</code></td><td>string</td><td>No</td><td><code>decimate</code> (default) or <code>remesh</code></td></tr>
                                     <tr><td><code>ratio</code></td><td>float</td><td>No</td><td>0.0-1.0 quality ratio for decimate mode (default: 0.5)</td></tr>
                                     <tr><td><code>faces</code></td><td>int</td><td>No</td><td>Target face count for remesh mode (default: 5000)</td></tr>
-                                    <tr><td><code>texture_size</code></td><td>int</td><td>No</td><td>Texture resolution for remesh: 1024, 2048, 4096 (default: 2048)</td></tr>
+                                    <tr><td><code>texture_size</code></td><td>int</td><td>No</td><td>Texture resolution for remesh: 512, 1024, 2048, 4096 (default: 2048)</td></tr>
                                     <tr><td><code>format</code></td><td>string</td><td>No</td><td>Output format: <code>glb</code>, <code>usdz</code>, or <code>both</code> (default: <code>glb</code>)</td></tr>
                                     <tr><td><code>callback_url</code></td><td>string</td><td>No</td><td>HTTPS URL to receive webhook on job completion/failure</td></tr>
                                 </tbody>
@@ -1404,6 +1405,12 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                         <button type="button" class="modal-close" onclick="closeModal('changelogModal')" aria-label="Close changelog">&times;</button>
                     </div>
                     <div class="modal-body">
+                        <section class="content-section">
+                            <h3>v1.0.4beta <span class="text-muted">(2025-12-27)</span></h3>
+                            <ul class="pl-20">
+                                <li><strong>512px Texture Size:</strong> Added 512px texture size option for mobile/AR optimization of simple and small items.</li>
+                            </ul>
+                        </section>
                         <section class="content-section">
                             <h3>v1.0.3beta <span class="text-muted">(2025-12-26)</span></h3>
                             <ul class="pl-20">
