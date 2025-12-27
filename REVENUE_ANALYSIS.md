@@ -238,7 +238,7 @@ To maximize customer acquisition, consider tiered pricing:
    - Engage in Blender Artists, Polycount forums
    - Answer questions on Stack Overflow
 
-3. **Free Tier:**
+3. **Free Starter Credits:**
    - 25 free credits on signup (5 files)
    - No credit card required
    - Email nurture sequence
@@ -358,7 +358,7 @@ Expected Year 1 Revenue = $208,300
 ## 11. Recommendations
 
 ### Immediate Actions (Pre-Launch)
-1. ✅ **Implement Free Tier:** 25 credits on signup (huge conversion driver)
+1. ✅ **Implement Free Starter Credits:** 25 credits on signup (huge conversion driver)
 2. ✅ **Add Pricing Tiers:** $25, $50, $200, Enterprise custom
 3. ✅ **Create Comparison Calculator:** "How much would you save vs competitors?"
 4. ✅ **Build Case Studies:** Process 3-5 demo files, showcase before/after
@@ -396,7 +396,7 @@ Your mesh optimization service has **strong potential** in a growing market. You
 5. **Marketing Execution:** Consistent content + community engagement
 
 ### Next Steps
-1. Launch with free tier to drive signups
+1. Launch with free starter credits to drive signups
 2. A/B test pricing ($25 vs $50 entry point)
 3. Focus on content marketing for first 90 days
 4. Build enterprise sales pipeline in parallel

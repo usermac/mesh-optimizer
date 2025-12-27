@@ -444,7 +444,7 @@ impl Database {
                 new_key.clone(),
                 KeyInfo {
                     email: email.clone(),
-                    stripe_customer_id: String::new(), // No Stripe customer for free tier
+                    stripe_customer_id: String::new(), // No Stripe customer for free starter credits
                     created: now,
                     active: true,
                     credits: 0,
@@ -1293,7 +1293,7 @@ mod tests {
         let key_info = data.keys.get(&key).unwrap();
         assert!(
             key_info.stripe_customer_id.is_empty(),
-            "Free tier key should have empty stripe_customer_id"
+            "Free starter credits key should have empty stripe_customer_id"
         );
         assert_eq!(key_info.email, email);
         assert!(key_info.active);

@@ -124,12 +124,12 @@ Effective Rate = $0.50 per credit
 | **Studio** | $200 | 500 | 20% | Mid-size studios |
 | **Enterprise** | Custom | Custom | 30-40% | Large studios |
 
-**Impact:** Reduces entry barrier from $50 to $0 (free tier), captures full value spectrum.
+**Impact:** Reduces entry barrier from $50 to $0 (free starter credits), captures full value spectrum.
 
 ### 2. Go-To-Market Timeline
 
 **Month 1-3: Launch & Validate**
-- Free tier drives signups (target: 200+ signups)
+- Free starter credits drive signups (target: 200+ signups)
 - Content marketing (blog posts, tutorials)
 - Community engagement (Reddit, forums)
 - Target: 30 paying customers
@@ -172,7 +172,7 @@ Effective Rate = $0.50 per credit
 - **Processing failures** → Mitigation: Robust error handling, automatic retries
 
 ### Business Risks
-- **Slow customer acquisition** → Mitigation: Free tier, aggressive marketing
+- **Slow customer acquisition** → Mitigation: Free starter credits, aggressive marketing
 - **High churn** → Mitigation: Improved documentation, customer success emails
 - **Competitive pressure** → Mitigation: Focus on 5GB USP, quality differentiation
 
@@ -187,7 +187,7 @@ Effective Rate = $0.50 per credit
 ## ✅ Immediate Action Items
 
 ### Pre-Launch (This Week)
-1. ✅ Implement free tier (25 credits on signup)
+1. ✅ Implement free starter credits (25 credits on signup)
 2. ✅ Add pricing tiers ($25, $50, $200, Enterprise)
 3. ✅ Create pricing calculator widget
 4. ✅ Build 3 before/after case studies
@@ -255,7 +255,7 @@ Effective Rate = $0.50 per credit
 Your **5GB file capability** is a genuine differentiator that justifies premium pricing. The **"try before you buy" model** reduces customer risk and accelerates decision-making. The market is proven, the technology works, and the infrastructure is ready.
 
 **Critical Success Factors:**
-1. **Pricing:** Must add free tier to drive adoption (current $50 barrier too high)
+1. **Pricing:** Must add free starter credits to drive adoption (current $50 barrier too high)
 2. **Marketing:** Consistent content + community engagement for first 90 days
 3. **Quality:** Maintain >95% job success rate (technical excellence is your moat)
 4. **Enterprise:** Land 1-2 big deals by Q3 (they'll drive 40%+ of revenue)
@@ -272,7 +272,7 @@ Your **5GB file capability** is a genuine differentiator that justifies premium 
 
 **RECOMMENDATION: Proceed with launch using revised pricing strategy.**
 
-The fundamentals are solid. Implement the free tier and multi-tier pricing, execute the go-to-market plan, and monitor metrics closely. This is a calculated risk with strong upside potential.
+The fundamentals are solid. Implement the free starter credits and multi-tier pricing, execute the go-to-market plan, and monitor metrics closely. This is a calculated risk with strong upside potential.
 
 **Next Review:** 90 days post-launch (reassess customer acquisition, churn, and unit economics)
 

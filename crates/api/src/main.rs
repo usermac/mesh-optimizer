@@ -2453,13 +2453,13 @@ async fn claim_free_credits(
         }
     }
 
-    // Create the free tier key
+    // Create the free starter credits key
     let api_key = state
         .db
         .create_free_tier_key(email.clone(), free_credits)
         .await
         .map_err(|e| {
-            error!("Failed to create free tier key: {}", e);
+            error!("Failed to create free starter credits key: {}", e);
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(json!({ "error": "Failed to create API key" })),

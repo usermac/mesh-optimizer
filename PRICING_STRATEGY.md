@@ -52,7 +52,7 @@ Effective Rate = $0.50 per credit
 
 ## 3. Detailed Tier Breakdown
 
-### 🆓 Free Tier
+### 🆓 Free Starter Credits
 **Price:** $0  
 **Credits:** 25 (one-time)  
 **Typical Usage:** 2-5 files optimized
@@ -342,7 +342,7 @@ Credits/Month    | Cost per Credit | Monthly Price  | Annual Price
 **Non-Negotiables:**
 - Minimum 6-month contract
 - Payment terms: Net 30 maximum
-- No free trials beyond standard free tier
+- No free trials beyond standard free starter credits
 
 ---
 
@@ -372,8 +372,8 @@ Create this table for sales materials:
 - [ ] Design pricing page with tier comparison
 - [ ] Write FAQ about credit usage
 
-### Week 2: Free Tier Launch
-- [ ] Implement free tier (25 credits on signup)
+### Week 2: Free Starter Credits Launch
+- [ ] Implement free starter credits (25 credits on signup)
 - [ ] Set up email automation (welcome sequence)
 - [ ] Create usage tracking analytics
 - [ ] Test conversion funnel
@@ -417,7 +417,7 @@ Create this table for sales materials:
 
 ### Tier Distribution Targets
 ```
-Free Tier: 60% of signups (conversion source)
+Free Starter Credits: 60% of signups (conversion source)
 Starter: 20% of paid customers
 Professional: 50% of paid customers ⭐ (highest volume)
 Studio: 25% of paid customers
@@ -451,7 +451,7 @@ A: Yes! Email us with your .edu address for a 30% education discount on all purc
 ## 12. Recommendations Summary
 
 ### Immediate Actions (This Week)
-1. ✅ **Implement Free Tier:** 25 credits on signup
+1. ✅ **Implement Free Starter Credits:** 25 credits on signup
 2. ✅ **Launch 4 Pricing Tiers:** Free, Starter ($25), Professional ($50), Studio ($200)
 3. ✅ **Create Pricing Calculator:** Help users estimate costs
 4. ✅ **Design Comparison Table:** Highlight value vs competitors
@@ -481,7 +481,7 @@ A: Yes! Email us with your .edu address for a 30% education discount on all purc
 ### Recommended Launch Configuration
 
 ```env
-# Free Tier
+# Free Starter Credits
 FREE_TIER_CREDITS=25
 
 # Paid Tiers
