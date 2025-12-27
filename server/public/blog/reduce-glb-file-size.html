@@ -99,7 +99,7 @@ bpy.ops.object.modifier_apply(modifier="Decimate")</code></pre>
   -F "ratio=0.5" \
   --output optimized.glb</code></pre>
 
-                <p>That's it. The API handles polygon reduction, texture optimization, and Draco compression automatically. A 47MB file becomes 3MB. The whole process takes about 10 seconds.</p>
+                <p>That's it. The API handles polygon reduction, texture optimization, and Draco compression automatically. A 47MB file becomes 3MB. The whole process typically takes seconds to a few minutes depending on file size and complexity.</p>
 
                 <p>For batch processing, you can loop through a directory:</p>
 
@@ -184,7 +184,7 @@ done</code></pre>
 
                 <h2>Summary</h2>
 
-                <p>Large GLB files kill web 3D experiences. The fix is straightforward: reduce polygons, compress textures, enable Draco. You can do this manually in Blender, spending 30-60 minutes per model, or you can automate it with an API call that takes 10 seconds.</p>
+                <p>Large GLB files kill web 3D experiences. The fix is straightforward: reduce polygons, compress textures, enable Draco. You can do this manually in Blender, spending 30-60 minutes per model, or you can automate it with an API call that takes seconds to minutes.</p>
 
                 <p>If you're dealing with more than a handful of models, automation isn't just convenient - it's the only way to ship on time.</p>
             </div>
