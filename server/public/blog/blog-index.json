@@ -1,0 +1,1692 @@
+{
+  "generated": "2025-12-27T16:11:09.648Z",
+  "version": "1.0",
+  "entries": [
+    {
+      "text": "How to Convert OBJ to GLB (Single Files & Batch)",
+      "url": "/blog/convert-obj-to-glb.html",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Convert OBJ files to GLB format for web and AR delivery. Covers single file conversion, batch processing, and handling MTL/texture dependencies.",
+      "keywords": [
+        "obj to glb",
+        "convert obj glb",
+        "obj glb converter",
+        "batch convert obj",
+        "obj to gltf",
+        "3d file conversion",
+        "format:",
+        "include:",
+        "mesh:",
+        "materials:",
+        "fix:"
+      ]
+    },
+    {
+      "text": "Why Convert OBJ to GLB?",
+      "url": "/blog/convert-obj-to-glb.html#why-convert-obj-to-glb",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Why Convert OBJ to GLB? OBJ was designed in the 1980s. It's lasted this long because it's simple and universal - almost every 3D tool can read and write OBJ. But for modern web delivery, it has seriou",
+      "parentArticle": "How to Convert OBJ to GLB (Single Files & Batch)",
+      "keywords": []
+    },
+    {
+      "text": "The OBJ File Structure Problem",
+      "url": "/blog/convert-obj-to-glb.html#the-obj-file-structure-problem",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "The OBJ File Structure Problem An OBJ file alone contains only geometry. Everything else lives in separate files: [code] The MTL file references textures by path. If those paths are wrong (absolute pa",
+      "parentArticle": "How to Convert OBJ to GLB (Single Files & Batch)",
+      "keywords": []
+    },
+    {
+      "text": "Manual Conversion: Blender",
+      "url": "/blog/convert-obj-to-glb.html#manual-conversion-blender",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Manual Conversion: Blender Blender is the most reliable free option for OBJ to GLB conversion. Step 1: Import the OBJ File → Import → Wavefront (.obj). Check \"Split by Object\" and \"Split by Group\" if",
+      "parentArticle": "How to Convert OBJ to GLB (Single Files & Batch)",
+      "keywords": [
+        "format:",
+        "include:",
+        "mesh:",
+        "materials:"
+      ]
+    },
+    {
+      "text": "Automated Conversion: API",
+      "url": "/blog/convert-obj-to-glb.html#automated-conversion-api",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Automated Conversion: API For reliable batch conversion with automatic texture handling: Single File (with textures in ZIP) The most reliable approach: bundle OBJ + MTL + textures into a ZIP: [code] T",
+      "parentArticle": "How to Convert OBJ to GLB (Single Files & Batch)",
+      "keywords": []
+    },
+    {
+      "text": "Common Problems & Solutions",
+      "url": "/blog/convert-obj-to-glb.html#common-problems-solutions",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Common Problems & Solutions Problem: White/Gray Model (No Textures) The textures didn't transfer. Check: - Is the MTL file present and correctly named? - Are texture paths in MTL relative or absolute?",
+      "parentArticle": "How to Convert OBJ to GLB (Single Files & Batch)",
+      "keywords": [
+        "fix:"
+      ]
+    },
+    {
+      "text": "Conversion + Optimization",
+      "url": "/blog/convert-obj-to-glb.html#conversion-optimization",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Conversion + Optimization Since you're already converting, this is the perfect time to optimize: [code] One API call handles: - OBJ/MTL/texture parsing - Polygon reduction - Texture optimization - Dra",
+      "parentArticle": "How to Convert OBJ to GLB (Single Files & Batch)",
+      "keywords": []
+    },
+    {
+      "text": "Verifying Your Conversions",
+      "url": "/blog/convert-obj-to-glb.html#verifying-your-conversions",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Verifying Your Conversions After batch conversion, verify the results: - Use our GLB Inspector to check each file - Look for missing materials (material count should match original) - Check polygon co",
+      "parentArticle": "How to Convert OBJ to GLB (Single Files & Batch)",
+      "keywords": []
+    },
+    {
+      "text": "Summary",
+      "url": "/blog/convert-obj-to-glb.html#summary",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Summary OBJ to GLB conversion is straightforward for single files with co-located textures. It gets complicated with: - Broken texture paths - Missing MTL files - Absolute paths from another machine -",
+      "parentArticle": "How to Convert OBJ to GLB (Single Files & Batch)",
+      "keywords": []
+    },
+    {
+      "text": "Step 1: Import the OBJ",
+      "url": "/blog/convert-obj-to-glb.html#step-1-import-the-obj",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Step 1: Import the OBJ File → Import → Wavefront (.obj). Check \"Split by Object\" and \"Split by Group\" if you want to preserve object hierarchy. Step 2",
+      "parentArticle": "How to Convert OBJ to GLB (Single Files & Batch)",
+      "parentSection": "Manual Conversion: Blender",
+      "keywords": []
+    },
+    {
+      "text": "Step 2: Fix Material Paths",
+      "url": "/blog/convert-obj-to-glb.html#step-2-fix-material-paths",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Step 2: Fix Material Paths If textures are missing: - Select the object - Go to the Material tab in Properties - Expand the texture nodes - Re-link ea",
+      "parentArticle": "How to Convert OBJ to GLB (Single Files & Batch)",
+      "parentSection": "Manual Conversion: Blender",
+      "keywords": []
+    },
+    {
+      "text": "Step 3: Export as GLB",
+      "url": "/blog/convert-obj-to-glb.html#step-3-export-as-glb",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Step 3: Export as GLB File → Export → glTF 2.0 (.glb). Key settings: - Format: glTF Binary (.glb) - Include: Check \"Selected Objects\" if you don't wan",
+      "parentArticle": "How to Convert OBJ to GLB (Single Files & Batch)",
+      "parentSection": "Manual Conversion: Blender",
+      "keywords": [
+        "format:",
+        "include:",
+        "mesh:",
+        "materials:"
+      ]
+    },
+    {
+      "text": "Batch Conversion in Blender (Python)",
+      "url": "/blog/convert-obj-to-glb.html#batch-conversion-in-blender-python",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Batch Conversion in Blender (Python) For multiple files, use Blender's Python scripting: import bpy import os import glob input_dir = \"/path/to/obj/fi",
+      "parentArticle": "How to Convert OBJ to GLB (Single Files & Batch)",
+      "parentSection": "Manual Conversion: Blender",
+      "keywords": []
+    },
+    {
+      "text": "Single File (with textures in ZIP)",
+      "url": "/blog/convert-obj-to-glb.html#single-file-with-textures-in-zip",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Single File (with textures in ZIP) The most reliable approach: bundle OBJ + MTL + textures into a ZIP: [code] The API extracts the ZIP",
+      "parentArticle": "How to Convert OBJ to GLB (Single Files & Batch)",
+      "parentSection": "Automated Conversion: API",
+      "keywords": []
+    },
+    {
+      "text": "Batch Processing Script",
+      "url": "/blog/convert-obj-to-glb.html#batch-processing-script",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Batch Processing Script #!/bin/bash INPUT_DIR=\"./obj_files\" OUTPUT_DIR=\"./glb_output\" API_KEY=\"sk_your_key\" mkdir -p \"$OUTPUT_DIR\" # Process each OBJ",
+      "parentArticle": "How to Convert OBJ to GLB (Single Files & Batch)",
+      "parentSection": "Automated Conversion: API",
+      "keywords": []
+    },
+    {
+      "text": "Node.js Batch Script",
+      "url": "/blog/convert-obj-to-glb.html#nodejs-batch-script",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Node.js Batch Script const fs = require('fs'); const path = require('path'); const archiver = require('archiver'); const FormData = require('form-data",
+      "parentArticle": "How to Convert OBJ to GLB (Single Files & Batch)",
+      "parentSection": "Automated Conversion: API",
+      "keywords": []
+    },
+    {
+      "text": "Problem: White/Gray Model (No Textures)",
+      "url": "/blog/convert-obj-to-glb.html#problem-whitegray-model-no-textures",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Problem: White/Gray Model (No Textures) The textures didn't transfer. Check: - Is the MTL file present and correctly named? - Are texture paths in MTL",
+      "parentArticle": "How to Convert OBJ to GLB (Single Files & Batch)",
+      "parentSection": "Common Problems & Solutions",
+      "keywords": [
+        "fix:"
+      ]
+    },
+    {
+      "text": "Problem: Model Appears Inside-Out",
+      "url": "/blog/convert-obj-to-glb.html#problem-model-appears-insideout",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Problem: Model Appears Inside-Out OBJ files sometimes have inconsistent face winding (normals pointing inward). Fix: In Blender, select the mesh, go t",
+      "parentArticle": "How to Convert OBJ to GLB (Single Files & Batch)",
+      "parentSection": "Common Problems & Solutions",
+      "keywords": [
+        "fix:"
+      ]
+    },
+    {
+      "text": "Problem: Model is Rotated Wrong",
+      "url": "/blog/convert-obj-to-glb.html#problem-model-is-rotated-wrong",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Problem: Model is Rotated Wrong OBJ uses Y-up or Z-up depending on the source software. GLB is Y-up. Fix: Apply rotation in Blender before export, or",
+      "parentArticle": "How to Convert OBJ to GLB (Single Files & Batch)",
+      "parentSection": "Common Problems & Solutions",
+      "keywords": [
+        "fix:"
+      ]
+    },
+    {
+      "text": "Problem: Scale is Wrong",
+      "url": "/blog/convert-obj-to-glb.html#problem-scale-is-wrong",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Problem: Scale is Wrong OBJ has no unit system - a \"1\" could be 1 meter, 1 inch, or 1 mile. Fix: Scale in Blender before export, or handle in code. Ch",
+      "parentArticle": "How to Convert OBJ to GLB (Single Files & Batch)",
+      "parentSection": "Common Problems & Solutions",
+      "keywords": [
+        "fix:"
+      ]
+    },
+    {
+      "text": "Problem: Multiple Objects Merged",
+      "url": "/blog/convert-obj-to-glb.html#problem-multiple-objects-merged",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Problem: Multiple Objects Merged Some OBJ exporters combine everything into one mesh. Fix: Use \"Split by Object\" and \"Split by Group\" during OBJ impor",
+      "parentArticle": "How to Convert OBJ to GLB (Single Files & Batch)",
+      "parentSection": "Common Problems & Solutions",
+      "keywords": [
+        "fix:"
+      ]
+    },
+    {
+      "text": "Convert & Optimize in One Step",
+      "url": "/blog/convert-obj-to-glb.html#convert-optimize-in-one-step",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Convert & Optimize in One Step Upload your OBJ files (or ZIPs) and get optimized GLB output. free credits to start. Start Converting Get 3D Pipeline T",
+      "parentArticle": "How to Convert OBJ to GLB (Single Files & Batch)",
+      "parentSection": "Summary",
+      "keywords": []
+    },
+    {
+      "text": "Get 3D Pipeline Tips",
+      "url": "/blog/convert-obj-to-glb.html#get-3d-pipeline-tips",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Get 3D Pipeline Tips Automation techniques for 3D asset workflows. Email address Subscribe <p class=\"text-small\" style=\"margin-to",
+      "parentArticle": "How to Convert OBJ to GLB (Single Files & Batch)",
+      "parentSection": "Summary",
+      "keywords": []
+    },
+    {
+      "text": "MeshOpt vs Blender: When to Use Each for 3D Optimization",
+      "url": "/blog/meshopt-vs-blender.html",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Compare MeshOpt and Blender for 3D model optimization. See when manual Blender work makes sense vs automated API processing.",
+      "keywords": [
+        "meshopt vs blender",
+        "blender decimation",
+        "blender alternative",
+        "automate blender",
+        "batch 3d optimization",
+        "blender",
+        "meshopt",
+        "blender:",
+        "meshopt:"
+      ]
+    },
+    {
+      "text": "Quick Comparison",
+      "url": "/blog/meshopt-vs-blender.html#quick-comparison",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Quick Comparison Feature Blender MeshOpt Price Free (open source) Pay per job (Free starter credits) Learning curve Steep (weeks to months) Minimal (API or drag-drop) Manual control Full control over",
+      "parentArticle": "MeshOpt vs Blender: When to Use Each for 3D Optimization",
+      "keywords": []
+    },
+    {
+      "text": "Where Blender Wins",
+      "url": "/blog/meshopt-vs-blender.html#where-blender-wins",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Where Blender Wins Blender is the better choice when: You Need Creative Control Blender gives you complete control over every vertex, every material, every setting. If you need to: - Manually adjust e",
+      "parentArticle": "MeshOpt vs Blender: When to Use Each for 3D Optimization",
+      "keywords": []
+    },
+    {
+      "text": "Where MeshOpt Wins",
+      "url": "/blog/meshopt-vs-blender.html#where-meshopt-wins",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Where MeshOpt Wins MeshOpt makes more sense when: You Have Volume 50 product SKUs. 200 legacy OBJ files. 1,000 scanned assets. At scale, manual optimization becomes a bottleneck. The math changes: Mod",
+      "parentArticle": "MeshOpt vs Blender: When to Use Each for 3D Optimization",
+      "keywords": []
+    },
+    {
+      "text": "The Hybrid Approach",
+      "url": "/blog/meshopt-vs-blender.html#the-hybrid-approach",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "The Hybrid Approach Many teams use both: - Blender for hero assets, creative work, and complex fixes - MeshOpt for bulk processing, pipeline automation, and \"good enough\" optimization at scale They're",
+      "parentArticle": "MeshOpt vs Blender: When to Use Each for 3D Optimization",
+      "keywords": [
+        "blender",
+        "meshopt"
+      ]
+    },
+    {
+      "text": "Cost Comparison",
+      "url": "/blog/meshopt-vs-blender.html#cost-comparison",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Cost Comparison Blender is free, but your time isn't. The Real Calculation If your time is worth $50/hour and you're optimizing 100 models: Blender: 25 hours × $50 = $1,250 in time MeshOpt: 100 credit",
+      "parentArticle": "MeshOpt vs Blender: When to Use Each for 3D Optimization",
+      "keywords": [
+        "blender:",
+        "meshopt:"
+      ]
+    },
+    {
+      "text": "Making the Decision",
+      "url": "/blog/meshopt-vs-blender.html#making-the-decision",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Making the Decision Ask yourself: - How many models? Under 10 = Blender is fine. Over 50 = seriously consider automation. - How often? One-time project = manual is OK. Ongoing pipeline = automate. - W",
+      "parentArticle": "MeshOpt vs Blender: When to Use Each for 3D Optimization",
+      "keywords": []
+    },
+    {
+      "text": "Try Both",
+      "url": "/blog/meshopt-vs-blender.html#try-both",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Try Both Blender is free to download. MeshOpt includes free starter credits. Try both on the same model and see which fits your workflow. Use our GLB Inspector to compare the results - check polygon c",
+      "parentArticle": "MeshOpt vs Blender: When to Use Each for 3D Optimization",
+      "keywords": []
+    },
+    {
+      "text": "You Need Creative Control",
+      "url": "/blog/meshopt-vs-blender.html#you-need-creative-control",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "You Need Creative Control Blender gives you complete control over every vertex, every material, every setting. If you need to: - Manually adjust edge",
+      "parentArticle": "MeshOpt vs Blender: When to Use Each for 3D Optimization",
+      "parentSection": "Where Blender Wins",
+      "keywords": []
+    },
+    {
+      "text": "You're Working on One-Off Hero Assets",
+      "url": "/blog/meshopt-vs-blender.html#youre-working-on-oneoff-hero-assets",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "You're Working on One-Off Hero Assets For a single high-value model - a game protagonist, a flagship product, a hero image - the time investment in ma",
+      "parentArticle": "MeshOpt vs Blender: When to Use Each for 3D Optimization",
+      "parentSection": "Where Blender Wins",
+      "keywords": []
+    },
+    {
+      "text": "You Already Know Blender",
+      "url": "/blog/meshopt-vs-blender.html#you-already-know-blender",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "You Already Know Blender If Blender is already part of your daily workflow and you're fast with it, adding another tool may not be worth the context s",
+      "parentArticle": "MeshOpt vs Blender: When to Use Each for 3D Optimization",
+      "parentSection": "Where Blender Wins",
+      "keywords": []
+    },
+    {
+      "text": "Budget is Zero",
+      "url": "/blog/meshopt-vs-blender.html#budget-is-zero",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Budget is Zero Blender is free. If you have more time than money, and the volume is low enough to handle manually, Blender costs nothing but your hour",
+      "parentArticle": "MeshOpt vs Blender: When to Use Each for 3D Optimization",
+      "parentSection": "Where Blender Wins",
+      "keywords": []
+    },
+    {
+      "text": "You Have Volume",
+      "url": "/blog/meshopt-vs-blender.html#you-have-volume",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "You Have Volume 50 product SKUs. 200 legacy OBJ files. 1,000 scanned assets. At scale, manual optimization becomes a bottleneck. The math changes: Mod",
+      "parentArticle": "MeshOpt vs Blender: When to Use Each for 3D Optimization",
+      "parentSection": "Where MeshOpt Wins",
+      "keywords": []
+    },
+    {
+      "text": "You Need Consistency",
+      "url": "/blog/meshopt-vs-blender.html#you-need-consistency",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "You Need Consistency Manual work varies. Monday's optimization looks different from Friday's. Different team members have different standards. For e-c",
+      "parentArticle": "MeshOpt vs Blender: When to Use Each for 3D Optimization",
+      "parentSection": "Where MeshOpt Wins",
+      "keywords": []
+    },
+    {
+      "text": "You Want Pipeline Integration",
+      "url": "/blog/meshopt-vs-blender.html#you-want-pipeline-integration",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "You Want Pipeline Integration If your 3D assets flow through a build pipeline - CI/CD, automated deployment, content management systems - an API fits",
+      "parentArticle": "MeshOpt vs Blender: When to Use Each for 3D Optimization",
+      "parentSection": "Where MeshOpt Wins",
+      "keywords": []
+    },
+    {
+      "text": "Your Team Isn't 3D-Specialized",
+      "url": "/blog/meshopt-vs-blender.html#your-team-isnt-3dspecialized",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Your Team Isn't 3D-Specialized Web developers, marketing teams, content managers - not everyone knows Blender. MeshOpt's web UI is drag-and-drop simpl",
+      "parentArticle": "MeshOpt vs Blender: When to Use Each for 3D Optimization",
+      "parentSection": "Where MeshOpt Wins",
+      "keywords": []
+    },
+    {
+      "text": "You're on Deadline",
+      "url": "/blog/meshopt-vs-blender.html#youre-on-deadline",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "You're on Deadline When the project ships next week and 30 models need optimization, there's no time to learn Blender's decimation settings or debug a",
+      "parentArticle": "MeshOpt vs Blender: When to Use Each for 3D Optimization",
+      "parentSection": "Where MeshOpt Wins",
+      "keywords": [
+        "blender",
+        "meshopt"
+      ]
+    },
+    {
+      "text": "Try MeshOpt Free",
+      "url": "/blog/meshopt-vs-blender.html#try-meshopt-free",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Try MeshOpt Free free credits to test on your models. See if automation fits your workflow. Get Free Credits Get 3D Workflow Tips Techniques for faste",
+      "parentArticle": "MeshOpt vs Blender: When to Use Each for 3D Optimization",
+      "parentSection": "Try Both",
+      "keywords": []
+    },
+    {
+      "text": "Get 3D Workflow Tips",
+      "url": "/blog/meshopt-vs-blender.html#get-3d-workflow-tips",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Get 3D Workflow Tips Techniques for faster asset pipelines, whether you use Blender, automation, or both. Email address Subscribe",
+      "parentArticle": "MeshOpt vs Blender: When to Use Each for 3D Optimization",
+      "parentSection": "Try Both",
+      "keywords": []
+    },
+    {
+      "text": "MeshOpt vs InstaLOD: Game Studio Power vs Web Simplicity",
+      "url": "/blog/meshopt-vs-instalod.html",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Compare MeshOpt and InstaLOD for 3D optimization. See when AAA game tools make sense vs lightweight web-focused processing.",
+      "keywords": [
+        "instalod alternative",
+        "instalod pricing",
+        "instalod vs",
+        "mesh optimization comparison",
+        "lod generation",
+        "instalod:",
+        "meshopt:",
+        "instalod",
+        "meshopt"
+      ]
+    },
+    {
+      "text": "What InstaLOD Does Well",
+      "url": "/blog/meshopt-vs-instalod.html#what-instalod-does-well",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "What InstaLOD Does Well Let's be clear: InstaLOD is a serious professional tool with capabilities MeshOpt doesn't try to match: InstaLOD's Strengths LOD Chain Generation - Automatically create 5-10 LO",
+      "parentArticle": "MeshOpt vs InstaLOD: Game Studio Power vs Web Simplicity",
+      "keywords": []
+    },
+    {
+      "text": "Quick Comparison",
+      "url": "/blog/meshopt-vs-instalod.html#quick-comparison",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Quick Comparison Feature InstaLOD MeshOpt Primary Use Case AAA games, console/PC Web, mobile, AR/VR Pricing Model Annual subscription ($$$) Pay per job (Free starter credits) Minimum Commitment Annual",
+      "parentArticle": "MeshOpt vs InstaLOD: Game Studio Power vs Web Simplicity",
+      "keywords": []
+    },
+    {
+      "text": "Where InstaLOD Wins",
+      "url": "/blog/meshopt-vs-instalod.html#where-instalod-wins",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Where InstaLOD Wins AAA Game Development If you're shipping a game on PlayStation, Xbox, or PC with thousands of assets, InstaLOD's feature set makes sense: - Generate 5-10 LOD levels per asset automa",
+      "parentArticle": "MeshOpt vs InstaLOD: Game Studio Power vs Web Simplicity",
+      "keywords": []
+    },
+    {
+      "text": "Where MeshOpt Wins",
+      "url": "/blog/meshopt-vs-instalod.html#where-meshopt-wins",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Where MeshOpt Wins Web and Mobile Delivery MeshOpt is built specifically for web delivery: - GLB/GLTF as first-class formats (not afterthoughts) - Draco compression built-in for minimal file sizes - D",
+      "parentArticle": "MeshOpt vs InstaLOD: Game Studio Power vs Web Simplicity",
+      "keywords": []
+    },
+    {
+      "text": "The Complexity Question",
+      "url": "/blog/meshopt-vs-instalod.html#the-complexity-question",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "The Complexity Question InstaLOD has dozens of parameters per operation. That power comes with complexity: Complexity Trade-off InstaLOD: 50+ parameters to tune. Requires understanding of polygon budg",
+      "parentArticle": "MeshOpt vs InstaLOD: Game Studio Power vs Web Simplicity",
+      "keywords": [
+        "instalod:",
+        "meshopt:"
+      ]
+    },
+    {
+      "text": "Cost Comparison",
+      "url": "/blog/meshopt-vs-instalod.html#cost-comparison",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Cost Comparison InstaLOD doesn't publish pricing (contact sales), but enterprise 3D tools typically run $2,000-10,000+ per seat annually. Scenario InstaLOD (estimated) MeshOpt 10 models/month ~$200-80",
+      "parentArticle": "MeshOpt vs InstaLOD: Game Studio Power vs Web Simplicity",
+      "keywords": []
+    },
+    {
+      "text": "Decision Framework",
+      "url": "/blog/meshopt-vs-instalod.html#decision-framework",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Decision Framework Choose InstaLOD When - Building AAA games for console/PC - Need multi-level LOD chains - Require mesh merging/batching - Want DCC plugin integration - Processing 10,000+ assets/year",
+      "parentArticle": "MeshOpt vs InstaLOD: Game Studio Power vs Web Simplicity",
+      "keywords": []
+    },
+    {
+      "text": "Can They Work Together?",
+      "url": "/blog/meshopt-vs-instalod.html#can-they-work-together",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Can They Work Together? Yes. Some teams use both: - InstaLOD for hero assets that need custom LOD chains and complex optimization - MeshOpt for bulk catalog processing and web delivery optimization In",
+      "parentArticle": "MeshOpt vs InstaLOD: Game Studio Power vs Web Simplicity",
+      "keywords": [
+        "instalod",
+        "meshopt"
+      ]
+    },
+    {
+      "text": "The Bottom Line",
+      "url": "/blog/meshopt-vs-instalod.html#the-bottom-line",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "The Bottom Line InstaLOD is a professional game development tool. It's powerful, complex, and priced for studios with dedicated technical art teams. MeshOpt is a web delivery tool. It's simple, access",
+      "parentArticle": "MeshOpt vs InstaLOD: Game Studio Power vs Web Simplicity",
+      "keywords": []
+    },
+    {
+      "text": "Try It Yourself",
+      "url": "/blog/meshopt-vs-instalod.html#try-it-yourself",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Try It Yourself MeshOpt offers free credits - enough to test on real models and see if it fits your workflow. Use our GLB Inspector to analyze the results. Try MeshOpt Free free credits. No annual com",
+      "parentArticle": "MeshOpt vs InstaLOD: Game Studio Power vs Web Simplicity",
+      "keywords": []
+    },
+    {
+      "text": "AAA Game Development",
+      "url": "/blog/meshopt-vs-instalod.html#aaa-game-development",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "AAA Game Development If you're shipping a game on PlayStation, Xbox, or PC with thousands of assets, InstaLOD's feature set makes sense: - Generate 5-",
+      "parentArticle": "MeshOpt vs InstaLOD: Game Studio Power vs Web Simplicity",
+      "parentSection": "Where InstaLOD Wins",
+      "keywords": []
+    },
+    {
+      "text": "Complex Pipeline Integration",
+      "url": "/blog/meshopt-vs-instalod.html#complex-pipeline-integration",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Complex Pipeline Integration InstaLOD's C++/C# SDK lets you embed optimization directly into your engine or tools pipeline. If you need to trigger opt",
+      "parentArticle": "MeshOpt vs InstaLOD: Game Studio Power vs Web Simplicity",
+      "parentSection": "Where InstaLOD Wins",
+      "keywords": []
+    },
+    {
+      "text": "DCC Plugin Workflow",
+      "url": "/blog/meshopt-vs-instalod.html#dcc-plugin-workflow",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "DCC Plugin Workflow Artists who live in Maya or 3ds Max can use InstaLOD without leaving their application. The native plugins integrate into existing",
+      "parentArticle": "MeshOpt vs InstaLOD: Game Studio Power vs Web Simplicity",
+      "parentSection": "Where InstaLOD Wins",
+      "keywords": []
+    },
+    {
+      "text": "Web and Mobile Delivery",
+      "url": "/blog/meshopt-vs-instalod.html#web-and-mobile-delivery",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Web and Mobile Delivery MeshOpt is built specifically for web delivery: - GLB/GLTF as first-class formats (not afterthoughts) - Draco compression buil",
+      "parentArticle": "MeshOpt vs InstaLOD: Game Studio Power vs Web Simplicity",
+      "parentSection": "Where MeshOpt Wins",
+      "keywords": []
+    },
+    {
+      "text": "No Commitment Required",
+      "url": "/blog/meshopt-vs-instalod.html#no-commitment-required",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "No Commitment Required InstaLOD requires an annual subscription before you process a single model. MeshOpt lets you: - Try 50 models free - Pay only f",
+      "parentArticle": "MeshOpt vs InstaLOD: Game Studio Power vs Web Simplicity",
+      "parentSection": "Where MeshOpt Wins",
+      "keywords": []
+    },
+    {
+      "text": "Zero Setup",
+      "url": "/blog/meshopt-vs-instalod.html#zero-setup",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Zero Setup MeshOpt works in a browser or via API. No installation, no license servers, no workstation requirements. Your marketing team can optimize m",
+      "parentArticle": "MeshOpt vs InstaLOD: Game Studio Power vs Web Simplicity",
+      "parentSection": "Where MeshOpt Wins",
+      "keywords": []
+    },
+    {
+      "text": "E-Commerce and Product Visualization",
+      "url": "/blog/meshopt-vs-instalod.html#ecommerce-and-product-visualization",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "E-Commerce and Product Visualization Online stores need hundreds of product models optimized consistently. MeshOpt's API fits naturally into e-commerc",
+      "parentArticle": "MeshOpt vs InstaLOD: Game Studio Power vs Web Simplicity",
+      "parentSection": "Where MeshOpt Wins",
+      "keywords": []
+    },
+    {
+      "text": "Try MeshOpt Free",
+      "url": "/blog/meshopt-vs-instalod.html#try-meshopt-free",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Try MeshOpt Free free credits. No annual commitment. See if web-focused optimization fits your workflow. Get Free Credits Get 3D Pipeline Tips Optimiz",
+      "parentArticle": "MeshOpt vs InstaLOD: Game Studio Power vs Web Simplicity",
+      "parentSection": "Try It Yourself",
+      "keywords": []
+    },
+    {
+      "text": "Get 3D Pipeline Tips",
+      "url": "/blog/meshopt-vs-instalod.html#get-3d-pipeline-tips",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Get 3D Pipeline Tips Optimization techniques for web, mobile, and AR delivery. Email address Subscribe <p class=\"text-small\" styl",
+      "parentArticle": "MeshOpt vs InstaLOD: Game Studio Power vs Web Simplicity",
+      "parentSection": "Try It Yourself",
+      "keywords": []
+    },
+    {
+      "text": "MeshOpt vs RapidCompact: Choosing the Right Cloud 3D Optimizer",
+      "url": "/blog/meshopt-vs-rapidcompact.html",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Compare MeshOpt and RapidCompact for cloud-based 3D optimization. Both handle web delivery - see which fits your volume and budget.",
+      "keywords": [
+        "rapidcompact alternative",
+        "rapidcompact pricing",
+        "rapidcompact vs",
+        "cloud 3d optimization",
+        "web 3d optimization"
+      ]
+    },
+    {
+      "text": "What They Have in Common",
+      "url": "/blog/meshopt-vs-rapidcompact.html#what-they-have-in-common",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "What They Have in Common Before diving into differences, let's acknowledge the overlap: Both Platforms Offer - Cloud-based processing (no local software) - Web UI for drag-and-drop optimization - REST",
+      "parentArticle": "MeshOpt vs RapidCompact: Choosing the Right Cloud 3D Optimizer",
+      "keywords": []
+    },
+    {
+      "text": "Quick Comparison",
+      "url": "/blog/meshopt-vs-rapidcompact.html#quick-comparison",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Quick Comparison Feature RapidCompact MeshOpt Target Market Enterprise, large e-commerce SMB, agencies, developers Pricing Model Enterprise contracts (contact sales) Pay-per-job (transparent pricing)",
+      "parentArticle": "MeshOpt vs RapidCompact: Choosing the Right Cloud 3D Optimizer",
+      "keywords": []
+    },
+    {
+      "text": "Where RapidCompact Wins",
+      "url": "/blog/meshopt-vs-rapidcompact.html#where-rapidcompact-wins",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Where RapidCompact Wins Enterprise Features RapidCompact is built for large organizations with complex requirements: - UV Repacking - Automatically reorganize UV layouts for optimal texture usage - Te",
+      "parentArticle": "MeshOpt vs RapidCompact: Choosing the Right Cloud 3D Optimizer",
+      "keywords": []
+    },
+    {
+      "text": "Where MeshOpt Wins",
+      "url": "/blog/meshopt-vs-rapidcompact.html#where-meshopt-wins",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Where MeshOpt Wins Transparent, Accessible Pricing RapidCompact requires contacting sales and negotiating enterprise contracts. MeshOpt's pricing is: - Published on the website - No minimums or commit",
+      "parentArticle": "MeshOpt vs RapidCompact: Choosing the Right Cloud 3D Optimizer",
+      "keywords": []
+    },
+    {
+      "text": "Different Target Markets",
+      "url": "/blog/meshopt-vs-rapidcompact.html#different-target-markets",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Different Target Markets The fundamental difference is target customer: RapidCompact's Sweet Spot - Enterprise e-commerce (10K+ SKUs) - Automotive configurators - Companies requiring on-premise - Comp",
+      "parentArticle": "MeshOpt vs RapidCompact: Choosing the Right Cloud 3D Optimizer",
+      "keywords": []
+    },
+    {
+      "text": "API Comparison",
+      "url": "/blog/meshopt-vs-rapidcompact.html#api-comparison",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "API Comparison Both offer REST APIs, but the experience differs: RapidCompact API - Documentation requires enterprise account - Comprehensive options for complex workflows - Webhook callbacks for asyn",
+      "parentArticle": "MeshOpt vs RapidCompact: Choosing the Right Cloud 3D Optimizer",
+      "keywords": []
+    },
+    {
+      "text": "When to Choose Each",
+      "url": "/blog/meshopt-vs-rapidcompact.html#when-to-choose-each",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "When to Choose Each Scenario RapidCompact MeshOpt You process 50,000+ models/year Enterprise pricing makes sense Works, but volume pricing available You process 1,000 models/year Likely overkill Pay-p",
+      "parentArticle": "MeshOpt vs RapidCompact: Choosing the Right Cloud 3D Optimizer",
+      "keywords": []
+    },
+    {
+      "text": "The Honest Take",
+      "url": "/blog/meshopt-vs-rapidcompact.html#the-honest-take",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "The Honest Take RapidCompact is a mature enterprise platform with features MeshOpt doesn't have (UV repacking, atlasing, LOD chains, on-premise). If you're a large organization with complex requiremen",
+      "parentArticle": "MeshOpt vs RapidCompact: Choosing the Right Cloud 3D Optimizer",
+      "keywords": []
+    },
+    {
+      "text": "Try Before You Decide",
+      "url": "/blog/meshopt-vs-rapidcompact.html#try-before-you-decide",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Try Before You Decide MeshOpt offers free credits - no credit card, no sales call. Process some real models and see if it meets your needs. Use our GLB Inspector to analyze the results. If you need en",
+      "parentArticle": "MeshOpt vs RapidCompact: Choosing the Right Cloud 3D Optimizer",
+      "keywords": []
+    },
+    {
+      "text": "Enterprise Features",
+      "url": "/blog/meshopt-vs-rapidcompact.html#enterprise-features",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Enterprise Features RapidCompact is built for large organizations with complex requirements: - UV Repacking - Automatically reorganize UV layouts for",
+      "parentArticle": "MeshOpt vs RapidCompact: Choosing the Right Cloud 3D Optimizer",
+      "parentSection": "Where RapidCompact Wins",
+      "keywords": []
+    },
+    {
+      "text": "Established Track Record",
+      "url": "/blog/meshopt-vs-rapidcompact.html#established-track-record",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Established Track Record RapidCompact (from DGG - Darmstadt Graphics Group) has been in the 3D optimization space longer and has case studies with maj",
+      "parentArticle": "MeshOpt vs RapidCompact: Choosing the Right Cloud 3D Optimizer",
+      "parentSection": "Where RapidCompact Wins",
+      "keywords": []
+    },
+    {
+      "text": "Comprehensive Format Support",
+      "url": "/blog/meshopt-vs-rapidcompact.html#comprehensive-format-support",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Comprehensive Format Support Need to process CAD files from Catia, Solidworks, or legacy formats? RapidCompact's broader format support handles more s",
+      "parentArticle": "MeshOpt vs RapidCompact: Choosing the Right Cloud 3D Optimizer",
+      "parentSection": "Where RapidCompact Wins",
+      "keywords": []
+    },
+    {
+      "text": "Transparent, Accessible Pricing",
+      "url": "/blog/meshopt-vs-rapidcompact.html#transparent-accessible-pricing",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Transparent, Accessible Pricing RapidCompact requires contacting sales and negotiating enterprise contracts. MeshOpt's pricing is: - Published on the",
+      "parentArticle": "MeshOpt vs RapidCompact: Choosing the Right Cloud 3D Optimizer",
+      "parentSection": "Where MeshOpt Wins",
+      "keywords": []
+    },
+    {
+      "text": "Instant Access",
+      "url": "/blog/meshopt-vs-rapidcompact.html#instant-access",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Instant Access No demo calls. No sales qualification. No procurement process. [code] Sign up, get API key, start processing. Enterprise software often",
+      "parentArticle": "MeshOpt vs RapidCompact: Choosing the Right Cloud 3D Optimizer",
+      "parentSection": "Where MeshOpt Wins",
+      "keywords": []
+    },
+    {
+      "text": "QuadriFlow Remeshing",
+      "url": "/blog/meshopt-vs-rapidcompact.html#quadriflow-remeshing",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "QuadriFlow Remeshing MeshOpt offers true retopology via QuadriFlow - not just decimation, but generating clean quad-based topology with normal map bak",
+      "parentArticle": "MeshOpt vs RapidCompact: Choosing the Right Cloud 3D Optimizer",
+      "parentSection": "Where MeshOpt Wins",
+      "keywords": []
+    },
+    {
+      "text": "Cost at Lower Volumes",
+      "url": "/blog/meshopt-vs-rapidcompact.html#cost-at-lower-volumes",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Cost at Lower Volumes Enterprise pricing means enterprise minimums. If you're processing 50-500 models per month, MeshOpt's pay-per-job model is signi",
+      "parentArticle": "MeshOpt vs RapidCompact: Choosing the Right Cloud 3D Optimizer",
+      "parentSection": "Where MeshOpt Wins",
+      "keywords": []
+    },
+    {
+      "text": "RapidCompact API",
+      "url": "/blog/meshopt-vs-rapidcompact.html#rapidcompact-api",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "RapidCompact API - Documentation requires enterprise account - Comprehensive options for complex workflows - Webhook callbacks for async processing -",
+      "parentArticle": "MeshOpt vs RapidCompact: Choosing the Right Cloud 3D Optimizer",
+      "parentSection": "API Comparison",
+      "keywords": []
+    },
+    {
+      "text": "MeshOpt API",
+      "url": "/blog/meshopt-vs-rapidcompact.html#meshopt-api",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "MeshOpt API - Public documentation, instant access - Simple parameters (quality slider) - Synchronous responses for immediate results - Minimal learni",
+      "parentArticle": "MeshOpt vs RapidCompact: Choosing the Right Cloud 3D Optimizer",
+      "parentSection": "API Comparison",
+      "keywords": []
+    },
+    {
+      "text": "Try MeshOpt Free",
+      "url": "/blog/meshopt-vs-rapidcompact.html#try-meshopt-free",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Try MeshOpt Free free credits. Instant access. See if simple web optimization fits your workflow. Get Free Credits Get 3D Optimization Tips Practical",
+      "parentArticle": "MeshOpt vs RapidCompact: Choosing the Right Cloud 3D Optimizer",
+      "parentSection": "Try Before You Decide",
+      "keywords": []
+    },
+    {
+      "text": "Get 3D Optimization Tips",
+      "url": "/blog/meshopt-vs-rapidcompact.html#get-3d-optimization-tips",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Get 3D Optimization Tips Practical techniques for web and mobile 3D delivery. Email address Subscribe <p class=\"text-small\" style",
+      "parentArticle": "MeshOpt vs RapidCompact: Choosing the Right Cloud 3D Optimizer",
+      "parentSection": "Try Before You Decide",
+      "keywords": []
+    },
+    {
+      "text": "MeshOpt vs Simplygon: Enterprise vs Pay-Per-Use",
+      "url": "/blog/meshopt-vs-simplygon.html",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Compare MeshOpt and Simplygon for 3D optimization. See when enterprise Simplygon licensing makes sense vs simple pay-per-use API processing.",
+      "keywords": [
+        "simplygon alternative",
+        "simplygon pricing",
+        "simplygon vs",
+        "mesh optimization software",
+        "3d optimization api",
+        "scenario:",
+        "simplygon:",
+        "meshopt:"
+      ]
+    },
+    {
+      "text": "What is Simplygon?",
+      "url": "/blog/meshopt-vs-simplygon.html#what-is-simplygon",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "What is Simplygon? Simplygon (now owned by Microsoft) is an industry-leading mesh optimization SDK. It offers: - Advanced polygon reduction algorithms - Automatic LOD chain generation - Impostor/billb",
+      "parentArticle": "MeshOpt vs Simplygon: Enterprise vs Pay-Per-Use",
+      "keywords": []
+    },
+    {
+      "text": "Quick Comparison",
+      "url": "/blog/meshopt-vs-simplygon.html#quick-comparison",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Quick Comparison Feature Simplygon MeshOpt Pricing model Enterprise license (custom quote) Pay-per-job ($0.10-0.50/model) Minimum commitment Annual contract (typically $10K+) None (Free starter credit",
+      "parentArticle": "MeshOpt vs Simplygon: Enterprise vs Pay-Per-Use",
+      "keywords": []
+    },
+    {
+      "text": "The Pricing Reality",
+      "url": "/blog/meshopt-vs-simplygon.html#the-pricing-reality",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "The Pricing Reality Simplygon Pricing Simplygon doesn't publish pricing. You contact sales, go through a qualification process, and receive a custom quote. Based on industry reports and user discussio",
+      "parentArticle": "MeshOpt vs Simplygon: Enterprise vs Pay-Per-Use",
+      "keywords": [
+        "scenario:",
+        "simplygon:",
+        "meshopt:"
+      ]
+    },
+    {
+      "text": "Where Simplygon Wins",
+      "url": "/blog/meshopt-vs-simplygon.html#where-simplygon-wins",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Where Simplygon Wins AAA Game Production If you're building a AAA game with thousands of assets, each needing multiple LOD levels, impostors for distant rendering, and deep integration with Unreal or",
+      "parentArticle": "MeshOpt vs Simplygon: Enterprise vs Pay-Per-Use",
+      "keywords": []
+    },
+    {
+      "text": "Where MeshOpt Wins",
+      "url": "/blog/meshopt-vs-simplygon.html#where-meshopt-wins",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Where MeshOpt Wins Accessibility No sales calls. No enterprise contracts. No SDK integration. Sign up, get an API key, start processing. A solo developer can be optimizing models in 5 minutes. Web-Fir",
+      "parentArticle": "MeshOpt vs Simplygon: Enterprise vs Pay-Per-Use",
+      "keywords": []
+    },
+    {
+      "text": "Use Case Guide",
+      "url": "/blog/meshopt-vs-simplygon.html#use-case-guide",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Use Case Guide Choose Simplygon When - Building AAA/AA games with large asset counts - Need automatic LOD chain generation - Require impostor/billboard systems - Deep Unity/Unreal integration needed -",
+      "parentArticle": "MeshOpt vs Simplygon: Enterprise vs Pay-Per-Use",
+      "keywords": []
+    },
+    {
+      "text": "Migration Considerations",
+      "url": "/blog/meshopt-vs-simplygon.html#migration-considerations",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Migration Considerations If you're currently evaluating Simplygon or considering alternatives: Coming from Simplygon If Simplygon's pricing no longer fits your budget or your needs have simplified: -",
+      "parentArticle": "MeshOpt vs Simplygon: Enterprise vs Pay-Per-Use",
+      "keywords": []
+    },
+    {
+      "text": "Honest Assessment",
+      "url": "/blog/meshopt-vs-simplygon.html#honest-assessment",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Honest Assessment Simplygon is the more powerful tool. Period. It has features MeshOpt doesn't offer and likely never will. It's been refined over 15+ years for the most demanding production pipelines",
+      "parentArticle": "MeshOpt vs Simplygon: Enterprise vs Pay-Per-Use",
+      "keywords": []
+    },
+    {
+      "text": "AAA Game Production",
+      "url": "/blog/meshopt-vs-simplygon.html#aaa-game-production",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "AAA Game Production If you're building a AAA game with thousands of assets, each needing multiple LOD levels, impostors for distant rendering, and dee",
+      "parentArticle": "MeshOpt vs Simplygon: Enterprise vs Pay-Per-Use",
+      "parentSection": "Where Simplygon Wins",
+      "keywords": []
+    },
+    {
+      "text": "Automatic LOD Chains",
+      "url": "/blog/meshopt-vs-simplygon.html#automatic-lod-chains",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Automatic LOD Chains Simplygon excels at generating complete LOD chains automatically. Input one high-poly model, get LOD0 through LOD4 with appropria",
+      "parentArticle": "MeshOpt vs Simplygon: Enterprise vs Pay-Per-Use",
+      "parentSection": "Where Simplygon Wins",
+      "keywords": []
+    },
+    {
+      "text": "On-Premise Security",
+      "url": "/blog/meshopt-vs-simplygon.html#onpremise-security",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "On-Premise Security For studios with strict IP protection requirements, Simplygon can run entirely on-premise. Your assets never leave your network. M",
+      "parentArticle": "MeshOpt vs Simplygon: Enterprise vs Pay-Per-Use",
+      "parentSection": "Where Simplygon Wins",
+      "keywords": []
+    },
+    {
+      "text": "Advanced Features",
+      "url": "/blog/meshopt-vs-simplygon.html#advanced-features",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Advanced Features Impostor generation, visibility-based optimization, aggregate LOD merging - Simplygon has features that simply don't exist in simple",
+      "parentArticle": "MeshOpt vs Simplygon: Enterprise vs Pay-Per-Use",
+      "parentSection": "Where Simplygon Wins",
+      "keywords": []
+    },
+    {
+      "text": "Accessibility",
+      "url": "/blog/meshopt-vs-simplygon.html#accessibility",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Accessibility No sales calls. No enterprise contracts. No SDK integration. Sign up, get an API key, start processing. A solo developer can be optimizi",
+      "parentArticle": "MeshOpt vs Simplygon: Enterprise vs Pay-Per-Use",
+      "parentSection": "Where MeshOpt Wins",
+      "keywords": []
+    },
+    {
+      "text": "Web-First Focus",
+      "url": "/blog/meshopt-vs-simplygon.html#webfirst-focus",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Web-First Focus MeshOpt is built specifically for web, mobile, and AR delivery. GLB/GLTF output with Draco compression, texture optimization for web p",
+      "parentArticle": "MeshOpt vs Simplygon: Enterprise vs Pay-Per-Use",
+      "parentSection": "Where MeshOpt Wins",
+      "keywords": []
+    },
+    {
+      "text": "Transparent, Scalable Pricing",
+      "url": "/blog/meshopt-vs-simplygon.html#transparent-scalable-pricing",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Transparent, Scalable Pricing Process 10 models or 10,000 - pay only for what you use. No awkward conversations with sales about whether your project",
+      "parentArticle": "MeshOpt vs Simplygon: Enterprise vs Pay-Per-Use",
+      "parentSection": "Where MeshOpt Wins",
+      "keywords": []
+    },
+    {
+      "text": "Simple REST API",
+      "url": "/blog/meshopt-vs-simplygon.html#simple-rest-api",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Simple REST API One HTTP endpoint. Upload file, get optimized file back. Integrate with any language, any platform, any CI/CD system. No SDK installat",
+      "parentArticle": "MeshOpt vs Simplygon: Enterprise vs Pay-Per-Use",
+      "parentSection": "Where MeshOpt Wins",
+      "keywords": []
+    },
+    {
+      "text": "E-commerce and Small Teams",
+      "url": "/blog/meshopt-vs-simplygon.html#ecommerce-and-small-teams",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "E-commerce and Small Teams If you're a Shopify merchant, web agency, or small studio, you likely need reliable optimization without enterprise complex",
+      "parentArticle": "MeshOpt vs Simplygon: Enterprise vs Pay-Per-Use",
+      "parentSection": "Where MeshOpt Wins",
+      "keywords": []
+    },
+    {
+      "text": "Coming from Simplygon",
+      "url": "/blog/meshopt-vs-simplygon.html#coming-from-simplygon",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Coming from Simplygon If Simplygon's pricing no longer fits your budget or your needs have simplified: - MeshOpt handles the core use case (polygon re",
+      "parentArticle": "MeshOpt vs Simplygon: Enterprise vs Pay-Per-Use",
+      "parentSection": "Migration Considerations",
+      "keywords": []
+    },
+    {
+      "text": "Evaluating Both",
+      "url": "/blog/meshopt-vs-simplygon.html#evaluating-both",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Evaluating Both If you're starting fresh and considering both: - Get a Simplygon quote first to understand actual costs - Test MeshOpt's free starter",
+      "parentArticle": "MeshOpt vs Simplygon: Enterprise vs Pay-Per-Use",
+      "parentSection": "Migration Considerations",
+      "keywords": []
+    },
+    {
+      "text": "Try MeshOpt Free",
+      "url": "/blog/meshopt-vs-simplygon.html#try-meshopt-free",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Try MeshOpt Free free credits to test on your models. No sales call required. Get Free Credits Get 3D Optimization Updates New features, optimization",
+      "parentArticle": "MeshOpt vs Simplygon: Enterprise vs Pay-Per-Use",
+      "parentSection": "Honest Assessment",
+      "keywords": []
+    },
+    {
+      "text": "Get 3D Optimization Updates",
+      "url": "/blog/meshopt-vs-simplygon.html#get-3d-optimization-updates",
+      "category": "Comparison",
+      "date": "December 2025",
+      "context": "Get 3D Optimization Updates New features, optimization tips, and industry comparisons. Email address Subscribe <p class=\"text-sma",
+      "parentArticle": "MeshOpt vs Simplygon: Enterprise vs Pay-Per-Use",
+      "parentSection": "Honest Assessment",
+      "keywords": []
+    },
+    {
+      "text": "How to Optimize 3D Models for Shopify AR",
+      "url": "/blog/optimize-3d-models-shopify-ar.html",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Meet Shopify's AR requirements with properly optimized 3D models. Learn file size limits, polygon counts, and texture requirements for smooth AR Quick Look experiences.",
+      "keywords": [
+        "shopify ar",
+        "shopify 3d",
+        "shopify ar requirements",
+        "optimize 3d shopify",
+        "usdz shopify",
+        "glb shopify",
+        "format=both",
+        "glb",
+        "usdz",
+        "materials:",
+        "animations:",
+        "glb:",
+        "usdz:",
+        "performance:"
+      ]
+    },
+    {
+      "text": "Shopify's 3D/AR Requirements",
+      "url": "/blog/optimize-3d-models-shopify-ar.html#shopifys-3dar-requirements",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Shopify's 3D/AR Requirements Shopify accepts two file formats for 3D models: - GLB - For 3D viewer on product pages (all platforms) - USDZ - For AR Quick Look on iOS devices For the best experience, y",
+      "parentArticle": "How to Optimize 3D Models for Shopify AR",
+      "keywords": [
+        "glb",
+        "usdz",
+        "materials:",
+        "animations:"
+      ]
+    },
+    {
+      "text": "Common Problems (And How to Fix Them)",
+      "url": "/blog/optimize-3d-models-shopify-ar.html#common-problems-and-how-to-fix-them",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Common Problems (And How to Fix Them) Problem: \"View in AR\" Button Does Nothing This usually means your USDZ file is missing or corrupted. Check that: - You've uploaded both GLB and USDZ versions - Th",
+      "parentArticle": "How to Optimize 3D Models for Shopify AR",
+      "keywords": []
+    },
+    {
+      "text": "The Manual Optimization Process",
+      "url": "/blog/optimize-3d-models-shopify-ar.html#the-manual-optimization-process",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "The Manual Optimization Process If you're comfortable with Blender, here's the workflow: Step 1: Reduce Polygon Count Import your model and apply a Decimate modifier. For e-commerce products, you can",
+      "parentArticle": "How to Optimize 3D Models for Shopify AR",
+      "keywords": []
+    },
+    {
+      "text": "The Automated Approach",
+      "url": "/blog/optimize-3d-models-shopify-ar.html#the-automated-approach",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "The Automated Approach Here's the same process via API: [code] That handles polygon reduction, texture optimization, and Draco compression in one call. The format=both parameter generates GLB and USDZ",
+      "parentArticle": "How to Optimize 3D Models for Shopify AR",
+      "keywords": [
+        "format=both"
+      ]
+    },
+    {
+      "text": "Quality Settings for Different Products",
+      "url": "/blog/optimize-3d-models-shopify-ar.html#quality-settings-for-different-products",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Quality Settings for Different Products Not every product needs the same level of detail: Product Type Target Polys Texture Size Quality Setting Hero/Featured 50-100K 2048px 70-80% Standard Products 2",
+      "parentArticle": "How to Optimize 3D Models for Shopify AR",
+      "keywords": []
+    },
+    {
+      "text": "Testing Your AR Experience",
+      "url": "/blog/optimize-3d-models-shopify-ar.html#testing-your-ar-experience",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Testing Your AR Experience Before uploading to Shopify, test locally: - GLB: Open in glTF Viewer or our GLB Inspector - USDZ: AirDrop to an iPhone, or open in macOS Finder - Performance: Test on an ol",
+      "parentArticle": "How to Optimize 3D Models for Shopify AR",
+      "keywords": [
+        "glb:",
+        "usdz:",
+        "performance:"
+      ]
+    },
+    {
+      "text": "Uploading to Shopify",
+      "url": "/blog/optimize-3d-models-shopify-ar.html#uploading-to-shopify",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Uploading to Shopify Once your files are optimized: - Go to Products in Shopify admin - Select the product - Scroll to 3D models section - Upload both GLB and USDZ files - Preview on mobile to verify",
+      "parentArticle": "How to Optimize 3D Models for Shopify AR",
+      "keywords": []
+    },
+    {
+      "text": "Summary",
+      "url": "/blog/optimize-3d-models-shopify-ar.html#summary",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Summary Shopify AR is a powerful sales tool - products with AR see significantly higher conversion rates. But the technology only works if your 3D models are properly optimized. Key takeaways: - Keep",
+      "parentArticle": "How to Optimize 3D Models for Shopify AR",
+      "keywords": []
+    },
+    {
+      "text": "File Size Limits",
+      "url": "/blog/optimize-3d-models-shopify-ar.html#file-size-limits",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "File Size Limits Shopify's official limits are generous - up to 500MB per file. But those limits are for what Shopify will accept, not what will actua",
+      "parentArticle": "How to Optimize 3D Models for Shopify AR",
+      "parentSection": "Shopify's 3D/AR Requirements",
+      "keywords": []
+    },
+    {
+      "text": "Apple AR Quick Look Requirements",
+      "url": "/blog/optimize-3d-models-shopify-ar.html#apple-ar-quick-look-requirements",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Apple AR Quick Look Requirements The USDZ format powers AR on iOS, and Apple has its own recommendations: - Polygon count: Under 100,000 triangles for",
+      "parentArticle": "How to Optimize 3D Models for Shopify AR",
+      "parentSection": "Shopify's 3D/AR Requirements",
+      "keywords": [
+        "materials:"
+      ]
+    },
+    {
+      "text": "Problem: \"View in AR\" Button Does Nothing",
+      "url": "/blog/optimize-3d-models-shopify-ar.html#problem-view-in-ar-button-does-nothing",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Problem: \"View in AR\" Button Does Nothing This usually means your USDZ file is missing or corrupted. Check that: - You've uploaded both GLB and USDZ v",
+      "parentArticle": "How to Optimize 3D Models for Shopify AR",
+      "parentSection": "Common Problems (And How to Fix Them)",
+      "keywords": []
+    },
+    {
+      "text": "Problem: AR Loads But Looks Wrong",
+      "url": "/blog/optimize-3d-models-shopify-ar.html#problem-ar-loads-but-looks-wrong",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Problem: AR Loads But Looks Wrong Materials often break during conversion. USDZ only supports PBR materials with specific texture types: - Base Color",
+      "parentArticle": "How to Optimize 3D Models for Shopify AR",
+      "parentSection": "Common Problems (And How to Fix Them)",
+      "keywords": []
+    },
+    {
+      "text": "Problem: AR is Slow or Stutters",
+      "url": "/blog/optimize-3d-models-shopify-ar.html#problem-ar-is-slow-or-stutters",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Problem: AR is Slow or Stutters Your model is too heavy. Use our GLB Inspector to check polygon count and texture sizes. If you're over the recommende",
+      "parentArticle": "How to Optimize 3D Models for Shopify AR",
+      "parentSection": "Common Problems (And How to Fix Them)",
+      "keywords": []
+    },
+    {
+      "text": "Step 1: Reduce Polygon Count",
+      "url": "/blog/optimize-3d-models-shopify-ar.html#step-1-reduce-polygon-count",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Step 1: Reduce Polygon Count Import your model and apply a Decimate modifier. For e-commerce products, you can often reduce by 70-80% without visible",
+      "parentArticle": "How to Optimize 3D Models for Shopify AR",
+      "parentSection": "The Manual Optimization Process",
+      "keywords": []
+    },
+    {
+      "text": "Step 2: Resize Textures",
+      "url": "/blog/optimize-3d-models-shopify-ar.html#step-2-resize-textures",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Step 2: Resize Textures Open each texture and resize to 1024x1024 or 2048x2048 maximum. For most products, 1024px is sufficient - remember, it's being",
+      "parentArticle": "How to Optimize 3D Models for Shopify AR",
+      "parentSection": "The Manual Optimization Process",
+      "keywords": []
+    },
+    {
+      "text": "Step 3: Export GLB with Compression",
+      "url": "/blog/optimize-3d-models-shopify-ar.html#step-3-export-glb-with-compression",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Step 3: Export GLB with Compression When exporting to GLB, enable Draco compression for geometry. This can reduce file size by 80-90% with minimal qua",
+      "parentArticle": "How to Optimize 3D Models for Shopify AR",
+      "parentSection": "The Manual Optimization Process",
+      "keywords": []
+    },
+    {
+      "text": "Step 4: Convert to USDZ",
+      "url": "/blog/optimize-3d-models-shopify-ar.html#step-4-convert-to-usdz",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Step 4: Convert to USDZ This is where it gets tricky. Apple's Reality Converter is the official tool, but it only runs on macOS. Alternatives: - Reali",
+      "parentArticle": "How to Optimize 3D Models for Shopify AR",
+      "parentSection": "The Manual Optimization Process",
+      "keywords": []
+    },
+    {
+      "text": "Batch Processing for Catalogs",
+      "url": "/blog/optimize-3d-models-shopify-ar.html#batch-processing-for-catalogs",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Batch Processing for Catalogs For stores with hundreds of products: #!/bin/bash for file in ./products/*.glb; do name=$(basename \"$file\" .glb) # Optim",
+      "parentArticle": "How to Optimize 3D Models for Shopify AR",
+      "parentSection": "The Automated Approach",
+      "keywords": []
+    },
+    {
+      "text": "Ready to Optimize for Shopify?",
+      "url": "/blog/optimize-3d-models-shopify-ar.html#ready-to-optimize-for-shopify",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Ready to Optimize for Shopify? Get free credits to optimize your product models. Both GLB and USDZ output supported. Start Optimizing Get E-commerce 3",
+      "parentArticle": "How to Optimize 3D Models for Shopify AR",
+      "parentSection": "Summary",
+      "keywords": []
+    },
+    {
+      "text": "Get E-commerce 3D Tips",
+      "url": "/blog/optimize-3d-models-shopify-ar.html#get-ecommerce-3d-tips",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Get E-commerce 3D Tips Optimization techniques specifically for product visualization and AR. Email address Subscribe <p class=\"t",
+      "parentArticle": "How to Optimize 3D Models for Shopify AR",
+      "parentSection": "Summary",
+      "keywords": []
+    },
+    {
+      "text": "How to Reduce GLB File Size for Web Delivery",
+      "url": "/blog/reduce-glb-file-size.html",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Learn practical techniques to reduce GLB file size for faster web loading. From manual Blender optimization to automated API solutions.",
+      "keywords": [
+        "reduce glb file size",
+        "optimize glb",
+        "glb compression",
+        "3d web optimization",
+        "three.js performance",
+        "geometry",
+        "textures",
+        "80-100%",
+        "50-80%",
+        "20-50%"
+      ]
+    },
+    {
+      "text": "Why GLB Files Get So Large",
+      "url": "/blog/reduce-glb-file-size.html#why-glb-files-get-so-large",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Why GLB Files Get So Large Before we fix the problem, let's understand why it happens. GLB file size comes from three sources: - Geometry - Polygon count. A photogrammetry scan can easily have 2 milli",
+      "parentArticle": "How to Reduce GLB File Size for Web Delivery",
+      "keywords": [
+        "geometry",
+        "textures"
+      ]
+    },
+    {
+      "text": "The Manual Approach (Blender)",
+      "url": "/blog/reduce-glb-file-size.html#the-manual-approach-blender",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "The Manual Approach (Blender) If you're comfortable with Blender, here's the standard workflow: Step 1: Reduce Polygon Count Import your model, select the mesh, and apply a Decimate modifier. Start wi",
+      "parentArticle": "How to Reduce GLB File Size for Web Delivery",
+      "keywords": []
+    },
+    {
+      "text": "The Automated Approach (API)",
+      "url": "/blog/reduce-glb-file-size.html#the-automated-approach-api",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "The Automated Approach (API) Here's the same workflow as a single API call: [code] That's it. The API handles polygon reduction, texture optimization, and Draco compression automatically. A 47MB file",
+      "parentArticle": "How to Reduce GLB File Size for Web Delivery",
+      "keywords": []
+    },
+    {
+      "text": "Choosing the Right Quality Level",
+      "url": "/blog/reduce-glb-file-size.html#choosing-the-right-quality-level",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Choosing the Right Quality Level The ratio parameter (0.0-1.0) controls the polygon reduction ratio. Here's what we've found works well: - 80-100% - Minor cleanup. Good for already-optimized models th",
+      "parentArticle": "How to Reduce GLB File Size for Web Delivery",
+      "keywords": [
+        "80-100%",
+        "50-80%",
+        "20-50%"
+      ]
+    },
+    {
+      "text": "When to Use Remesh Instead",
+      "url": "/blog/reduce-glb-file-size.html#when-to-use-remesh-instead",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "When to Use Remesh Instead Decimation works by removing vertices while trying to preserve the shape. It's fast but can produce messy topology. For hero assets where you need clean geometry - models th",
+      "parentArticle": "How to Reduce GLB File Size for Web Delivery",
+      "keywords": []
+    },
+    {
+      "text": "Performance Targets for Web 3D",
+      "url": "/blog/reduce-glb-file-size.html#performance-targets-for-web-3d",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Performance Targets for Web 3D Here are the benchmarks we recommend for smooth 60fps performance: Target Desktop Mobile Total Triangles 500,000 100,000 Single Model Triangles 100,000 30,000 Texture Si",
+      "parentArticle": "How to Reduce GLB File Size for Web Delivery",
+      "keywords": []
+    },
+    {
+      "text": "Summary",
+      "url": "/blog/reduce-glb-file-size.html#summary",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Summary Large GLB files kill web 3D experiences. The fix is straightforward: reduce polygons, compress textures, enable Draco. You can do this manually in Blender, spending 30-60 minutes per model, or",
+      "parentArticle": "How to Reduce GLB File Size for Web Delivery",
+      "keywords": []
+    },
+    {
+      "text": "Step 1: Reduce Polygon Count",
+      "url": "/blog/reduce-glb-file-size.html#step-1-reduce-polygon-count",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Step 1: Reduce Polygon Count Import your model, select the mesh, and apply a Decimate modifier. Start with a ratio of 0.5 (50% reduction) and preview",
+      "parentArticle": "How to Reduce GLB File Size for Web Delivery",
+      "parentSection": "The Manual Approach (Blender)",
+      "keywords": []
+    },
+    {
+      "text": "Step 2: Resize Textures",
+      "url": "/blog/reduce-glb-file-size.html#step-2-resize-textures",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Step 2: Resize Textures Open each texture in an image editor. Most web models don't need textures larger than 1024x1024. Some can get away with 512x51",
+      "parentArticle": "How to Reduce GLB File Size for Web Delivery",
+      "parentSection": "The Manual Approach (Blender)",
+      "keywords": []
+    },
+    {
+      "text": "Step 3: Re-export with Draco Compression",
+      "url": "/blog/reduce-glb-file-size.html#step-3-reexport-with-draco-compression",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Step 3: Re-export with Draco Compression When exporting to GLB, enable Draco mesh compression in the export settings. This can reduce geometry data by",
+      "parentArticle": "How to Reduce GLB File Size for Web Delivery",
+      "parentSection": "The Manual Approach (Blender)",
+      "keywords": []
+    },
+    {
+      "text": "Ready to Optimize Your Models?",
+      "url": "/blog/reduce-glb-file-size.html#ready-to-optimize-your-models",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Ready to Optimize Your Models? Get free credits to try MeshOpt. No credit card required. Start Optimizing Get More 3D Optimization Tips Practical tech",
+      "parentArticle": "How to Reduce GLB File Size for Web Delivery",
+      "parentSection": "Summary",
+      "keywords": []
+    },
+    {
+      "text": "Get More 3D Optimization Tips",
+      "url": "/blog/reduce-glb-file-size.html#get-more-3d-optimization-tips",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Get More 3D Optimization Tips Practical techniques for web and mobile 3D delivery. No fluff. Email address Subscribe <p class=\"te",
+      "parentArticle": "How to Reduce GLB File Size for Web Delivery",
+      "parentSection": "Summary",
+      "keywords": []
+    },
+    {
+      "text": "Three.js Performance: How to Optimize 3D Models for 60fps",
+      "url": "/blog/threejs-performance-optimization.html",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Fix slow Three.js scenes with proper 3D model optimization. Learn to diagnose performance issues, reduce draw calls, and hit 60fps on all devices.",
+      "keywords": [
+        "three.js performance",
+        "three.js optimization",
+        "webgl performance",
+        "three.js slow",
+        "three.js 60fps",
+        "three.js draw calls",
+        "renderer.info.render.calls",
+        "scene.add()",
+        "fps",
+        "fix:"
+      ]
+    },
+    {
+      "text": "Diagnosing the Problem",
+      "url": "/blog/threejs-performance-optimization.html#diagnosing-the-problem",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Diagnosing the Problem Before optimizing, you need to know what's actually slow. Add stats.js to see real-time performance metrics: [code] This shows you three critical numbers: - FPS - Frames per sec",
+      "parentArticle": "Three.js Performance: How to Optimize 3D Models for 60fps",
+      "keywords": [
+        "fps"
+      ]
+    },
+    {
+      "text": "The Four Performance Killers",
+      "url": "/blog/threejs-performance-optimization.html#the-four-performance-killers",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "The Four Performance Killers In order of impact, these are what actually slow down Three.js scenes: 1. Draw Calls Every mesh with a unique material requires a separate \"draw call\" to the GPU. Each dra",
+      "parentArticle": "Three.js Performance: How to Optimize 3D Models for 60fps",
+      "keywords": [
+        "fix:"
+      ]
+    },
+    {
+      "text": "Optimization Techniques",
+      "url": "/blog/threejs-performance-optimization.html#optimization-techniques",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Optimization Techniques Frustum Culling (Free Performance) Three.js automatically skips rendering objects outside the camera's view. Make sure it's enabled (it is by default): [code] For this to work",
+      "parentArticle": "Three.js Performance: How to Optimize 3D Models for 60fps",
+      "keywords": []
+    },
+    {
+      "text": "Model Optimization: Manual vs Automated",
+      "url": "/blog/threejs-performance-optimization.html#model-optimization-manual-vs-automated",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Model Optimization: Manual vs Automated The techniques above help at runtime, but the biggest gains come from optimizing models before they reach Three.js. Manual Approach (Blender) - Import model - A",
+      "parentArticle": "Three.js Performance: How to Optimize 3D Models for 60fps",
+      "keywords": []
+    },
+    {
+      "text": "Performance Checklist",
+      "url": "/blog/threejs-performance-optimization.html#performance-checklist",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Performance Checklist Before deploying, verify: - Draw calls under 100 - Check renderer.info.render.calls - Total triangles under 500K - Use our GLB Inspector - No texture over 2048px - Check Texture",
+      "parentArticle": "Three.js Performance: How to Optimize 3D Models for 60fps",
+      "keywords": [
+        "renderer.info.render.calls"
+      ]
+    },
+    {
+      "text": "Summary",
+      "url": "/blog/threejs-performance-optimization.html#summary",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Summary Three.js performance problems almost always trace back to: - Too many draw calls (merge meshes, use instancing) - Too many polygons (decimate models) - Textures too large (resize, compress) -",
+      "parentArticle": "Three.js Performance: How to Optimize 3D Models for 60fps",
+      "keywords": [
+        "scene.add()"
+      ]
+    },
+    {
+      "text": "Chrome DevTools Performance Tab",
+      "url": "/blog/threejs-performance-optimization.html#chrome-devtools-performance-tab",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Chrome DevTools Performance Tab For deeper analysis, use Chrome DevTools: - Open DevTools (F12) - Go to Performance tab - Click Record, interact with",
+      "parentArticle": "Three.js Performance: How to Optimize 3D Models for 60fps",
+      "parentSection": "Diagnosing the Problem",
+      "keywords": []
+    },
+    {
+      "text": "Three.js Renderer Info",
+      "url": "/blog/threejs-performance-optimization.html#threejs-renderer-info",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Three.js Renderer Info Check what's actually being rendered: [code] High draw calls (over 100) or triangle counts (over 1 million) are red flags. The",
+      "parentArticle": "Three.js Performance: How to Optimize 3D Models for 60fps",
+      "parentSection": "Diagnosing the Problem",
+      "keywords": []
+    },
+    {
+      "text": "1. Draw Calls",
+      "url": "/blog/threejs-performance-optimization.html#1-draw-calls",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "1. Draw Calls Every mesh with a unique material requires a separate \"draw call\" to the GPU. Each draw call has overhead - context switching, state cha",
+      "parentArticle": "Three.js Performance: How to Optimize 3D Models for 60fps",
+      "parentSection": "The Four Performance Killers",
+      "keywords": []
+    },
+    {
+      "text": "2. Polygon Count",
+      "url": "/blog/threejs-performance-optimization.html#2-polygon-count",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "2. Polygon Count Every triangle needs to be transformed, lit, and rasterized. More triangles = more work. Total Triangles Performance Use Case",
+      "parentArticle": "Three.js Performance: How to Optimize 3D Models for 60fps",
+      "parentSection": "The Four Performance Killers",
+      "keywords": []
+    },
+    {
+      "text": "3. Texture Memory",
+      "url": "/blog/threejs-performance-optimization.html#3-texture-memory",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "3. Texture Memory Textures consume GPU memory. Exceed the GPU's VRAM and you'll see stuttering as textures swap in and out. Texture Size Memory (RGBA)",
+      "parentArticle": "Three.js Performance: How to Optimize 3D Models for 60fps",
+      "parentSection": "The Four Performance Killers",
+      "keywords": []
+    },
+    {
+      "text": "4. Shader Complexity",
+      "url": "/blog/threejs-performance-optimization.html#4-shader-complexity",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "4. Shader Complexity Complex materials with many texture lookups, lighting calculations, or custom shaders can bottleneck the GPU. Fix: Use simpler ma",
+      "parentArticle": "Three.js Performance: How to Optimize 3D Models for 60fps",
+      "parentSection": "The Four Performance Killers",
+      "keywords": [
+        "fix:"
+      ]
+    },
+    {
+      "text": "Frustum Culling (Free Performance)",
+      "url": "/blog/threejs-performance-optimization.html#frustum-culling-free-performance",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Frustum Culling (Free Performance) Three.js automatically skips rendering objects outside the camera's view. Make sure it's enabled (it is by default)",
+      "parentArticle": "Three.js Performance: How to Optimize 3D Models for 60fps",
+      "parentSection": "Optimization Techniques",
+      "keywords": []
+    },
+    {
+      "text": "Instancing for Repeated Objects",
+      "url": "/blog/threejs-performance-optimization.html#instancing-for-repeated-objects",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Instancing for Repeated Objects If you have many copies of the same geometry (trees, particles, buildings), use instancing: const geometry = new THREE",
+      "parentArticle": "Three.js Performance: How to Optimize 3D Models for 60fps",
+      "parentSection": "Optimization Techniques",
+      "keywords": []
+    },
+    {
+      "text": "Draco Compression for Faster Loading",
+      "url": "/blog/threejs-performance-optimization.html#draco-compression-for-faster-loading",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Draco Compression for Faster Loading Draco compresses geometry data by 80-90%, dramatically reducing download time: import { GLTFLoader } from 'three/",
+      "parentArticle": "Three.js Performance: How to Optimize 3D Models for 60fps",
+      "parentSection": "Optimization Techniques",
+      "keywords": []
+    },
+    {
+      "text": "Dispose Resources Properly",
+      "url": "/blog/threejs-performance-optimization.html#dispose-resources-properly",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Dispose Resources Properly Memory leaks kill performance over time. Always dispose when removing objects: function disposeObject(obj) { if (obj.geomet",
+      "parentArticle": "Three.js Performance: How to Optimize 3D Models for 60fps",
+      "parentSection": "Optimization Techniques",
+      "keywords": []
+    },
+    {
+      "text": "Manual Approach (Blender)",
+      "url": "/blog/threejs-performance-optimization.html#manual-approach-blender",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Manual Approach (Blender) - Import model - Apply Decimate modifier to reduce polygons - Resize textures in image editor - Export with Draco compressio",
+      "parentArticle": "Three.js Performance: How to Optimize 3D Models for 60fps",
+      "parentSection": "Model Optimization: Manual vs Automated",
+      "keywords": []
+    },
+    {
+      "text": "Automated Approach (API)",
+      "url": "/blog/threejs-performance-optimization.html#automated-approach-api",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Automated Approach (API) [code] Time: Seconds to minutes per model (varies by file size). Includes polygon reduction, texture optimization, and Draco",
+      "parentArticle": "Three.js Performance: How to Optimize 3D Models for 60fps",
+      "parentSection": "Model Optimization: Manual vs Automated",
+      "keywords": []
+    },
+    {
+      "text": "Integration with Build Pipeline",
+      "url": "/blog/threejs-performance-optimization.html#integration-with-build-pipeline",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Integration with Build Pipeline For projects with many models, integrate optimization into your build: // optimize-models.js const fs = require('fs');",
+      "parentArticle": "Three.js Performance: How to Optimize 3D Models for 60fps",
+      "parentSection": "Model Optimization: Manual vs Automated",
+      "keywords": []
+    },
+    {
+      "text": "Optimize Models Before Loading",
+      "url": "/blog/threejs-performance-optimization.html#optimize-models-before-loading",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Optimize Models Before Loading Get free credits to reduce polygon counts and compress textures. Your Three.js scenes will thank you. Start Optimizing",
+      "parentArticle": "Three.js Performance: How to Optimize 3D Models for 60fps",
+      "parentSection": "Summary",
+      "keywords": []
+    },
+    {
+      "text": "Get WebGL Performance Tips",
+      "url": "/blog/threejs-performance-optimization.html#get-webgl-performance-tips",
+      "category": "Guide",
+      "date": "December 2025",
+      "context": "Get WebGL Performance Tips Techniques for faster Three.js, Babylon.js, and WebGL experiences. Email address Subscribe <p class=\"t",
+      "parentArticle": "Three.js Performance: How to Optimize 3D Models for 60fps",
+      "parentSection": "Summary",
+      "keywords": []
+    }
+  ]
+}

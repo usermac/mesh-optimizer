@@ -41,6 +41,13 @@
             <p>Practical guides for preparing 3D assets for web and mobile delivery. No fluff, just techniques that work.</p>
         </div>
 
+        <div class="blog-search-container">
+            <label for="blogSearchInput" class="visually-hidden">Search blog articles</label>
+            <input type="text" id="blogSearchInput" placeholder="Search articles..." aria-label="Search blog articles" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="blogSearchResults" aria-autocomplete="list" />
+            <div id="blogSearchResults" class="blog-search-results" role="listbox" aria-label="Search results"></div>
+            <div id="blogSearchStatus" class="visually-hidden" aria-live="polite" aria-atomic="true"></div>
+        </div>
+
         <div class="cards-grid">
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
@@ -147,6 +154,211 @@
             e.preventDefault();
             alert('Email signup coming soon! For now, try the optimizer at webdeliveryengine.com');
         });
+
+        // Blog search functionality
+        let blogSearchIndex = null;
+        let blogSearchDebounceTimer = null;
+
+        // Load the blog search index
+        (async function loadBlogSearchIndex() {
+            try {
+                const response = await fetch('/blog/blog-index.json');
+                const data = await response.json();
+                if (data.entries) {
+                    blogSearchIndex = data.entries;
+                }
+            } catch (e) {
+                console.warn('Blog search index not available:', e);
+            }
+        })();
+
+        // Search the blog index
+        function searchBlog(query) {
+            if (!blogSearchIndex || !query.trim()) return [];
+
+            const terms = query.toLowerCase().split(/\s+/).filter(t => t.length > 0);
+            const results = [];
+
+            for (const entry of blogSearchIndex) {
+                const searchableText = [
+                    entry.text || '',
+                    entry.context || '',
+                    entry.category || '',
+                    entry.parentArticle || '',
+                    ...(entry.keywords || [])
+                ].join(' ').toLowerCase();
+
+                let score = 0;
+                for (const term of terms) {
+                    if (searchableText.includes(term)) {
+                        score++;
+                        // Boost for title matches
+                        if ((entry.text || '').toLowerCase().includes(term)) {
+                            score += 2;
+                        }
+                        // Boost for keyword matches
+                        if ((entry.keywords || []).some(k => k.includes(term))) {
+                            score += 1;
+                        }
+                    }
+                }
+
+                if (score > 0) {
+                    results.push({ entry, score });
+                }
+            }
+
+            // Sort by score descending, then by whether it's a main article (no parentArticle)
+            results.sort((a, b) => {
+                if (b.score !== a.score) return b.score - a.score;
+                // Prefer main articles over sections
+                const aIsMain = !a.entry.parentArticle;
+                const bIsMain = !b.entry.parentArticle;
+                if (aIsMain && !bIsMain) return -1;
+                if (!aIsMain && bIsMain) return 1;
+                return 0;
+            });
+
+            return results.slice(0, 10).map(r => r.entry);
+        }
+
+        // Highlight search terms in text
+        function highlightTerms(text, query) {
+            if (!text || !query) return text || '';
+            const terms = query.toLowerCase().split(/\s+/).filter(t => t.length > 0);
+            let result = text;
+            for (const term of terms) {
+                const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                result = result.replace(regex, '<mark>$1</mark>');
+            }
+            return result;
+        }
+
+        // Render search results
+        function renderBlogSearchResults(results, query) {
+            const container = document.getElementById('blogSearchResults');
+            const input = document.getElementById('blogSearchInput');
+            const status = document.getElementById('blogSearchStatus');
+
+            if (!results || results.length === 0) {
+                if (query && query.trim()) {
+                    container.innerHTML = '<div class="blog-search-no-results">No articles found</div>';
+                    container.classList.add('active');
+                    input.setAttribute('aria-expanded', 'true');
+                    status.textContent = 'No results found';
+                } else {
+                    container.classList.remove('active');
+                    input.setAttribute('aria-expanded', 'false');
+                    status.textContent = '';
+                }
+                return;
+            }
+
+            container.innerHTML = results.map((entry, index) => {
+                const location = entry.parentArticle
+                    ? `${entry.category} / ${entry.parentArticle}`
+                    : entry.category;
+                const contextPreview = (entry.context || '').substring(0, 120);
+
+                return `
+                    <a href="${entry.url}" class="blog-search-result" role="option" id="blog-result-${index}" tabindex="-1">
+                        <div class="blog-search-result-title">${highlightTerms(entry.text, query)}</div>
+                        <div class="blog-search-result-location">${location}</div>
+                        <div class="blog-search-result-context">${highlightTerms(contextPreview, query)}</div>
+                    </a>
+                `;
+            }).join('');
+
+            container.classList.add('active');
+            input.setAttribute('aria-expanded', 'true');
+            status.textContent = `${results.length} result${results.length === 1 ? '' : 's'} found`;
+        }
+
+        // Initialize blog search
+        (function initBlogSearch() {
+            const input = document.getElementById('blogSearchInput');
+            const results = document.getElementById('blogSearchResults');
+            if (!input || !results) return;
+
+            let selectedIndex = -1;
+
+            function closeResults() {
+                results.classList.remove('active');
+                input.setAttribute('aria-expanded', 'false');
+                input.removeAttribute('aria-activedescendant');
+                selectedIndex = -1;
+            }
+
+            input.addEventListener('input', () => {
+                const query = input.value.trim();
+                selectedIndex = -1;
+                input.removeAttribute('aria-activedescendant');
+
+                if (!query) {
+                    closeResults();
+                    return;
+                }
+
+                clearTimeout(blogSearchDebounceTimer);
+                blogSearchDebounceTimer = setTimeout(() => {
+                    const searchResults = searchBlog(query);
+                    renderBlogSearchResults(searchResults, query);
+                }, 150);
+            });
+
+            input.addEventListener('keydown', (e) => {
+                const resultEls = results.querySelectorAll('.blog-search-result');
+                if (!resultEls.length) return;
+
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    selectedIndex = Math.min(selectedIndex + 1, resultEls.length - 1);
+                    updateSelection(resultEls);
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    selectedIndex = Math.max(selectedIndex - 1, -1);
+                    updateSelection(resultEls);
+                } else if (e.key === 'Enter' && selectedIndex >= 0) {
+                    e.preventDefault();
+                    resultEls[selectedIndex].click();
+                } else if (e.key === 'Escape') {
+                    closeResults();
+                    input.blur();
+                }
+            });
+
+            function updateSelection(resultEls) {
+                resultEls.forEach((el, i) => {
+                    if (i === selectedIndex) {
+                        el.classList.add('selected');
+                        el.setAttribute('aria-selected', 'true');
+                        el.scrollIntoView({ block: 'nearest' });
+                        input.setAttribute('aria-activedescendant', el.id);
+                    } else {
+                        el.classList.remove('selected');
+                        el.setAttribute('aria-selected', 'false');
+                    }
+                });
+                if (selectedIndex < 0) {
+                    input.removeAttribute('aria-activedescendant');
+                }
+            }
+
+            // Close results when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!input.contains(e.target) && !results.contains(e.target)) {
+                    closeResults();
+                }
+            });
+
+            // Reopen results when focusing input with existing query
+            input.addEventListener('focus', () => {
+                if (input.value.trim() && blogSearchIndex) {
+                    const searchResults = searchBlog(input.value.trim());
+                    renderBlogSearchResults(searchResults, input.value.trim());
+                }
+            });
+        })();
     </script>
 </body>
 </html>
