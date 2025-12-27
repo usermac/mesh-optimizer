@@ -18,20 +18,21 @@
     <link rel="stylesheet" href="/css/styles.css" />
 </head>
 <body class="content-page">
+    <a href="#main-content" class="visually-hidden">Skip to main content</a>
     <header class="site-header">
         <a href="/" class="logo">MeshOpt</a>
-        <nav>
+        <nav aria-label="Main navigation">
             <a href="/">Optimizer</a>
             <a href="/tools/">Tools</a>
             <a href="/blog/">Blog</a>
         </nav>
     </header>
 
-    <main>
-        <nav class="breadcrumb">
+    <main id="main-content">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
             <a href="/">Home</a>
-            <span class="separator">/</span>
-            <span class="current">Tools</span>
+            <span class="separator" aria-hidden="true">/</span>
+            <span class="current" aria-current="page">Tools</span>
         </nav>
 
         <div class="article-header">
