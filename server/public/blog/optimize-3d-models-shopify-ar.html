@@ -186,18 +186,17 @@
   -H "X-API-Key: sk_your_key" \
   -F "file=@product.glb" \
   -F "mode=decimate" \
-  -F "quality=50" \
+  -F "ratio=0.5" \
+  -F "format=both" \
   --output product-optimized.glb</code></pre>
 
-                <p>That handles polygon reduction, texture optimization, and Draco compression in one call. Processing takes about 10 seconds.</p>
+                <p>That handles polygon reduction, texture optimization, and Draco compression in one call. The <code>format=both</code> parameter generates GLB and USDZ simultaneously. Processing takes about 10 seconds.</p>
 
-                <p>For USDZ conversion:</p>
+                <p>The API response includes download URLs for both formats:</p>
 
-                <pre><code>curl -X POST https://webdeliveryengine.com/convert \
-  -H "X-API-Key: sk_your_key" \
-  -F "file=@product-optimized.glb" \
-  -F "output_format=usdz" \
-  --output product.usdz</code></pre>
+                <pre><code>// Response includes:
+// "glb_url": "/download/{job_id}/model_opt.glb"
+// "usdz_url": "/download/{job_id}/model_opt.usdz"</code></pre>
 
                 <p>Now you have both formats ready for Shopify upload.</p>
 
@@ -209,20 +208,17 @@
 for file in ./products/*.glb; do
   name=$(basename "$file" .glb)
 
-  # Optimize GLB
+  # Optimize and generate both GLB + USDZ in one call
   curl -X POST https://webdeliveryengine.com/optimize \
     -H "X-API-Key: sk_your_key" \
     -F "file=@$file" \
     -F "mode=decimate" \
-    -F "quality=50" \
-    --output "./output/${name}.glb"
+    -F "ratio=0.5" \
+    -F "format=both" \
+    --output "./output/${name}.json"
 
-  # Convert to USDZ
-  curl -X POST https://webdeliveryengine.com/convert \
-    -H "X-API-Key: sk_your_key" \
-    -F "file=@./output/${name}.glb" \
-    -F "output_format=usdz" \
-    --output "./output/${name}.usdz"
+  # Parse response to get download URLs, then fetch both files
+  # Response contains glb_url and usdz_url for downloading
 
   echo "Processed: $name"
 done</code></pre>

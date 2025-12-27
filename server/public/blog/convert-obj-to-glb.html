@@ -204,7 +204,7 @@ curl -X POST https://webdeliveryengine.com/optimize \
   -H "X-API-Key: sk_your_key" \
   -F "file=@model.zip" \
   -F "mode=decimate" \
-  -F "quality=80" \
+  -F "ratio=0.8" \
   --output model.glb</code></pre>
 
                 <p>The API extracts the ZIP, resolves texture paths automatically, converts to GLB, and optionally optimizes in one step.</p>
@@ -251,7 +251,7 @@ for obj_file in "$INPUT_DIR"/*.obj; do
         -H "X-API-Key: $API_KEY" \
         -F "file=@$zip_file" \
         -F "mode=decimate" \
-        -F "quality=80" \
+        -F "ratio=0.8" \
         --output "$OUTPUT_DIR/${basename}.glb"
 
     # Cleanup
@@ -400,7 +400,7 @@ main().catch(console.error);</code></pre>
   -H "X-API-Key: sk_your_key" \
   -F "file=@model.zip" \
   -F "mode=decimate" \
-  -F "quality=50" \
+  -F "ratio=0.5" \
   --output model-optimized.glb</code></pre>
 
                 <p>One API call handles:</p>

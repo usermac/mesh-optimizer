@@ -319,7 +319,7 @@ for model in ./models/*.glb; do
     curl -X POST https://webdeliveryengine.com/optimize \
         -H "X-API-Key: $API_KEY" \
         -F "file=@$model" \
-        -F "quality=50" \
+        -F "ratio=0.5" \
         --output "./dist/$(basename $model)"
 done</code></pre>
 
