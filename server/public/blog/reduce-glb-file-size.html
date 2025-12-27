@@ -18,22 +18,24 @@
     <link rel="stylesheet" href="/css/styles.css" />
 </head>
 <body class="content-page">
+    <a href="#main-content" class="visually-hidden">Skip to main content</a>
+
     <header class="site-header">
         <a href="/" class="logo">MeshOpt</a>
-        <nav>
+        <nav aria-label="Main navigation">
             <a href="/">Optimizer</a>
             <a href="/tools/">Tools</a>
             <a href="/blog/">Blog</a>
         </nav>
     </header>
 
-    <main>
-        <nav class="breadcrumb">
+    <main id="main-content">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
             <a href="/">Home</a>
-            <span class="separator">/</span>
+            <span class="separator" aria-hidden="true">/</span>
             <a href="/blog/">Blog</a>
-            <span class="separator">/</span>
-            <span class="current">Reduce GLB File Size</span>
+            <span class="separator" aria-hidden="true">/</span>
+            <span class="current" aria-current="page">Reduce GLB File Size</span>
         </nav>
 
         <article>
@@ -146,9 +148,9 @@ done</code></pre>
                 <table class="api-table">
                     <thead>
                         <tr>
-                            <th>Target</th>
-                            <th>Desktop</th>
-                            <th>Mobile</th>
+                            <th scope="col">Target</th>
+                            <th scope="col">Desktop</th>
+                            <th scope="col">Mobile</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -199,7 +201,8 @@ done</code></pre>
                 <h3>Get More 3D Optimization Tips</h3>
                 <p>Practical techniques for web and mobile 3D delivery. No fluff.</p>
                 <form class="email-capture-form" id="emailForm">
-                    <input type="email" placeholder="your@email.com" required />
+                    <label for="email-subscribe" class="visually-hidden">Email address</label>
+                    <input type="email" id="email-subscribe" placeholder="your@email.com" required />
                     <button type="submit">Subscribe</button>
                 </form>
                 <p class="text-small" style="margin-top: 16px; margin-bottom: 0; opacity: 0.5;">No spam. Unsubscribe anytime.</p>

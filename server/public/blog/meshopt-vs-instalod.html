@@ -147,22 +147,24 @@
     </style>
 </head>
 <body class="content-page">
+    <a href="#main-content" class="visually-hidden">Skip to main content</a>
+
     <header class="site-header">
         <a href="/" class="logo">MeshOpt</a>
-        <nav>
+        <nav aria-label="Main navigation">
             <a href="/">Optimizer</a>
             <a href="/tools/">Tools</a>
             <a href="/blog/">Blog</a>
         </nav>
     </header>
 
-    <main>
-        <nav class="breadcrumb">
+    <main id="main-content">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
             <a href="/">Home</a>
-            <span class="separator">/</span>
+            <span class="separator" aria-hidden="true">/</span>
             <a href="/blog/">Blog</a>
-            <span class="separator">/</span>
-            <span class="current">MeshOpt vs InstaLOD</span>
+            <span class="separator" aria-hidden="true">/</span>
+            <span class="current" aria-current="page">MeshOpt vs InstaLOD</span>
         </nav>
 
         <article>
@@ -206,9 +208,9 @@
                 <table class="comparison-table">
                     <thead>
                         <tr>
-                            <th>Feature</th>
-                            <th class="header-instalod">InstaLOD</th>
-                            <th class="header-meshopt">MeshOpt</th>
+                            <th scope="col">Feature</th>
+                            <th scope="col" class="header-instalod">InstaLOD</th>
+                            <th scope="col" class="header-meshopt">MeshOpt</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -374,9 +376,9 @@ for sku in product_skus:
                 <table class="comparison-table">
                     <thead>
                         <tr>
-                            <th>Scenario</th>
-                            <th class="header-instalod">InstaLOD (estimated)</th>
-                            <th class="header-meshopt">MeshOpt</th>
+                            <th scope="col">Scenario</th>
+                            <th scope="col" class="header-instalod">InstaLOD (estimated)</th>
+                            <th scope="col" class="header-meshopt">MeshOpt</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -468,7 +470,8 @@ for sku in product_skus:
                 <h3>Get 3D Pipeline Tips</h3>
                 <p>Optimization techniques for web, mobile, and AR delivery.</p>
                 <form class="email-capture-form" id="emailForm">
-                    <input type="email" placeholder="your@email.com" required />
+                    <label for="email-subscribe" class="visually-hidden">Email address</label>
+                    <input type="email" id="email-subscribe" placeholder="your@email.com" required />
                     <button type="submit">Subscribe</button>
                 </form>
                 <p class="text-small" style="margin-top: 16px; margin-bottom: 0; opacity: 0.5;">No spam. Unsubscribe anytime.</p>

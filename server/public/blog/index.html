@@ -18,20 +18,22 @@
     <link rel="stylesheet" href="/css/styles.css" />
 </head>
 <body class="content-page">
+    <a href="#main-content" class="visually-hidden">Skip to main content</a>
+
     <header class="site-header">
         <a href="/" class="logo">MeshOpt</a>
-        <nav>
+        <nav aria-label="Main navigation">
             <a href="/">Optimizer</a>
             <a href="/tools/">Tools</a>
             <a href="/blog/">Blog</a>
         </nav>
     </header>
 
-    <main>
-        <nav class="breadcrumb">
+    <main id="main-content">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
             <a href="/">Home</a>
-            <span class="separator">/</span>
-            <span class="current">Blog</span>
+            <span class="separator" aria-hidden="true">/</span>
+            <span class="current" aria-current="page">Blog</span>
         </nav>
 
         <div class="article-header">
@@ -125,7 +127,8 @@
             <h3>Get New Articles in Your Inbox</h3>
             <p>Practical 3D optimization tips. No spam, no fluff.</p>
             <form class="email-capture-form" id="emailForm">
-                <input type="email" placeholder="your@email.com" required />
+                <label for="email-subscribe" class="visually-hidden">Email address</label>
+                <input type="email" id="email-subscribe" placeholder="your@email.com" required />
                 <button type="submit">Subscribe</button>
             </form>
             <p class="text-small" style="margin-top: 16px; margin-bottom: 0; opacity: 0.5;">Unsubscribe anytime.</p>

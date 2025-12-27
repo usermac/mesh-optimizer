@@ -18,22 +18,24 @@
     <link rel="stylesheet" href="/css/styles.css" />
 </head>
 <body class="content-page">
+    <a href="#main-content" class="visually-hidden">Skip to main content</a>
+
     <header class="site-header">
         <a href="/" class="logo">MeshOpt</a>
-        <nav>
+        <nav aria-label="Main navigation">
             <a href="/">Optimizer</a>
             <a href="/tools/">Tools</a>
             <a href="/blog/">Blog</a>
         </nav>
     </header>
 
-    <main>
-        <nav class="breadcrumb">
+    <main id="main-content">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
             <a href="/">Home</a>
-            <span class="separator">/</span>
+            <span class="separator" aria-hidden="true">/</span>
             <a href="/blog/">Blog</a>
-            <span class="separator">/</span>
-            <span class="current">Shopify AR Optimization</span>
+            <span class="separator" aria-hidden="true">/</span>
+            <span class="current" aria-current="page">Shopify AR Optimization</span>
         </nav>
 
         <article>
@@ -69,9 +71,9 @@
                 <table class="api-table">
                     <thead>
                         <tr>
-                            <th>Metric</th>
-                            <th>Shopify Limit</th>
-                            <th>Recommended</th>
+                            <th scope="col">Metric</th>
+                            <th scope="col">Shopify Limit</th>
+                            <th scope="col">Recommended</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -230,10 +232,10 @@ done</code></pre>
                 <table class="api-table">
                     <thead>
                         <tr>
-                            <th>Product Type</th>
-                            <th>Target Polys</th>
-                            <th>Texture Size</th>
-                            <th>Quality Setting</th>
+                            <th scope="col">Product Type</th>
+                            <th scope="col">Target Polys</th>
+                            <th scope="col">Texture Size</th>
+                            <th scope="col">Quality Setting</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -317,7 +319,8 @@ done</code></pre>
                 <h3>Get E-commerce 3D Tips</h3>
                 <p>Optimization techniques specifically for product visualization and AR.</p>
                 <form class="email-capture-form" id="emailForm">
-                    <input type="email" placeholder="your@email.com" required />
+                    <label for="email-subscribe" class="visually-hidden">Email address</label>
+                    <input type="email" id="email-subscribe" placeholder="your@email.com" required />
                     <button type="submit">Subscribe</button>
                 </form>
                 <p class="text-small" style="margin-top: 16px; margin-bottom: 0; opacity: 0.5;">No spam. Unsubscribe anytime.</p>
