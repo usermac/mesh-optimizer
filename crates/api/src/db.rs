@@ -321,11 +321,21 @@ impl Database {
                     error!("Database appears encrypted but no ENCRYPTION_KEY provided");
                 }
 
-                DbData::default()
+                // CRITICAL: Do NOT silently return empty data - this causes data loss!
+                panic!(
+                    "CRITICAL: Failed to load database from {:?}. \
+                    Check ENCRYPTION_KEY matches production. \
+                    Refusing to start with empty database to prevent data loss.",
+                    path
+                );
             }
             Err(e) => {
-                error!("Failed to read database file: {:?}", e);
-                DbData::default()
+                // CRITICAL: Do NOT silently return empty data - this causes data loss!
+                panic!(
+                    "CRITICAL: Failed to read database file {:?}: {:?}. \
+                    Refusing to start with empty database to prevent data loss.",
+                    path, e
+                );
             }
         }
     }

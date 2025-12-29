@@ -23,6 +23,20 @@ node scripts/build-blog-index.js
 # Ensure remote directory exists
 ssh $SERVER "mkdir -p $REMOTE_DIR"
 
+# 0.5. Pre-deploy Safety Backup (REQUIRED)
+echo "🛡️ Creating mandatory pre-deploy backup..."
+if ssh $SERVER "[ -f /root/mesh-optimizer/server/stats.db ]"; then
+    if ssh $SERVER "bash /root/mesh-optimizer/scripts/backup/backup.sh"; then
+        echo "✅ Pre-deploy backup complete"
+    else
+        echo "❌ BACKUP FAILED - Deployment blocked for safety"
+        echo "Fix backup issues before deploying. Check: /var/log/mesh/backup.log"
+        exit 1
+    fi
+else
+    echo "ℹ️ No existing database - fresh deployment, skipping backup"
+fi
+
 # Install system tools for monitoring and backups
 ssh $SERVER "apt-get update && apt-get install -y htop sshpass" || true
 
@@ -41,7 +55,7 @@ rsync -avz \
            --include 'Dockerfile' \
            --include 'Caddyfile' \
            --include 'deploy.sh' \
-           --include '.env' \
+           --exclude '.env' \
            --exclude '*' \
            . $SERVER:$REMOTE_DIR
 
