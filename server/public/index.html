@@ -2062,6 +2062,11 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
             // Initial toggle of history/free credits links
             updateHistoryFreeCreditsLinks();
 
+            // Auto-expand Nightmare Banner for new users (no API key)
+            if (!localStorage.getItem('apiKey')) {
+                document.querySelector('.nightmare-banner details')?.setAttribute('open', '');
+            }
+
             // API Key Preview - update on input
             apiKeyEl.addEventListener("input", (e) => {
                 const key = e.target.value;
