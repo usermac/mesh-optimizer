@@ -2045,6 +2045,11 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 document.getElementById("freeCreditsLink").style.display = hasKey ? "none" : "block";
             }
 
+            // Collapse Nightmare Banner when user has API key (no longer needs onboarding pitch)
+            function collapseNightmareBanner() {
+                document.querySelector('.nightmare-banner details')?.removeAttribute('open');
+            }
+
             // Clean up any old test keys from localStorage
             const storedKey = localStorage.getItem("apiKey");
             if (storedKey === "sk_test_123") {
@@ -2073,6 +2078,7 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 // Save key to localStorage on change
                 if (key) {
                     localStorage.setItem("apiKey", key);
+                    collapseNightmareBanner();
                 } else {
                     localStorage.removeItem("apiKey");
                 }
@@ -2581,6 +2587,7 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                                 localStorage.setItem("apiKey", data.api_key);
                                 updateApiKeyPreview();
                                 updateHistoryFreeCreditsLinks();
+                                collapseNightmareBanner();
                             } else {
                                 // New user - check email
                                 successAlert.style.display = "block";
