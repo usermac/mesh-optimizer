@@ -267,7 +267,10 @@ fn load_obj(path: &PathBuf) -> Result<(Vec<Vertex>, Vec<u32>, Option<Vec<u8>>, O
                 [0.0, 1.0, 0.0]
             };
             let uv = if !mesh.texcoords.is_empty() {
-                [mesh.texcoords[i * 2], mesh.texcoords[i * 2 + 1]]
+                // OBJ files have UV origin at top-left (V=0 at top)
+                // glTF expects origin at bottom-left (V=0 at bottom)
+                // Flip V coordinate: v_new = 1.0 - v_old
+                [mesh.texcoords[i * 2], 1.0 - mesh.texcoords[i * 2 + 1]]
             } else {
                 [0.0, 0.0]
             };
@@ -613,6 +616,8 @@ struct Texture {
 #[derive(Serialize)]
 struct Material {
     pbrMetallicRoughness: PbrMetallicRoughness,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    doubleSided: Option<bool>,
 }
 
 #[derive(Serialize)]
@@ -738,6 +743,7 @@ fn save_glb(
 
         materials.push(Material {
             pbrMetallicRoughness: pbr,
+            doubleSided: Some(true), // Ensures correct rendering regardless of face winding
         });
         material_idx = Some(0);
     }
