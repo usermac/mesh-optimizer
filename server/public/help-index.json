@@ -1,5 +1,5 @@
 {
-  "generated": "2025-12-27T17:09:54.806Z",
+  "generated": "2025-12-30T00:40:34.605Z",
   "version": "1.0",
   "entries": [
     {
@@ -590,6 +590,14 @@
       "modalName": "Get Free Credits",
       "section": null,
       "context": "Get Free Credits &times; Try MeshOpt for free! Enter your email below and we'll send you an API key with -- free credits. &#10003; Check your email! We've sent your free API key. Paste it in the API KEY field to get started. &#10003; Welcome back! You already have an account. Your API key has been r",
+      "keywords": []
+    },
+    {
+      "text": "v1.0.5beta (2025-12-29)",
+      "modal": "changelogModal",
+      "modalName": "Changelog",
+      "section": null,
+      "context": "v1.0.5beta (2025-12-29) - OBJ Texture Fix: Fixed inverted textures on OBJ files (especially from ZBrush) by correcting UV coordinate orientation during GLB export.",
       "keywords": []
     },
     {
