@@ -336,12 +336,8 @@ done</code></pre>
         <a href="/blog/">Blog</a>
     </footer>
 
+    <script src="/js/subscribe.js"></script>
     <script>
-        document.getElementById('emailForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            alert('Email signup coming soon! For now, try the optimizer at webdeliveryengine.com');
-        });
-
         // Fetch dynamic pricing config
         fetch('/config')
             .then(res => res.json())

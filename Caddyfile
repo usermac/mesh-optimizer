@@ -5,3 +5,7 @@
 webdeliveryengine.com, www.webdeliveryengine.com {
     reverse_proxy localhost:3000
 }
+
+lists.webdeliveryengine.com {
+    reverse_proxy localhost:9000
+}

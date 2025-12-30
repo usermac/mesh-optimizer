@@ -136,7 +136,10 @@ struct AppState {
     jobs: Arc<RwLock<HashMap<String, JobStatus>>>,
     worker_semaphore: Arc<Semaphore>,
     admin_rate_limiter: Arc<RwLock<HashMap<String, Vec<std::time::Instant>>>>,
+    subscribe_rate_limiter: Arc<RwLock<HashMap<String, Vec<std::time::Instant>>>>,
     processing_messages: Arc<ProcessingMessages>,
+    listmonk_url: Option<String>,
+    listmonk_list_uuid: Option<String>,
 }
 
 #[derive(Clone)]
@@ -252,6 +255,13 @@ async fn main() -> Result<()> {
 
     info!("Recovered {} jobs from database", recovered_jobs.len());
 
+    // Optional Listmonk config (email subscriptions)
+    let listmonk_url = std::env::var("LISTMONK_URL").ok();
+    let listmonk_list_uuid = std::env::var("LISTMONK_LIST_UUID").ok();
+    if listmonk_url.is_some() && listmonk_list_uuid.is_some() {
+        info!("Listmonk integration enabled");
+    }
+
     let state = AppState {
         db,
         stripe_client,
@@ -261,7 +271,10 @@ async fn main() -> Result<()> {
         jobs: Arc::new(RwLock::new(recovered_jobs)),
         worker_semaphore: Arc::new(Semaphore::new(worker_slots)),
         admin_rate_limiter: Arc::new(RwLock::new(HashMap::new())),
+        subscribe_rate_limiter: Arc::new(RwLock::new(HashMap::new())),
         processing_messages: Arc::new(load_processing_messages()),
+        listmonk_url,
+        listmonk_list_uuid,
     };
 
     // 4. Start Cleanup Task
@@ -286,6 +299,7 @@ async fn main() -> Result<()> {
         .route("/health", get(health_check))
         .route("/config", get(get_config))
         .route("/contact", post(contact_handler))
+        .route("/subscribe", post(subscribe_handler))
         .route("/claim-free-credits", post(claim_free_credits))
         .route("/job/:id", get(job_status_handler))
         .route(
@@ -2604,6 +2618,98 @@ async fn contact_handler(
         Err((
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(json!({ "error": "Failed to send message" })),
+        ))
+    }
+}
+
+// --- EMAIL SUBSCRIPTION ---
+
+#[derive(Deserialize)]
+struct SubscribeRequest {
+    email: String,
+}
+
+async fn subscribe_handler(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(req): Json<SubscribeRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    // Check if Listmonk is configured
+    let (listmonk_url, list_uuid) = match (&state.listmonk_url, &state.listmonk_list_uuid) {
+        (Some(url), Some(uuid)) => (url.clone(), uuid.clone()),
+        _ => {
+            warn!("Subscribe attempt but Listmonk not configured");
+            return Err((
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(json!({ "error": "Newsletter subscription not available" })),
+            ));
+        }
+    };
+
+    // Get client IP for rate limiting
+    let client_ip = headers
+        .get("x-forwarded-for")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.split(',').next())
+        .map(|s| s.trim())
+        .or_else(|| {
+            headers
+                .get("x-real-ip")
+                .and_then(|h| h.to_str().ok())
+        });
+    let ip_for_limit = client_ip.unwrap_or("unknown");
+
+    // Rate limit: 5 requests per minute per IP
+    if !check_admin_rate_limit(&state.subscribe_rate_limiter, ip_for_limit, 5, 60).await {
+        return Err((
+            StatusCode::TOO_MANY_REQUESTS,
+            Json(json!({ "error": "Too many requests. Please try again later." })),
+        ));
+    }
+
+    // Validate email format (basic check)
+    if !req.email.contains('@') || req.email.len() < 5 {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": "Invalid email address" })),
+        ));
+    }
+
+    // Call Listmonk public subscription API
+    let client = reqwest::Client::new();
+    let res = client
+        .post(format!("{}/api/public/subscription", listmonk_url))
+        .json(&json!({
+            "email": req.email,
+            "list_uuids": [list_uuid]
+        }))
+        .send()
+        .await
+        .map_err(|e| {
+            error!("Failed to call Listmonk API: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Subscription service unavailable" })),
+            )
+        })?;
+
+    if res.status().is_success() {
+        info!("Newsletter subscription: {}", req.email);
+        Ok(Json(json!({ "success": true })))
+    } else {
+        let status = res.status();
+        let error_text = res.text().await.unwrap_or_default();
+
+        // Listmonk returns 409 if already subscribed - treat as success
+        if status == reqwest::StatusCode::CONFLICT {
+            info!("Newsletter already subscribed: {}", req.email);
+            return Ok(Json(json!({ "success": true })));
+        }
+
+        error!("Listmonk API error ({}): {}", status, error_text);
+        Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Failed to subscribe" })),
         ))
     }
 }

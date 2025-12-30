@@ -1,0 +1,36 @@
+version: "3.7"
+
+services:
+  db:
+    image: postgres:14-alpine
+    container_name: listmonk_db
+    environment:
+      - POSTGRES_PASSWORD=listmonk
+      - POSTGRES_USER=listmonk
+      - POSTGRES_DB=listmonk
+    restart: unless-stopped
+    volumes:
+      - listmonk-data:/var/lib/postgresql/data
+    networks:
+      - listmonk
+
+  app:
+    image: listmonk/listmonk:latest
+    container_name: listmonk
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9000:9000"
+    environment:
+      - TZ=UTC
+    volumes:
+      - ./config.toml:/listmonk/config.toml
+    networks:
+      - listmonk
+    depends_on:
+      - db
+
+networks:
+  listmonk:
+
+volumes:
+  listmonk-data:
