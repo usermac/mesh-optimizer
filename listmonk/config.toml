@@ -1,9 +1,9 @@
 [app]
 address = "0.0.0.0:9000"
 
-# Admin credentials - CHANGE THESE after first login!
-admin_username = "admin"
-admin_password = "changeme123"
+# Admin credentials - set via environment variables
+admin_username = "${LISTMONK_ADMIN_USERNAME}"
+admin_password = "${LISTMONK_ADMIN_PASSWORD}"
 
 [db]
 host = "db"

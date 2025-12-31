@@ -20,6 +20,8 @@ services:
     restart: unless-stopped
     ports:
       - "172.17.0.1:9000:9000"
+    env_file:
+      - ../.env
     environment:
       - TZ=UTC
     volumes:
