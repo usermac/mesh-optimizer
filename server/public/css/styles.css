@@ -828,13 +828,115 @@ code {
     color: #e5e7eb;
 }
 
+/* Newsletter Section */
+.newsletter-section {
+    background: linear-gradient(135deg, var(--panel) 0%, var(--bg) 100%);
+    border-top: 1px solid var(--border);
+    padding: 32px 20px;
+    margin-top: 40px;
+}
+
+.newsletter-content {
+    max-width: 500px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.newsletter-content h3 {
+    margin: 0 0 8px 0;
+    font-size: 1.25rem;
+    color: var(--text);
+}
+
+.newsletter-content p {
+    margin: 0 0 16px 0;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.newsletter-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.newsletter-input-group {
+    display: flex;
+    gap: 8px;
+}
+
+.newsletter-input-group input {
+    flex: 1;
+    padding: 10px 14px;
+    font-size: 0.95rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--text);
+}
+
+.newsletter-input-group input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.newsletter-input-group button {
+    padding: 10px 20px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    white-space: nowrap;
+}
+
+.newsletter-input-group button:hover {
+    background: var(--primary-hover);
+}
+
+.newsletter-input-group button:active {
+    transform: scale(0.98);
+}
+
+.newsletter-input-group button:disabled {
+    background: var(--text-muted);
+    cursor: not-allowed;
+}
+
+.newsletter-status {
+    font-size: 0.85rem;
+    min-height: 20px;
+}
+
+.newsletter-status.success {
+    color: var(--success);
+}
+
+.newsletter-status.error {
+    color: var(--error);
+}
+
+@media (max-width: 480px) {
+    .newsletter-input-group {
+        flex-direction: column;
+    }
+
+    .newsletter-input-group button {
+        width: 100%;
+    }
+}
+
 /* Footer */
 footer.main-footer {
     padding: 15px 20px;
     font-size: 0.85rem;
     color: var(--text-muted);
     border-top: 1px solid var(--border);
-    margin-top: 40px;
+    margin-top: 0;
     display: flex;
     flex-wrap: wrap;
     gap: 10px 20px;
