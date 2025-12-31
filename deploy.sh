@@ -47,9 +47,10 @@ rsync -avz \
            --exclude 'crates/*/test_*' \
            --exclude 'crates/**/test_*' \
            --include 'scripts/***' \
+           --include 'server/' \
            --exclude 'server/database.json' \
            --exclude 'server/stats.db' \
-           --include 'server/***' \
+           --include 'server/**' \
            --include 'Cargo.toml' \
            --include 'Cargo.lock' \
            --include 'Dockerfile' \
