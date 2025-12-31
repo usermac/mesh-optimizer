@@ -141,8 +141,15 @@ setup_scripts() {
     chmod +x "$script_dir/verify_backup.sh"
     chmod +x "$script_dir/health_check.sh"
     chmod +x "$script_dir/send_report.sh"
+    chmod +x "$script_dir/listmonk-backup.sh"
+    chmod +x "$script_dir/listmonk-restore.sh"
     chmod +x "/root/mesh-optimizer/scripts/reports/daily_stats.sh"
     chmod +x "/root/mesh-optimizer/scripts/reports/blender_health_check.sh"
+
+    # Create listmonk backup directory
+    mkdir -p /root/backups/listmonk
+    mkdir -p /root/backups/listmonk/pre-restore
+    mkdir -p /root/backups/listmonk/user-exports
 
     print_color "$GREEN" "✅ Scripts configured"
 }
@@ -179,6 +186,7 @@ setup_cron() {
     print_color "$BLUE" "\n⏰ Setting up automated backup schedule..."
 
     local backup_script="/root/mesh-optimizer/scripts/backup/backup.sh"
+    local listmonk_backup_script="/root/mesh-optimizer/scripts/backup/listmonk-backup.sh"
     local verify_script="/root/mesh-optimizer/scripts/backup/verify_backup.sh"
     local health_script="/root/mesh-optimizer/scripts/backup/health_check.sh"
     local stats_script="/root/mesh-optimizer/scripts/reports/daily_stats.sh"
@@ -195,6 +203,9 @@ setup_cron() {
 # Mesh Optimizer Backup System
 # Backup every 6 hours (at 00:00, 06:00, 12:00, 18:00)
 0 */6 * * * /bin/bash -c 'set -a; source /root/mesh-optimizer/.env; set +a; bash $backup_script' >> /var/log/mesh/backup.log 2>&1
+
+# Listmonk Backup daily at 3 AM
+0 3 * * * /bin/bash -c 'set -a; source /root/mesh-optimizer/.env; set +a; bash $listmonk_backup_script' >> /var/log/mesh/listmonk-backup.log 2>&1
 
 # Verify backups weekly (every Sunday at 2 AM)
 0 2 * * 0 /bin/bash -c 'set -a; source /root/mesh-optimizer/.env; set +a; bash $verify_script' >> /var/log/mesh/verify.log 2>&1
@@ -215,7 +226,8 @@ EOF
     ) | crontab -
 
     print_color "$GREEN" "✅ Cron jobs configured:"
-    echo "   - Backup: Every 6 hours"
+    echo "   - Mesh Backup: Every 6 hours"
+    echo "   - Listmonk Backup: Daily (3:00 AM)"
     echo "   - Verification: Weekly (Sunday 2:00 AM)"
     echo "   - Health Check: Hourly"
     echo "   - Daily Stats: Daily (00:00)"
@@ -254,16 +266,26 @@ display_next_steps() {
 
     print_color "$BLUE" "📚 Quick Reference:\n"
 
-    echo "Manual backup:"
+    echo "Manual backup (mesh-optimizer):"
     print_color "$YELLOW" "  bash /root/mesh-optimizer/scripts/backup/backup.sh"
+    echo ""
+
+    echo "Manual backup (listmonk):"
+    print_color "$YELLOW" "  bash /root/mesh-optimizer/scripts/backup/listmonk-backup.sh"
     echo ""
 
     echo "List available backups:"
     print_color "$YELLOW" "  bash /root/mesh-optimizer/scripts/backup/restore.sh"
+    print_color "$YELLOW" "  bash /root/mesh-optimizer/scripts/backup/listmonk-restore.sh"
     echo ""
 
     echo "Restore a backup:"
     print_color "$YELLOW" "  bash /root/mesh-optimizer/scripts/backup/restore.sh 20250108_120000"
+    print_color "$YELLOW" "  bash /root/mesh-optimizer/scripts/backup/listmonk-restore.sh 20250108_120000"
+    echo ""
+
+    echo "Export single Listmonk user:"
+    print_color "$YELLOW" "  bash /root/mesh-optimizer/scripts/backup/listmonk-restore.sh user email@example.com"
     echo ""
 
     echo "Verify backups:"
@@ -272,6 +294,7 @@ display_next_steps() {
 
     echo "View backup logs:"
     print_color "$YELLOW" "  tail -f /var/log/mesh/backup.log"
+    print_color "$YELLOW" "  tail -f /var/log/mesh/listmonk-backup.log"
     echo ""
 
     echo "View cron schedule:"
