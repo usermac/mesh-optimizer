@@ -2424,22 +2424,14 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                         dlContainer.children[1].href = data.usdz;
                     }
 
-                    // Display face counts if available
-                    if (data.originalFaces && data.outputFaces) {
+                    // Display face counts for remesh mode only (decimate omitted to avoid confusion from quad-to-tri conversion)
+                    if (data.originalFaces && data.outputFaces && modeSelect.value === "remesh") {
                         const orig = data.originalFaces.toLocaleString();
                         const out = data.outputFaces.toLocaleString();
-                        const currentMode = modeSelect.value;
-
-                        if (currentMode === "decimate") {
-                            // Replace helper text for decimate mode
-                            const faceCountText = `${orig} \u2192 ${out} faces`;
-                            document.getElementById("ratioHelp").textContent = faceCountText;
-                        } else {
-                            // For remesh, show method prefix (Remesh = quadriflow, Dec = decimate fallback)
-                            const methodPrefix = data.remeshMethod === "quadriflow" ? "Remesh" : "Dec";
-                            const faceCountText = `${methodPrefix} ${orig} \u2192 ${out} faces`;
-                            document.getElementById("remeshFaceResult").textContent = faceCountText;
-                        }
+                        // Show method prefix (Remesh = quadriflow, Dec = decimate fallback)
+                        const methodPrefix = data.remeshMethod === "quadriflow" ? "Remesh" : "Dec";
+                        const faceCountText = `${methodPrefix} ${orig} \u2192 ${out} faces`;
+                        document.getElementById("remeshFaceResult").textContent = faceCountText;
                     }
                 } catch (e) {
                     announceStatus("Error: " + e.message);
