@@ -46,6 +46,67 @@ struct Vertex {
 unsafe impl bytemuck::Pod for Vertex {}
 unsafe impl bytemuck::Zeroable for Vertex {}
 
+/// Compute smooth vertex normals from geometry by averaging face normals
+fn compute_normals(vertices: &mut [Vertex], indices: &[u32]) {
+    // Reset all normals to zero
+    for v in vertices.iter_mut() {
+        v.normal = [0.0, 0.0, 0.0];
+    }
+
+    // Accumulate face normals to each vertex
+    for face in indices.chunks(3) {
+        if face.len() < 3 {
+            continue;
+        }
+        let i0 = face[0] as usize;
+        let i1 = face[1] as usize;
+        let i2 = face[2] as usize;
+
+        if i0 >= vertices.len() || i1 >= vertices.len() || i2 >= vertices.len() {
+            continue;
+        }
+
+        let p0 = vertices[i0].pos;
+        let p1 = vertices[i1].pos;
+        let p2 = vertices[i2].pos;
+
+        // Edge vectors
+        let e1 = [p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]];
+        let e2 = [p2[0] - p0[0], p2[1] - p0[1], p2[2] - p0[2]];
+
+        // Cross product = face normal (not normalized, magnitude = 2x triangle area)
+        // This naturally weights larger triangles more
+        let normal = [
+            e1[1] * e2[2] - e1[2] * e2[1],
+            e1[2] * e2[0] - e1[0] * e2[2],
+            e1[0] * e2[1] - e1[1] * e2[0],
+        ];
+
+        // Accumulate to each vertex of the face
+        for &idx in &[i0, i1, i2] {
+            vertices[idx].normal[0] += normal[0];
+            vertices[idx].normal[1] += normal[1];
+            vertices[idx].normal[2] += normal[2];
+        }
+    }
+
+    // Normalize all vertex normals
+    for v in vertices.iter_mut() {
+        let len = (v.normal[0] * v.normal[0]
+            + v.normal[1] * v.normal[1]
+            + v.normal[2] * v.normal[2])
+            .sqrt();
+        if len > 1e-6 {
+            v.normal[0] /= len;
+            v.normal[1] /= len;
+            v.normal[2] /= len;
+        } else {
+            // Fallback for degenerate cases
+            v.normal = [0.0, 1.0, 0.0];
+        }
+    }
+}
+
 fn compact_vertices(vertices: &[Vertex], indices: &[u32]) -> (Vec<Vertex>, Vec<u32>) {
     let mut used = vec![false; vertices.len()];
     for &i in indices {
@@ -163,9 +224,13 @@ fn main() -> Result<()> {
 
     // Compact vertices (remove unused)
     println!("COMPACTING_START");
-    let (vertices, simplified_indices) = compact_vertices(&vertices, &simplified_indices);
+    let (mut vertices, simplified_indices) = compact_vertices(&vertices, &simplified_indices);
     println!("COMPACTING_END");
     println!("COMPACTED: {} verts", vertices.len());
+
+    // Recalculate normals after decimation (geometry changed, normals need updating)
+    println!("RECOMPUTING_NORMALS: Updating normals for decimated geometry");
+    compute_normals(&mut vertices, &simplified_indices);
 
     // 4. Export to GLB
     println!("EXPORT_GLB_START");
@@ -246,10 +311,16 @@ fn load_obj(path: &PathBuf) -> Result<(Vec<Vertex>, Vec<u32>, Option<Vec<u8>>, O
     let mut all_vertices = Vec::new();
     let mut all_indices = Vec::new();
     let mut index_offset = 0;
+    let mut needs_normals = false;
 
     for model in models {
         let mesh = model.mesh;
         let n_vertices = mesh.positions.len() / 3;
+        let has_normals = !mesh.normals.is_empty();
+
+        if !has_normals {
+            needs_normals = true;
+        }
 
         for i in 0..n_vertices {
             let pos = [
@@ -257,14 +328,14 @@ fn load_obj(path: &PathBuf) -> Result<(Vec<Vertex>, Vec<u32>, Option<Vec<u8>>, O
                 mesh.positions[i * 3 + 1],
                 mesh.positions[i * 3 + 2],
             ];
-            let normal = if !mesh.normals.is_empty() {
+            let normal = if has_normals {
                 [
                     mesh.normals[i * 3],
                     mesh.normals[i * 3 + 1],
                     mesh.normals[i * 3 + 2],
                 ]
             } else {
-                [0.0, 1.0, 0.0]
+                [0.0, 0.0, 0.0] // Will be computed below
             };
             let uv = if !mesh.texcoords.is_empty() {
                 // OBJ files have UV origin at top-left (V=0 at top)
@@ -281,6 +352,12 @@ fn load_obj(path: &PathBuf) -> Result<(Vec<Vertex>, Vec<u32>, Option<Vec<u8>>, O
             all_indices.push(i + index_offset);
         }
         index_offset += n_vertices as u32;
+    }
+
+    // Compute normals from geometry if not present in file
+    if needs_normals {
+        println!("COMPUTING_NORMALS: OBJ has no normals, calculating from geometry");
+        compute_normals(&mut all_vertices, &all_indices);
     }
 
     Ok((all_vertices, all_indices, texture_data, base_color))
@@ -465,6 +542,9 @@ fn load_fbx(path: &PathBuf) -> Result<(Vec<Vertex>, Vec<u32>, Option<Vec<u8>>, O
                     }
                 }
             }
+            // FBX loader doesn't extract normals, so compute them from geometry
+            println!("COMPUTING_NORMALS: FBX normals not extracted, calculating from geometry");
+            compute_normals(&mut vertices, &indices);
             Ok((vertices, indices, None, None))
         }
         _ => Err(anyhow!("Unsupported FBX version (Must be 7.4 or newer)")),
@@ -708,45 +788,38 @@ fn save_glb(
 
     let mut images = Vec::new();
     let mut textures = Vec::new();
-    let mut materials = Vec::new();
     let mut samplers = Vec::new();
-    let mut material_idx = None;
 
-    if texture.is_some() || base_color.is_some() {
-        let mut pbr = PbrMetallicRoughness {
-            baseColorTexture: None,
-            baseColorFactor: None,
-            metallicFactor: 0.0,
-            roughnessFactor: 1.0,
-        };
+    // Always create a material for proper shading in viewers
+    let mut pbr = PbrMetallicRoughness {
+        baseColorTexture: None,
+        // Default to light gray if no color specified - ensures proper shading
+        baseColorFactor: Some(base_color.map(|c| [c[0], c[1], c[2], 1.0]).unwrap_or([0.8, 0.8, 0.8, 1.0])),
+        metallicFactor: 0.0,
+        roughnessFactor: 0.5,
+    };
 
-        if texture.is_some() {
-            images.push(Image {
-                bufferView: 2, // Index of the buffer view we just added
-                mimeType: "image/png".to_string(),
-            });
-            samplers.push(Sampler {
-                magFilter: 9729, // LINEAR
-                minFilter: 9987, // LINEAR_MIPMAP_LINEAR (approx) or 9729
-            });
-            textures.push(Texture {
-                sampler: 0,
-                source: 0,
-            });
-            pbr.baseColorTexture = Some(TextureInfo { index: 0 });
-        }
-
-        if let Some(c) = base_color {
-            // GLTF uses RGBA
-            pbr.baseColorFactor = Some([c[0], c[1], c[2], 1.0]);
-        }
-
-        materials.push(Material {
-            pbrMetallicRoughness: pbr,
-            doubleSided: Some(true), // Ensures correct rendering regardless of face winding
+    if texture.is_some() {
+        images.push(Image {
+            bufferView: 2, // Index of the buffer view we just added
+            mimeType: "image/png".to_string(),
         });
-        material_idx = Some(0);
+        samplers.push(Sampler {
+            magFilter: 9729, // LINEAR
+            minFilter: 9987, // LINEAR_MIPMAP_LINEAR (approx) or 9729
+        });
+        textures.push(Texture {
+            sampler: 0,
+            source: 0,
+        });
+        pbr.baseColorTexture = Some(TextureInfo { index: 0 });
     }
+
+    let materials = vec![Material {
+        pbrMetallicRoughness: pbr,
+        doubleSided: Some(true), // Ensures correct rendering regardless of face winding
+    }];
+    let material_idx = Some(0);
 
     let header = GltfHeader {
         asset: Asset {
