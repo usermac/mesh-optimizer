@@ -2829,6 +2829,17 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                     }
                 }
 
+                // Reset free credits modal state when opening
+                if (modalId === "freeCreditsModal") {
+                    document.getElementById("free-credits-form").style.display = "block";
+                    document.getElementById("free-credits-success-alert").style.display = "none";
+                    document.getElementById("free-credits-existing-alert").style.display = "none";
+                    document.getElementById("free-credits-error-alert").style.display = "none";
+                    document.getElementById("free-credits-email").value = "";
+                    document.getElementById("free-credits-submit-btn").disabled = false;
+                    document.getElementById("free-credits-submit-btn").textContent = "Get Free Credits";
+                }
+
                 // Update ToS modal free re-optimization hours if opening ToS modal
                 if (modalId === "tosModal") {
                     if (pricingConfig.pricing && pricingConfig.pricing.free_reoptimization_hours !== undefined) {
