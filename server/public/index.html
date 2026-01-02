@@ -185,15 +185,13 @@
             </div>
 
             <!-- Remesh Controls -->
-            <div id="remeshControls" class="flex-column gap-10 d-none" role="group" aria-label="Remesh settings">
-                <div>
+            <div id="remeshControls" class="d-flex gap-15 d-none" role="group" aria-label="Remesh settings">
+                <div style="flex: 1;">
                     <label for="targetFaces">Target Faces</label>
-                    <div class="d-flex gap-10 align-center">
-                        <input type="number" id="targetFaces" value="5000" style="width: 40%;" aria-label="Target number of faces for remesh" />
-                        <span id="remeshFaceResult" class="text-muted text-small"></span>
-                    </div>
+                    <input type="number" id="targetFaces" value="5000" aria-label="Target number of faces for remesh" />
+                    <span id="remeshFaceResult" class="text-muted text-small"></span>
                 </div>
-                <div>
+                <div style="flex: 1;">
                     <label for="textureSize">Texture Size (px)</label>
                     <select id="textureSize" aria-label="Select texture size in pixels">
                         <option value="512">512</option>
