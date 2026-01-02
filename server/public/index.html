@@ -88,23 +88,19 @@
                     >Get <span id="freeCreditsAmount">--</span> free credits here...</a
                 >
             </div>
-            <!-- Auth -->
-            <div class="d-flex gap-10 align-center">
-                <label for="apiKey" style="margin-bottom: 0; white-space: nowrap; font-size: 0.75rem;">API KEY</label>
-                <input
-                    type="password"
-                    id="apiKey"
-                    value=""
-                    placeholder="sk_... or fr_..."
-                    class="flex-1"
-                    aria-describedby="apiKeyPreview"
-                />
-                <span
-                    id="apiKeyPreview"
-                    class="text-muted text-small font-mono text-nowrap min-w-60"
-                >
-                    --
-                </span>
+            <!-- Auth - Session-based UI -->
+            <div id="authSection">
+                <!-- Shown when NOT logged in -->
+                <div id="authNotLoggedIn" class="d-flex gap-10 align-center">
+                    <span class="text-muted text-small">Not logged in</span>
+                    <a href="#" id="loginLink" class="text-small">Get free credits to start</a>
+                </div>
+                <!-- Shown when logged in -->
+                <div id="authLoggedIn" class="d-flex gap-10 align-center" style="display: none;">
+                    <span id="userEmail" class="text-muted text-small flex-1" style="overflow: hidden; text-overflow: ellipsis;"></span>
+                    <button id="apiSettingsBtn" class="btn-link text-small">API Key</button>
+                    <button id="logoutBtn" class="btn-link text-small text-muted">Logout</button>
+                </div>
             </div>
 
             <!-- Upload -->
@@ -836,8 +832,8 @@
 
                         <section class="content-section">
                             <h3>9. Cookies & Tracking</h3>
-                            <p>We use minimal session storage for authentication state. We do <strong>NOT</strong> use analytics cookies, advertising cookies, social media tracking pixels, cross-site tracking, or third-party cookies of any kind.</p>
-                            <p>We use browser localStorage to store your API key and application state. This data never leaves your browser.</p>
+                            <p>We use a secure, HttpOnly session cookie for authentication. This cookie is encrypted and cannot be accessed by JavaScript, protecting you from XSS attacks. We do <strong>NOT</strong> use analytics cookies, advertising cookies, social media tracking pixels, cross-site tracking, or third-party cookies of any kind.</p>
+                            <p>Your API key is stored securely server-side and is only accessible through our authenticated API Settings page.</p>
                         </section>
 
                         <section class="content-section">
@@ -1462,16 +1458,16 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                     <div class="modal-body">
                         <div class="intro">
                             <p>
-                                <strong>Try MeshOpt for free!</strong> Enter your email below and we'll send you an API key with <span id="freeCreditsModalAmount">--</span> free credits.
+                                <strong>Try MeshOpt for free!</strong> Enter your email below to get started with <span id="freeCreditsModalAmount">--</span> free credits.
                             </p>
                         </div>
 
                         <div id="free-credits-success-alert" class="alert success" role="alert" style="display: none;">
-                            <strong>&#10003; Check your email!</strong> We've sent your free API key. Paste it in the API KEY field to get started.
+                            <strong>&#10003; Welcome!</strong> You're now logged in. We've also emailed your API key for programmatic use.
                         </div>
 
                         <div id="free-credits-existing-alert" class="alert success" role="alert" style="display: none;">
-                            <strong>&#10003; Welcome back!</strong> You already have an account. Your API key has been restored and we've also emailed it to you.
+                            <strong>&#10003; Welcome back!</strong> You're now logged in. We've also emailed your API key as a reminder.
                         </div>
 
                         <div id="free-credits-error-alert" class="alert error" role="alert" style="display: none;">
@@ -1500,9 +1496,213 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                     </div>
                 </div>
             </div>
+
+            <!-- API Settings Modal -->
+            <div id="apiSettingsModal" class="modal-overlay" role="dialog" aria-labelledby="apiSettingsModalTitle" aria-modal="true">
+                <div class="modal-window">
+                    <div class="modal-header">
+                        <h2 class="m-0" id="apiSettingsModalTitle">API Settings</h2>
+                        <button type="button" class="modal-close" onclick="closeModal('apiSettingsModal')" aria-label="Close API settings">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted">Use this key for programmatic access (scripts, CLI, CI/CD).</p>
+
+                        <div class="form-group">
+                            <label>Your API Key</label>
+                            <div class="d-flex gap-10 align-center">
+                                <code id="apiKeyDisplay" class="flex-1" style="background: #1a1a1a; padding: 10px; border-radius: 4px; font-family: monospace; word-break: break-all;">
+                                    ••••••••••••••••••••••••••••••
+                                </code>
+                            </div>
+                            <div class="d-flex gap-10 mt-10">
+                                <button type="button" id="revealApiKeyBtn" class="btn-secondary">Reveal Key</button>
+                                <button type="button" id="copyApiKeyBtn" class="btn-secondary" disabled>Copy</button>
+                            </div>
+                        </div>
+
+                        <div class="mt-20" style="border-top: 1px solid #333; padding-top: 20px;">
+                            <h3 class="text-muted" style="font-size: 0.9rem; margin-bottom: 10px;">Danger Zone</h3>
+                            <button type="button" id="regenerateApiKeyBtn" class="btn-danger">Regenerate Key</button>
+                            <p class="text-muted text-small mt-10">This will invalidate your current key immediately. Any scripts using the old key will stop working.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <script>
+            // ==========================================
+            // Session Management (Security Refactor)
+            // ==========================================
+            let currentUser = null;
+            let apiKeyRevealed = false;
+            let revealedApiKey = null;
+
+            // Check session status on page load
+            async function checkSession() {
+                try {
+                    const response = await fetch('/auth/session', { credentials: 'include' });
+                    const data = await response.json();
+
+                    if (data.authenticated) {
+                        currentUser = {
+                            email: data.email,
+                            credits: data.credits
+                        };
+                        updateAuthUI(true);
+                    } else {
+                        currentUser = null;
+                        updateAuthUI(false);
+                    }
+                } catch (e) {
+                    console.warn('Session check failed:', e);
+                    currentUser = null;
+                    updateAuthUI(false);
+                }
+            }
+
+            // Update UI based on authentication state
+            function updateAuthUI(isLoggedIn) {
+                const notLoggedIn = document.getElementById('authNotLoggedIn');
+                const loggedIn = document.getElementById('authLoggedIn');
+                const historyLink = document.getElementById('historyLink');
+                const freeCreditsLink = document.getElementById('freeCreditsLink');
+
+                if (isLoggedIn && currentUser) {
+                    notLoggedIn.style.display = 'none';
+                    loggedIn.style.display = 'flex';
+                    document.getElementById('userEmail').textContent = currentUser.email;
+                    historyLink.style.display = 'block';
+                    freeCreditsLink.style.display = 'none';
+                    // Collapse onboarding banner for logged-in users
+                    document.querySelector('.nightmare-banner details')?.removeAttribute('open');
+                } else {
+                    notLoggedIn.style.display = 'flex';
+                    loggedIn.style.display = 'none';
+                    historyLink.style.display = 'none';
+                    freeCreditsLink.style.display = 'block';
+                    // Expand onboarding banner for new users
+                    document.querySelector('.nightmare-banner details')?.setAttribute('open', '');
+                }
+            }
+
+            // Logout handler
+            async function handleLogout() {
+                try {
+                    await fetch('/auth/logout', {
+                        method: 'POST',
+                        credentials: 'include'
+                    });
+                    currentUser = null;
+                    updateAuthUI(false);
+                    // Clear any revealed API key
+                    apiKeyRevealed = false;
+                    revealedApiKey = null;
+                } catch (e) {
+                    console.error('Logout failed:', e);
+                }
+            }
+
+            // API Settings Modal handlers
+            async function revealApiKey() {
+                if (apiKeyRevealed) {
+                    // Hide the key
+                    document.getElementById('apiKeyDisplay').textContent = '••••••••••••••••••••••••••••••';
+                    document.getElementById('revealApiKeyBtn').textContent = 'Reveal Key';
+                    document.getElementById('copyApiKeyBtn').disabled = true;
+                    apiKeyRevealed = false;
+                    revealedApiKey = null;
+                } else {
+                    // Fetch and reveal the key
+                    try {
+                        const response = await fetch('/api/user/api-key', { credentials: 'include' });
+                        if (response.ok) {
+                            const data = await response.json();
+                            revealedApiKey = data.api_key;
+                            document.getElementById('apiKeyDisplay').textContent = revealedApiKey;
+                            document.getElementById('revealApiKeyBtn').textContent = 'Hide Key';
+                            document.getElementById('copyApiKeyBtn').disabled = false;
+                            apiKeyRevealed = true;
+                        } else {
+                            alert('Failed to fetch API key. Please try again.');
+                        }
+                    } catch (e) {
+                        console.error('Failed to fetch API key:', e);
+                        alert('Failed to fetch API key. Please try again.');
+                    }
+                }
+            }
+
+            async function copyApiKey() {
+                if (revealedApiKey) {
+                    try {
+                        await navigator.clipboard.writeText(revealedApiKey);
+                        const btn = document.getElementById('copyApiKeyBtn');
+                        btn.textContent = 'Copied!';
+                        setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+                    } catch (e) {
+                        console.error('Copy failed:', e);
+                    }
+                }
+            }
+
+            async function regenerateApiKey() {
+                if (!confirm('Are you sure? Your current API key will stop working immediately.')) {
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/user/api-key/regenerate', {
+                        method: 'POST',
+                        credentials: 'include'
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        revealedApiKey = data.api_key;
+                        document.getElementById('apiKeyDisplay').textContent = revealedApiKey;
+                        document.getElementById('revealApiKeyBtn').textContent = 'Hide Key';
+                        document.getElementById('copyApiKeyBtn').disabled = false;
+                        apiKeyRevealed = true;
+                        alert('API key regenerated successfully. Your old key is now invalid.');
+                    } else {
+                        alert('Failed to regenerate API key. Please try again.');
+                    }
+                } catch (e) {
+                    console.error('Regenerate failed:', e);
+                    alert('Failed to regenerate API key. Please try again.');
+                }
+            }
+
+            // Initialize session check on page load
+            document.addEventListener('DOMContentLoaded', async () => {
+                await checkSession();
+
+                // Setup API settings button
+                document.getElementById('apiSettingsBtn')?.addEventListener('click', () => {
+                    // Reset state when opening modal
+                    apiKeyRevealed = false;
+                    revealedApiKey = null;
+                    document.getElementById('apiKeyDisplay').textContent = '••••••••••••••••••••••••••••••';
+                    document.getElementById('revealApiKeyBtn').textContent = 'Reveal Key';
+                    document.getElementById('copyApiKeyBtn').disabled = true;
+                    openModal('apiSettingsModal');
+                });
+
+                // Setup logout button
+                document.getElementById('logoutBtn')?.addEventListener('click', handleLogout);
+
+                // Setup login link to open free credits modal
+                document.getElementById('loginLink')?.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    openModal('freeCreditsModal');
+                });
+
+                // Setup API settings modal buttons
+                document.getElementById('revealApiKeyBtn')?.addEventListener('click', revealApiKey);
+                document.getElementById('copyApiKeyBtn')?.addEventListener('click', copyApiKey);
+                document.getElementById('regenerateApiKeyBtn')?.addEventListener('click', regenerateApiKey);
+            });
+
             // ==========================================
             // Help Search Feature
             // ==========================================
@@ -2033,78 +2233,15 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 .getElementById("texInput")
                 .addEventListener("change", resetToOptimize);
 
-            // Load API Key from localStorage
-            const apiKeyEl = document.getElementById("apiKey");
+            // NOTE: API key handling has been moved to session-based auth
+            // The old localStorage-based code has been removed for security
+            // See the Session Management section at the top of this script
 
-            function updateApiKeyPreview() {
-                const key = apiKeyEl.value;
-                const preview = document.getElementById("apiKeyPreview");
-                if (key.length <= 4) {
-                    preview.textContent = key || "--";
-                } else {
-                    const first2 = key.substring(0, 2);
-                    const last2 = key.substring(key.length - 2);
-                    preview.textContent = first2 + "..." + last2;
-                }
-            }
-
-            // Toggle between "View History" and "Get free credits" links based on API key presence
-            function updateHistoryFreeCreditsLinks() {
-                const hasKey = !!localStorage.getItem("apiKey");
-                document.getElementById("historyLink").style.display = hasKey ? "block" : "none";
-                document.getElementById("freeCreditsLink").style.display = hasKey ? "none" : "block";
-            }
-
-            // Collapse Nightmare Banner when user has API key (no longer needs onboarding pitch)
-            function collapseNightmareBanner() {
-                document.querySelector('.nightmare-banner details')?.removeAttribute('open');
-            }
-
-            // Clean up any old test keys from localStorage
-            const storedKey = localStorage.getItem("apiKey");
-            if (storedKey === "sk_test_123") {
+            // Clean up any old API keys from localStorage (migration cleanup)
+            if (localStorage.getItem("apiKey")) {
                 localStorage.removeItem("apiKey");
-                apiKeyEl.value = "";
-                updateApiKeyPreview();
-            } else if (storedKey) {
-                apiKeyEl.value = storedKey;
-                updateApiKeyPreview();
-            } else {
-                // Ensure preview shows default when no key is stored
-                updateApiKeyPreview();
+                console.log("Migrated from localStorage API key to session-based auth");
             }
-
-            // Initial toggle of history/free credits links
-            updateHistoryFreeCreditsLinks();
-
-            // Auto-expand Nightmare Banner for new users (no API key)
-            if (!localStorage.getItem('apiKey')) {
-                document.querySelector('.nightmare-banner details')?.setAttribute('open', '');
-            }
-
-            // API Key Preview - update on input
-            apiKeyEl.addEventListener("input", (e) => {
-                const key = e.target.value;
-                // Save key to localStorage on change
-                if (key) {
-                    localStorage.setItem("apiKey", key);
-                    collapseNightmareBanner();
-                } else {
-                    localStorage.removeItem("apiKey");
-                }
-                updateApiKeyPreview();
-                updateHistoryFreeCreditsLinks();
-            });
-
-            // Handle browser back/forward navigation
-            window.addEventListener("pageshow", (event) => {
-                // Update preview when page is restored from bfcache
-                const currentKey = localStorage.getItem("apiKey");
-                if (currentKey && apiKeyEl.value !== currentKey) {
-                    apiKeyEl.value = currentKey;
-                }
-                updateApiKeyPreview();
-            });
 
             // Drag & Drop
             dropzone.addEventListener("click", () => fileInput.click());
@@ -2277,8 +2414,12 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
             }
 
             processBtn.addEventListener("click", async () => {
-                const apiKey = document.getElementById("apiKey").value;
-                if (!apiKey) return alert("Enter API Key");
+                // Must be logged in (session-based)
+                if (!currentUser) {
+                    alert("Please log in first");
+                    openModal('freeCreditsModal');
+                    return;
+                }
 
                 loader.style.display = "block";
                 processBtn.disabled = true;
@@ -2325,10 +2466,10 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                     const res = await fetch("/optimize", {
                         method: "POST",
                         headers: {
-                            Authorization: "Bearer " + apiKey,
                             "X-Source": "web",
                         },
                         body: formData,
+                        credentials: 'include'
                     });
 
                     if (!res.ok) {
@@ -2475,13 +2616,16 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                     }
                 });
 
-            // History Logic
+            // History Logic - uses session-based auth
             document
                 .getElementById("historyLink")
                 .addEventListener("click", async function(e) {
                     e.preventDefault();
-                    const apiKey = document.getElementById("apiKey").value;
-                    if (!apiKey) return alert("Enter API Key first");
+                    // Must be logged in (session-based)
+                    if (!currentUser) {
+                        alert("Please log in first");
+                        return;
+                    }
 
                     // Store trigger for focus return
                     const triggerElement = this;
@@ -2504,18 +2648,18 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                     });
 
                     try {
-                        // Fetch history
+                        // Fetch history using session cookie
                         const res = await fetch("/history", {
-                            headers: { Authorization: "Bearer " + apiKey },
+                            credentials: 'include'
                         });
                         const data = await res.json();
 
                         // Store data globally for CSV download
                         currentHistoryData = data;
 
-                        // Fetch current credit balance for this key
+                        // Fetch current credit balance using session cookie
                         const creditsRes = await fetch("/credits", {
-                            headers: { Authorization: "Bearer " + apiKey },
+                            credentials: 'include'
                         });
                         const creditsData = await creditsRes.json();
                         remainingCreditsSpan.textContent = creditsData.credits;
@@ -2572,7 +2716,8 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                         const res = await fetch("/claim-free-credits", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ email: email })
+                            body: JSON.stringify({ email: email }),
+                            credentials: 'include' // Important: receive session cookie
                         });
                         const data = await res.json();
 
@@ -2580,20 +2725,21 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                             // Hide form
                             document.getElementById("free-credits-form").style.display = "none";
 
-                            if (data.existing && data.api_key) {
-                                // Existing user - restore their key and show different message
+                            if (data.existing) {
+                                // Existing user - now logged in via session cookie
                                 existingAlert.style.display = "block";
-                                // Populate the API key field
-                                const apiKeyEl = document.getElementById("apiKey");
-                                apiKeyEl.value = data.api_key;
-                                localStorage.setItem("apiKey", data.api_key);
-                                updateApiKeyPreview();
-                                updateHistoryFreeCreditsLinks();
-                                collapseNightmareBanner();
                             } else {
-                                // New user - check email
+                                // New user - now logged in via session cookie
                                 successAlert.style.display = "block";
                             }
+
+                            // Update session state (will update UI to show logged-in state)
+                            await checkSession();
+
+                            // Close modal after a brief delay so user sees success message
+                            setTimeout(() => {
+                                closeModal('freeCreditsModal');
+                            }, 2000);
                         } else {
                             errorMessage.textContent = data.error || "Failed to claim free credits";
                             errorAlert.style.display = "block";
@@ -2660,12 +2806,9 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 modal.style.display = "flex";
                 document.body.style.overflow = "hidden";
 
-                // Pre-fill API key in contact form if opening contact modal
-                if (modalId === "contactModal") {
-                    const savedApiKey = localStorage.getItem("apiKey");
-                    if (savedApiKey) {
-                        document.getElementById("contact-api-key").value = savedApiKey;
-                    }
+                // Pre-fill email in contact form if logged in
+                if (modalId === "contactModal" && currentUser) {
+                    document.getElementById("contact-email").value = currentUser.email;
                 }
 
                 // Update help modal pricing if opening help modal
@@ -2719,7 +2862,7 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
             // Close any open modal on ESC key
             document.addEventListener("keydown", function (e) {
                 if (e.key === "Escape") {
-                    const modals = ["purchaseModal", "historyModal", "helpModal", "contactModal", "privacyModal", "apiCodeModal", "tosModal", "apiDocsModal", "batchScriptModal", "founderModal", "freeCreditsModal", "changelogModal"];
+                    const modals = ["purchaseModal", "historyModal", "helpModal", "contactModal", "privacyModal", "apiCodeModal", "tosModal", "apiDocsModal", "batchScriptModal", "founderModal", "freeCreditsModal", "changelogModal", "apiSettingsModal"];
                     modals.forEach(function(modalId) {
                         const modal = document.getElementById(modalId);
                         if (modal && modal.style.display === "flex") {
@@ -2875,7 +3018,8 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
 
             // Generate dynamic API code based on current UI settings
             function generateApiCode() {
-                const apiKey = document.getElementById('apiKey').value || 'YOUR_API_KEY';
+                // Always use placeholder - users get their API key from API Settings page
+                const apiKey = '<YOUR_API_KEY>';
                 const mode = document.getElementById('modeSelect').value;
                 const ratio = document.getElementById('ratio').value;
                 const targetFaces = document.getElementById('targetFaces').value;
@@ -3153,7 +3297,8 @@ Get-ChildItem -Filter "*.zip" | ForEach-Object {
                 const ratio = document.getElementById('ratio').value;
                 const faces = document.getElementById('targetFaces').value;
                 const textureSize = document.getElementById('textureSize').value;
-                const apiKey = document.getElementById('apiKey').value || 'YOUR_API_KEY';
+                // Always use placeholder - users get their API key from API Settings page
+                const apiKey = '<YOUR_API_KEY>';
                 const format = currentBatchFormat;
                 return { mode, ratio, faces, textureSize, apiKey, format };
             }
@@ -3833,19 +3978,13 @@ Write-Host "Batch complete! Files saved to $OutputDir"`;
                     purchaseMinLabel.textContent = "$" + pricing.min_purchase_usd;
                     purchaseMaxLabel.textContent = "$" + pricing.max_purchase_usd;
 
-                    // Pre-populate API key from localStorage or current input
-                    const savedKey = localStorage.getItem("meshOptimizerApiKey");
-                    const currentKey = document.getElementById("apiKey").value;
-
-                    if (currentKey) {
-                        purchaseApiKey.value = currentKey;
-                        purchaseApiKeyMessage.textContent = "Credits will be added to this account.";
-                    } else if (savedKey) {
-                        purchaseApiKey.value = savedKey;
-                        purchaseApiKeyMessage.textContent = "Credits will be added to this account.";
+                    // Pre-populate with logged-in user email if available
+                    if (currentUser && currentUser.email) {
+                        purchaseApiKey.value = currentUser.email;
+                        purchaseApiKeyMessage.textContent = "Credits will be added to your account.";
                     } else {
                         purchaseApiKey.value = "";
-                        purchaseApiKeyMessage.textContent = "Leave blank if you are a new customer.";
+                        purchaseApiKeyMessage.textContent = "Enter your email to add credits to your account.";
                         purchaseApiKeyMessage.style.color = "";
                     }
 

@@ -12,6 +12,7 @@ use axum::{
     routing::{get, post},
     Extension, Json, Router,
 };
+use axum_extra::extract::cookie::{Cookie, CookieJar, SameSite};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sha2::Digest;
@@ -281,6 +282,18 @@ async fn main() -> Result<()> {
     let db_for_cleanup = state.db.clone();
     tokio::spawn(cleanup_task(db_for_cleanup));
 
+    // 4a. Start Session Cleanup Task
+    let db_for_session_cleanup = state.db.clone();
+    tokio::spawn(async move {
+        loop {
+            // Run session cleanup every hour
+            tokio::time::sleep(Duration::from_secs(60 * 60)).await;
+            if let Err(e) = db_for_session_cleanup.cleanup_expired_sessions().await {
+                error!("Session cleanup failed: {}", e);
+            }
+        }
+    });
+
     // 4b. Start Capacity Stats Task
     let semaphore_for_stats = state.worker_semaphore.clone();
     tokio::spawn(capacity_stats_task(semaphore_for_stats, worker_slots));
@@ -319,6 +332,11 @@ async fn main() -> Result<()> {
         .route("/create-checkout-session", post(create_checkout_session))
         .route("/webhook", post(stripe_webhook))
         .route("/success", get(success_page))
+        // Session/Auth Routes (for web app)
+        .route("/auth/session", get(get_session_user))
+        .route("/auth/logout", post(logout_handler))
+        .route("/api/user/api-key", get(get_api_key_handler))
+        .route("/api/user/api-key/regenerate", post(regenerate_api_key_handler))
         // Admin Routes
         .route("/admin/add-credits", post(admin_add_credits))
         .route("/admin/create-key", post(admin_create_key))
@@ -361,11 +379,25 @@ async fn main() -> Result<()> {
 
 // --- MIDDLEWARE ---
 
+// Session cookie configuration
+const SESSION_COOKIE_NAME: &str = "session";
+const SESSION_DURATION_SECS: i64 = 7 * 24 * 60 * 60; // 7 days
+
 async fn auth_middleware(
     State(state): State<AppState>,
+    jar: CookieJar,
     mut req: Request,
     next: Next,
 ) -> Result<Response, StatusCode> {
+    // 1. Check for session cookie first (web app users)
+    if let Some(session_cookie) = jar.get(SESSION_COOKIE_NAME) {
+        if let Some(api_key) = state.db.validate_session(session_cookie.value()).await {
+            req.extensions_mut().insert(AuthKey(api_key));
+            return Ok(next.run(req).await);
+        }
+    }
+
+    // 2. Check for API key in Authorization header (programmatic access)
     let token = req
         .headers()
         .get("authorization")
@@ -373,6 +405,7 @@ async fn auth_middleware(
         .and_then(|s| s.strip_prefix("Bearer "))
         .map(|s| s.to_string())
         .or_else(|| {
+            // Fallback: check ?key=... query parameter
             req.uri().query().and_then(|q| {
                 url::form_urlencoded::parse(q.as_bytes())
                     .find(|(k, _)| k == "key")
@@ -387,6 +420,170 @@ async fn auth_middleware(
         }
         _ => Err(StatusCode::UNAUTHORIZED),
     }
+}
+
+/// Create a secure session cookie
+fn create_session_cookie(session_id: &str) -> Cookie<'static> {
+    Cookie::build((SESSION_COOKIE_NAME, session_id.to_string()))
+        .path("/")
+        .http_only(true)
+        .secure(true) // HTTPS only
+        .same_site(SameSite::Strict)
+        .max_age(time::Duration::seconds(SESSION_DURATION_SECS))
+        .build()
+}
+
+/// Create an expired cookie to clear the session
+fn clear_session_cookie() -> Cookie<'static> {
+    Cookie::build((SESSION_COOKIE_NAME, ""))
+        .path("/")
+        .http_only(true)
+        .secure(true)
+        .same_site(SameSite::Strict)
+        .max_age(time::Duration::seconds(0))
+        .build()
+}
+
+// --- SESSION/AUTH HANDLERS ---
+
+/// Get current session user info (if authenticated via session)
+async fn get_session_user(
+    State(state): State<AppState>,
+    jar: CookieJar,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    // Check for valid session
+    if let Some(session_cookie) = jar.get(SESSION_COOKIE_NAME) {
+        if let Some(api_key) = state.db.validate_session(session_cookie.value()).await {
+            if let Some(info) = state.db.get_key_info(&api_key).await {
+                return Ok(Json(json!({
+                    "authenticated": true,
+                    "email": info.email,
+                    "credits": info.credits
+                })));
+            }
+        }
+    }
+
+    // Not authenticated
+    Ok(Json(json!({
+        "authenticated": false
+    })))
+}
+
+/// Logout - clear session cookie and delete session from database
+async fn logout_handler(
+    State(state): State<AppState>,
+    jar: CookieJar,
+) -> impl IntoResponse {
+    // Delete session from database if it exists
+    if let Some(session_cookie) = jar.get(SESSION_COOKIE_NAME) {
+        let _ = state.db.delete_session(session_cookie.value()).await;
+    }
+
+    // Return response with cleared cookie
+    (jar.add(clear_session_cookie()), Json(json!({ "success": true })))
+}
+
+/// Get the user's API key (only accessible when authenticated via session)
+async fn get_api_key_handler(
+    State(state): State<AppState>,
+    jar: CookieJar,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    // Must be authenticated via session
+    if let Some(session_cookie) = jar.get(SESSION_COOKIE_NAME) {
+        if let Some(api_key) = state.db.validate_session(session_cookie.value()).await {
+            if let Some(info) = state.db.get_key_info(&api_key).await {
+                return Ok(Json(json!({
+                    "api_key": api_key,
+                    "email": info.email,
+                    "created": info.created
+                })));
+            }
+        }
+    }
+
+    Err(StatusCode::UNAUTHORIZED)
+}
+
+/// Regenerate API key (creates a new key, invalidates the old one)
+async fn regenerate_api_key_handler(
+    State(state): State<AppState>,
+    jar: CookieJar,
+) -> Result<impl IntoResponse, StatusCode> {
+    // Must be authenticated via session
+    let session_id = jar
+        .get(SESSION_COOKIE_NAME)
+        .map(|c| c.value().to_string())
+        .ok_or(StatusCode::UNAUTHORIZED)?;
+
+    let old_api_key = state
+        .db
+        .validate_session(&session_id)
+        .await
+        .ok_or(StatusCode::UNAUTHORIZED)?;
+
+    let info = state
+        .db
+        .get_key_info(&old_api_key)
+        .await
+        .ok_or(StatusCode::UNAUTHORIZED)?;
+
+    // Get current credits to transfer to new key
+    let current_credits = info.credits;
+
+    // Create new key with the same email
+    let new_key = state
+        .db
+        .create_free_tier_key(info.email.clone(), 0)
+        .await
+        .map_err(|e| {
+            error!("Failed to create new key: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    // Transfer credits from old key to new key
+    if current_credits > 0 {
+        let _ = state
+            .db
+            .record_transaction(&new_key, current_credits, "transfer_from_regenerated_key", None)
+            .await;
+    }
+
+    // Deactivate the old key (set credits to 0, mark inactive)
+    // Note: We can't fully delete it as it's part of the JSON structure
+    // The old key will just become unusable
+    let _ = state
+        .db
+        .record_transaction(&old_api_key, -current_credits, "key_regenerated", None)
+        .await;
+
+    // Delete all sessions for the old key
+    let _ = state.db.delete_sessions_for_key(&old_api_key).await;
+
+    // Create a new session for the new key
+    let new_session_id = state
+        .db
+        .create_session(&new_key, SESSION_DURATION_SECS, None, None)
+        .await
+        .map_err(|e| {
+            error!("Failed to create session: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    info!(
+        "Regenerated API key for {}: {} -> {}",
+        info.email, old_api_key, new_key
+    );
+
+    // Return new session cookie and key info
+    Ok((
+        jar.add(create_session_cookie(&new_session_id)),
+        Json(json!({
+            "success": true,
+            "api_key": new_key,
+            "message": "API key regenerated. Your old key is now invalid."
+        })),
+    ))
 }
 
 // --- HANDLERS ---
@@ -2378,6 +2575,7 @@ struct ClaimFreeCreditsRequest {
 
 async fn claim_free_credits(
     State(state): State<AppState>,
+    jar: CookieJar,
     Json(req): Json<ClaimFreeCreditsRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let email = req.email.trim().to_lowercase();
@@ -2411,19 +2609,15 @@ async fn claim_free_credits(
     let existing_key = state.db.get_key_by_email(&email).await;
 
     if let Some(api_key) = existing_key {
-        // Email already exists - send them their existing key as a reminder
+        // Email already exists - create a session for them (auto-login)
+        // Also send a reminder email with their API key for programmatic use
         let html_body = format!(
             r#"
             <h2>Your MeshOpt API Key from webdeliveryengine.com</h2>
-            <p>You requested your API key - here it is:</p>
+            <p>You requested access to your account. You've been automatically logged in on our website.</p>
+            <p>For programmatic use (scripts, API calls), here's your API key:</p>
             <p style="font-family: monospace; font-size: 1.2em; background: #f4f4f4; padding: 10px; border-radius: 4px;">{}</p>
-            <p>We've also restored it in your browser if you requested this from our website.</p>
-            <p>To use it:</p>
-            <ol>
-                <li>Go to <a href="https://webdeliveryengine.com">webdeliveryengine.com</a></li>
-                <li>Paste your API key in the "API KEY" field</li>
-                <li>Upload a 3D model and optimize!</li>
-            </ol>
+            <p>You can also view your API key anytime by logging in and visiting the API Settings page.</p>
             <p>Happy optimizing!</p>
             "#,
             api_key
@@ -2450,13 +2644,30 @@ async fn claim_free_credits(
             })?;
 
         if res.status().is_success() {
-            info!("Existing key reminder sent to {}", email);
-            return Ok(Json(json!({
-                "success": true,
-                "existing": true,
-                "api_key": api_key,
-                "message": "Your existing API key has been restored"
-            })));
+            // Create a session for the user (auto-login)
+            let session_id = state
+                .db
+                .create_session(&api_key, SESSION_DURATION_SECS, None, None)
+                .await
+                .map_err(|e| {
+                    error!("Failed to create session: {}", e);
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Json(json!({ "error": "Failed to create session" })),
+                    )
+                })?;
+
+            info!("Existing user {} logged in via free credits form", email);
+
+            // Return session cookie - NO API KEY in response!
+            return Ok((
+                jar.add(create_session_cookie(&session_id)),
+                Json(json!({
+                    "success": true,
+                    "existing": true,
+                    "message": "Welcome back! You've been logged in."
+                })),
+            ));
         } else {
             let error_text = res.text().await.unwrap_or_default();
             error!("Resend API error: {}", error_text);
@@ -2480,18 +2691,14 @@ async fn claim_free_credits(
             )
         })?;
 
-    // Send email with the API key
+    // Send email with the API key (for programmatic access)
     let html_body = format!(
         r#"
         <h2>Welcome to MeshOpt!</h2>
-        <p>Here's your free API key with <strong>{} credits</strong>:</p>
+        <p>You've been automatically logged in with <strong>{} free credits</strong>!</p>
+        <p>For programmatic use (scripts, API calls), here's your API key:</p>
         <p style="font-family: monospace; font-size: 1.2em; background: #f4f4f4; padding: 10px; border-radius: 4px;">{}</p>
-        <p>To get started:</p>
-        <ol>
-            <li>Go to <a href="https://webdeliveryengine.com">webdeliveryengine.com</a></li>
-            <li>Paste your API key in the "API KEY" field</li>
-            <li>Upload a 3D model and optimize!</li>
-        </ol>
+        <p>You can also view your API key anytime from the API Settings page on our website.</p>
         <p>Need more credits? You can purchase additional credits anytime from the website.</p>
         <p>Happy optimizing!</p>
         "#,
@@ -2505,7 +2712,7 @@ async fn claim_free_credits(
         .json(&json!({
             "from": "MeshOpt <support@webdeliveryengine.com>",
             "to": [email.clone()],
-            "subject": format!("Your Free MeshOpt API Key ({} credits)", free_credits),
+            "subject": format!("Welcome to MeshOpt! ({} free credits)", free_credits),
             "html": html_body
         }))
         .send()
@@ -2519,9 +2726,28 @@ async fn claim_free_credits(
         })?;
 
     if res.status().is_success() {
-        info!("Free credits key sent to {}", email);
-        Ok(Json(
-            json!({ "success": true, "message": "API key sent to your email" }),
+        // Create a session for the new user (auto-login)
+        let session_id = state
+            .db
+            .create_session(&api_key, SESSION_DURATION_SECS, None, None)
+            .await
+            .map_err(|e| {
+                error!("Failed to create session: {}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({ "error": "Failed to create session" })),
+                )
+            })?;
+
+        info!("New user {} created and logged in with {} free credits", email, free_credits);
+
+        // Return session cookie - NO API KEY in response!
+        Ok((
+            jar.add(create_session_cookie(&session_id)),
+            Json(json!({
+                "success": true,
+                "message": format!("Welcome! You've been logged in with {} free credits.", free_credits)
+            })),
         ))
     } else {
         let error_text = res.text().await.unwrap_or_default();

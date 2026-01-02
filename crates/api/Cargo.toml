@@ -7,6 +7,7 @@ edition = "2021"
 # Async Runtime & Web Server
 tokio = { version = "1.36", features = ["full"] }
 axum = { version = "0.7", features = ["macros", "multipart"] }
+axum-extra = { version = "0.9", features = ["cookie"] }
 tower = { version = "0.4", features = ["util"] }
 tower-http = { version = "0.5", features = ["cors", "trace", "fs", "limit"] }
 
@@ -24,6 +25,7 @@ uuid = { version = "1.7", features = ["v4", "serde"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 chrono = { version = "0.4", features = ["serde"] }
+time = "0.3"
 url = "2.5"
 sha2 = "0.10"
 hex = "0.4"

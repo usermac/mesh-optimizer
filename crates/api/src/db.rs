@@ -254,6 +254,18 @@ impl Database {
                 created_at INTEGER NOT NULL,
                 updated_at INTEGER NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS sessions (
+                id TEXT PRIMARY KEY,
+                api_key TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                expires_at INTEGER NOT NULL,
+                user_agent TEXT,
+                ip_address TEXT
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_sessions_api_key ON sessions(api_key);
+            CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions(expires_at);
             "#;
             if let Err(e) = sqlx::query(schema).execute(p).await {
                 error!("Failed to run SQLite migration: {:?}", e);
@@ -763,6 +775,142 @@ impl Database {
             );
             Ok(vec![])
         }
+    }
+
+    // --- Session Management ---
+
+    /// Create a new session for a user (identified by API key)
+    /// Returns the session token
+    pub async fn create_session(
+        &self,
+        api_key: &str,
+        duration_secs: i64,
+        user_agent: Option<&str>,
+        ip_address: Option<&str>,
+    ) -> Result<String> {
+        // Verify the API key exists and is active
+        if !self.is_valid_key(api_key).await {
+            return Err(anyhow::anyhow!("Invalid API key"));
+        }
+
+        let session_id = Uuid::new_v4().to_string();
+        let now = SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as i64;
+        let expires_at = now + duration_secs;
+
+        if let Some(pool) = &self.pool {
+            let query = r#"
+            INSERT INTO sessions (id, api_key, created_at, expires_at, user_agent, ip_address)
+            VALUES (?, ?, ?, ?, ?, ?)
+            "#;
+
+            sqlx::query(query)
+                .bind(&session_id)
+                .bind(api_key)
+                .bind(now)
+                .bind(expires_at)
+                .bind(user_agent)
+                .bind(ip_address)
+                .execute(pool)
+                .await
+                .map_err(|e| anyhow::anyhow!("Failed to create session: {}", e))?;
+
+            info!("Created session for api_key={}", api_key);
+            Ok(session_id)
+        } else {
+            Err(anyhow::anyhow!("Database pool not available"))
+        }
+    }
+
+    /// Validate a session token and return the associated API key if valid
+    pub async fn validate_session(&self, session_id: &str) -> Option<String> {
+        if let Some(pool) = &self.pool {
+            let now = SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs() as i64;
+
+            let query = r#"
+            SELECT api_key FROM sessions
+            WHERE id = ? AND expires_at > ?
+            "#;
+
+            if let Ok((api_key,)) = sqlx::query_as::<_, (String,)>(query)
+                .bind(session_id)
+                .bind(now)
+                .fetch_one(pool)
+                .await
+            {
+                // Verify the API key is still active
+                if self.is_valid_key(&api_key).await {
+                    return Some(api_key);
+                }
+            }
+        }
+        None
+    }
+
+    /// Delete a specific session (logout)
+    pub async fn delete_session(&self, session_id: &str) -> Result<()> {
+        if let Some(pool) = &self.pool {
+            let query = "DELETE FROM sessions WHERE id = ?";
+
+            sqlx::query(query)
+                .bind(session_id)
+                .execute(pool)
+                .await
+                .map_err(|e| anyhow::anyhow!("Failed to delete session: {}", e))?;
+
+            info!("Deleted session {}", session_id);
+        }
+        Ok(())
+    }
+
+    /// Delete all sessions for a specific API key (logout everywhere)
+    pub async fn delete_sessions_for_key(&self, api_key: &str) -> Result<u64> {
+        if let Some(pool) = &self.pool {
+            let query = "DELETE FROM sessions WHERE api_key = ?";
+
+            let result = sqlx::query(query)
+                .bind(api_key)
+                .execute(pool)
+                .await
+                .map_err(|e| anyhow::anyhow!("Failed to delete sessions: {}", e))?;
+
+            let deleted = result.rows_affected();
+            if deleted > 0 {
+                info!("Deleted {} sessions for api_key={}", deleted, api_key);
+            }
+            return Ok(deleted);
+        }
+        Ok(0)
+    }
+
+    /// Cleanup expired sessions (run periodically)
+    pub async fn cleanup_expired_sessions(&self) -> Result<u64> {
+        if let Some(pool) = &self.pool {
+            let now = SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs() as i64;
+
+            let query = "DELETE FROM sessions WHERE expires_at < ?";
+
+            let result = sqlx::query(query)
+                .bind(now)
+                .execute(pool)
+                .await
+                .map_err(|e| anyhow::anyhow!("Failed to cleanup sessions: {}", e))?;
+
+            let deleted = result.rows_affected();
+            if deleted > 0 {
+                info!("Cleaned up {} expired sessions", deleted);
+            }
+            return Ok(deleted);
+        }
+        Ok(0)
     }
 
     // --- Metrics / Logging ---
