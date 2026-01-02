@@ -2644,6 +2644,9 @@ async fn claim_free_credits(
             })?;
 
         if res.status().is_success() {
+            // Log successful email send
+            info!("Sent API key reminder email to {}", email);
+
             // Create a session for the user (auto-login)
             let session_id = state
                 .db
@@ -2726,6 +2729,9 @@ async fn claim_free_credits(
         })?;
 
     if res.status().is_success() {
+        // Log successful email send
+        info!("Sent welcome email with API key to {}", email);
+
         // Create a session for the new user (auto-login)
         let session_id = state
             .db
