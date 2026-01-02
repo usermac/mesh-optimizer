@@ -486,7 +486,7 @@ impl Database {
         let data = self.data.read().await;
         data.keys
             .iter()
-            .find(|(_, info)| info.email == email)
+            .find(|(_, info)| info.email == email && info.active)
             .map(|(k, _)| k.clone())
     }
 

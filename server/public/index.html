@@ -325,13 +325,13 @@
                         <button type="button" class="modal-close" onclick="closeModal('purchaseModal')" aria-label="Close purchase modal">&times;</button>
                     </div>
                     <div class="modal-body">
-                        <!-- API Key Input (for existing customers) -->
+                        <!-- Email Input (for existing customers) -->
                         <div class="form-group mb-15 api-key-row">
-                            <label for="purchaseApiKey">API Key (optional)</label>
+                            <label for="purchaseApiKey">Email (optional)</label>
                             <input
-                                type="text"
+                                type="email"
                                 id="purchaseApiKey"
-                                placeholder="sk_... (optional)"
+                                placeholder="you@example.com (optional)"
                                 aria-describedby="purchaseApiKeyMessage"
                             />
                             <small id="purchaseApiKeyMessage" class="text-muted"></small>
