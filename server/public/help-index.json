@@ -1,5 +1,5 @@
 {
-  "generated": "2026-01-02T03:11:48.377Z",
+  "generated": "2026-01-02T03:19:00.093Z",
   "version": "1.0",
   "entries": [
     {
@@ -7,7 +7,7 @@
       "modal": "helpModal",
       "modalName": "Help & Guide",
       "section": null,
-      "context": "Lost Your API Key? If you're logged in, click the \"API Key\" button in the sidebar to view, copy, or regenerate your key. Not logged in? Use the \"Get free credits here...\" link and enter your original",
+      "context": "Lost Your API Key? If you're logged in, click the \"API Key\" button in the sidebar to view, copy, or regenerate your key. Not logged in? Use the \"Log in or get free credits\" link and enter your email a",
       "keywords": []
     },
     {
