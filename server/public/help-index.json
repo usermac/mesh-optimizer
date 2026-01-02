@@ -1,5 +1,5 @@
 {
-  "generated": "2025-12-31T22:33:25.829Z",
+  "generated": "2026-01-02T03:00:03.971Z",
   "version": "1.0",
   "entries": [
     {
@@ -7,7 +7,7 @@
       "modal": "helpModal",
       "modalName": "Help & Guide",
       "section": null,
-      "context": "Lost Your API Key? Use the \"Get free credits here...\" link on the main page. While it's designed for new users, it also works as key recovery: simply enter your original email address, and your existi",
+      "context": "Lost Your API Key? If you're logged in, click the \"API Key\" button in the sidebar to view, copy, or regenerate your key. Not logged in? Use the \"Get free credits here...\" link and enter your original",
       "keywords": []
     },
     {
@@ -58,7 +58,7 @@
       "modal": "helpModal",
       "modalName": "Help & Guide",
       "section": null,
-      "context": "Standard Decimation Cost: 1 Credit Best for: Reducing file size while keeping the exact same geometry structure. Good for CAD models or models that are already clean. How it works: It simply removes p",
+      "context": "Standard Decimation Cost: 1 Credit Best for: Reducing file size while keeping the exact same geometry structure. Good for CAD models or models that are already clean. How it works: It intelligently re",
       "keywords": [
         "cost:"
       ]
@@ -78,7 +78,7 @@
       "modal": "helpModal",
       "modalName": "Help & Guide",
       "section": null,
-      "context": "Supported File Formats - GLB (Recommended): The best format. All geometry, materials, and textures are embedded in a single file. Just drag and drop. - GLTF: Supported, but note that GLTF files often",
+      "context": "Supported File Formats - GLB (Recommended): The best format. All geometry, materials, and textures are embedded in a single file. Just drag and drop. Why preferred? No missing textures, no external de",
       "keywords": [
         ".bin",
         ".gltf",
@@ -359,7 +359,7 @@
       "modal": "historyModal",
       "modalName": "Transaction History",
       "section": null,
-      "context": "Transaction History Remaining Credits: -- &times; Download CSV &#9432; Date Activity Amount &copy; 2025 Brian Ginn. All rights reserved. Tools Blog Terms of Service Privacy Policy API Docs Contact & Enterprise ♿ Accessibility",
+      "context": "Transaction History Remaining Credits: -- &times; Download CSV &#9432; Date Activity Amount &copy; 2025-2026 Brian Ginn. All rights reserved. Tools Blog Terms of Service Privacy Policy API Docs Contact & Enterprise ♿ Accessibility",
       "keywords": []
     },
     {
@@ -452,7 +452,7 @@
       "modal": "privacyModal",
       "modalName": "Privacy Policy",
       "section": null,
-      "context": "9. Cookies & Tracking We use minimal session storage for authentication state. We do NOT use analytics cookies, advertising cookies, social media tracking pixels, cross-site tracking, or third-party c",
+      "context": "9. Cookies & Tracking We use a secure, HttpOnly session cookie for authentication. This cookie is encrypted and cannot be accessed by JavaScript, protecting you from XSS attacks. We do NOT use analyti",
       "keywords": [
         "not"
       ]
@@ -585,11 +585,11 @@
       "keywords": []
     },
     {
-      "text": "Get Free Credits",
+      "text": "Danger Zone",
       "modal": "freeCreditsModal",
       "modalName": "Get Free Credits",
       "section": null,
-      "context": "Get Free Credits &times; Try MeshOpt for free! Enter your email below and we'll send you an API key with -- free credits. &#10003; Check your email! We've sent your free API key. Paste it in the API KEY field to get started. &#10003; Welcome back! You already have an account. Your API key has been r",
+      "context": "Danger Zone Regenerate Key This will invalidate your current key immediately. Any scripts using the old key will stop working.",
       "keywords": []
     },
     {
