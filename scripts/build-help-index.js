@@ -29,7 +29,8 @@ const MODAL_NAMES = {
     'tosModal': 'Terms of Service',
     'freeCreditsModal': 'Get Free Credits',
     'changelogModal': 'Changelog',
-    'founderModal': "Founder's Story"
+    'founderModal': "Founder's Story",
+    'apiSettingsModal': 'API Settings'
 };
 
 // Read and parse HTML
