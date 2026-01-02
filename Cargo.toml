@@ -2,5 +2,6 @@
 members = [
     "crates/api",
     "crates/worker",
+    "crates/mcp_server",
 ]
 resolver = "2"

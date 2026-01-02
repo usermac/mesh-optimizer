@@ -205,7 +205,7 @@ zip -r model.zip model.obj model.mtl *.jpg *.png
 
 # Convert via API
 curl -X POST https://webdeliveryengine.com/optimize \
-  -H "X-API-Key: sk_your_key" \
+  -H "Authorization: Bearer sk_your_key" \
   -F "file=@model.zip" \
   -F "mode=decimate" \
   -F "ratio=0.8" \
@@ -252,7 +252,7 @@ for obj_file in "$INPUT_DIR"/*.obj; do
 
     # Convert via API
     curl -s -X POST https://webdeliveryengine.com/optimize \
-        -H "X-API-Key: $API_KEY" \
+        -H "Authorization: Bearer $API_KEY" \
         -F "file=@$zip_file" \
         -F "mode=decimate" \
         -F "ratio=0.8" \
@@ -324,7 +324,7 @@ async function convertObjToGlb(objPath) {
 
     const response = await fetch('https://webdeliveryengine.com/optimize', {
         method: 'POST',
-        headers: { 'X-API-Key': API_KEY },
+        headers: { 'Authorization': `Bearer ${API_KEY}` },
         body: form
     });
 
@@ -401,7 +401,7 @@ main().catch(console.error);</code></pre>
                 <p>Since you're already converting, this is the perfect time to optimize:</p>
 
                 <pre><code>curl -X POST https://webdeliveryengine.com/optimize \
-  -H "X-API-Key: sk_your_key" \
+  -H "Authorization: Bearer sk_your_key" \
   -F "file=@model.zip" \
   -F "mode=decimate" \
   -F "ratio=0.5" \

@@ -329,7 +329,7 @@
                 <p>One HTTP endpoint. Upload file, get optimized file back. Integrate with any language, any platform, any CI/CD system. No SDK installation, no version compatibility issues, no platform-specific builds.</p>
 
                 <pre><code>curl -X POST https://webdeliveryengine.com/optimize \
-  -H "X-API-Key: sk_your_key" \
+  -H "Authorization: Bearer sk_your_key" \
   -F "file=@model.glb" \
   -F "ratio=0.5" \
   --output optimized.glb</code></pre>

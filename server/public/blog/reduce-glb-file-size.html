@@ -97,7 +97,7 @@ bpy.ops.object.modifier_apply(modifier="Decimate")</code></pre>
                 <p>Here's the same workflow as a single API call:</p>
 
                 <pre><code>curl -X POST https://webdeliveryengine.com/optimize \
-  -H "X-API-Key: sk_your_key" \
+  -H "Authorization: Bearer sk_your_key" \
   -F "file=@product-model.glb" \
   -F "mode=decimate" \
   -F "ratio=0.5" \
@@ -110,7 +110,7 @@ bpy.ops.object.modifier_apply(modifier="Decimate")</code></pre>
                 <pre><code>#!/bin/bash
 for file in ./models/*.glb; do
   curl -X POST https://webdeliveryengine.com/optimize \
-    -H "X-API-Key: sk_your_key" \
+    -H "Authorization: Bearer sk_your_key" \
     -F "file=@$file" \
     -F "mode=decimate" \
     -F "ratio=0.5" \
@@ -137,7 +137,7 @@ done</code></pre>
                 <p>Remeshing rebuilds the entire mesh with clean quad topology. It takes longer but produces better results for complex organic shapes like characters or scanned objects.</p>
 
                 <pre><code>curl -X POST https://webdeliveryengine.com/optimize \
-  -H "X-API-Key: sk_your_key" \
+  -H "Authorization: Bearer sk_your_key" \
   -F "file=@character.glb" \
   -F "mode=remesh" \
   -F "faces=5000" \

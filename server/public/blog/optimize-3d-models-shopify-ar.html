@@ -187,7 +187,7 @@
                 <p>Here's the same process via API:</p>
 
                 <pre><code>curl -X POST https://webdeliveryengine.com/optimize \
-  -H "X-API-Key: sk_your_key" \
+  -H "Authorization: Bearer sk_your_key" \
   -F "file=@product.glb" \
   -F "mode=decimate" \
   -F "ratio=0.5" \
@@ -214,7 +214,7 @@ for file in ./products/*.glb; do
 
   # Optimize and generate both GLB + USDZ in one call
   curl -X POST https://webdeliveryengine.com/optimize \
-    -H "X-API-Key: sk_your_key" \
+    -H "Authorization: Bearer sk_your_key" \
     -F "file=@$file" \
     -F "mode=decimate" \
     -F "ratio=0.5" \

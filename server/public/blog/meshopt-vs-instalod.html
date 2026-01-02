@@ -352,7 +352,7 @@
 for sku in product_skus:
     response = requests.post(
         'https://webdeliveryengine.com/optimize',
-        headers={'X-API-Key': API_KEY},
+        headers={'Authorization': f'Bearer {API_KEY}'},
         files={'file': open(f'{sku}.glb', 'rb')},
         data={'quality': 50, 'outputFormat': 'glb'}
     )

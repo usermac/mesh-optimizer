@@ -1,5 +1,5 @@
 {
-  "generated": "2026-01-02T03:55:49.555Z",
+  "generated": "2026-01-02T19:28:37.206Z",
   "version": "1.0",
   "entries": [
     {
@@ -151,7 +151,7 @@
       "url": "/blog/convert-obj-to-glb.html#single-file-with-textures-in-zip",
       "category": "Guide",
       "date": "December 2025",
-      "context": "Single File (with textures in ZIP) The most reliable approach: bundle OBJ + MTL + textures into a ZIP: [code] The API extracts the ZIP",
+      "context": "Single File (with textures in ZIP) The most reliable approach: bundle OBJ + MTL + textures into a ZIP: [code] The API extra",
       "parentArticle": "How to Convert OBJ to GLB (Single Files & Batch)",
       "parentSection": "Automated Conversion: API",
       "keywords": []

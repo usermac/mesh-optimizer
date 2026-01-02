@@ -336,7 +336,7 @@
 
                 <pre><code># Start using the API in 5 minutes
 curl -X POST https://webdeliveryengine.com/optimize \
-    -H "X-API-Key: YOUR_KEY" \
+    -H "Authorization: Bearer YOUR_KEY" \
     -F "file=@model.glb" \
     -F "ratio=0.5" \
     --output optimized.glb</code></pre>
@@ -418,7 +418,7 @@ curl -X POST https://webdeliveryengine.com/optimize \
                 <pre><code># MeshOpt: Simple API call
 response = requests.post(
     'https://webdeliveryengine.com/optimize',
-    headers={'X-API-Key': API_KEY},
+    headers={'Authorization': f'Bearer {API_KEY}'},
     files={'file': open('model.glb', 'rb')},
     data={'quality': 50}
 )

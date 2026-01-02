@@ -1,5 +1,5 @@
 {
-  "generated": "2026-01-02T03:55:49.527Z",
+  "generated": "2026-01-02T16:12:39.358Z",
   "version": "1.0",
   "entries": [
     {
@@ -9,41 +9,6 @@
       "section": null,
       "context": "Lost Your API Key? If you're logged in, click the \"API Key\" button in the sidebar to view, copy, or regenerate your key. Not logged in? Use the \"Log in or get free credits\" link and enter your email a",
       "keywords": []
-    },
-    {
-      "text": "Quick Start: Missing Textures?",
-      "modal": "helpModal",
-      "modalName": "Help & Guide",
-      "section": null,
-      "context": "Quick Start: Missing Textures?",
-      "keywords": []
-    },
-    {
-      "text": "Why is my model white/grey?",
-      "modal": "helpModal",
-      "modalName": "Help & Guide",
-      "section": null,
-      "context": "Why is my model white/grey? If you uploaded an .obj file and the result has no color, you likely forgot the texture files! The Rule: OBJ files need their associated material file ( .mtl ) and texture",
-      "keywords": [
-        ".obj",
-        ".mtl",
-        ".jpg",
-        ".png"
-      ]
-    },
-    {
-      "text": "How to fix it:",
-      "modal": "helpModal",
-      "modalName": "Help & Guide",
-      "section": null,
-      "context": "How to fix it: Option 1 (Recommended): Create a .zip file containing your model.obj , model.mtl , and all texture images. Drag the ZIP onto the upload area. This keeps everything organized together. O",
-      "keywords": [
-        ".zip",
-        "model.obj",
-        "model.mtl",
-        ".obj",
-        ".glb"
-      ]
     },
     {
       "text": "Which Mode Should I Use?",
@@ -328,7 +293,7 @@
       "modal": "batchScriptModal",
       "modalName": "Batch Script Generator",
       "section": null,
-      "context": "Current Settings Loading... &#9888; Do not paste into AI chatbots. These scripts may contain your personal API key. Paste your file paths below (one per line). We'll generate a complete script that up",
+      "context": "Current Settings Loading... Paste your file paths below (one per line). We'll generate a complete script that uploads each file, tracks progress, and downloads results as they finish. Bash Python Powe",
       "keywords": [
         "paste file paths above to generate script..."
       ]
@@ -348,7 +313,7 @@
       "modal": "purchaseModal",
       "modalName": "Buy Credits",
       "section": null,
-      "context": "Buy Credits &times; API Key (optional) Purchase Amount (Adjust the slider): $50 $10 $500 You Get: 100 Credits What can you do with these credits? 100 Decimates $0.50 each 80 + 4 Mixed (80/20) 20 Remeshes $2.50 each ✨ Bonus credits start at $50! Cancel 🔒 Secured by Stripe Pay with Stripe →",
+      "context": "Buy Credits &times; Email Purchase Amount (Adjust the slider): $50 $10 $500 You Get: 100 Credits What can you do with these credits? 100 Decimates $0.50 each 80 + 4 Mixed (80/20) 20 Remeshes $2.50 each ✨ Bonus credits start at $50! Cancel 🔒 Secured by Stripe Pay with Stripe →",
       "keywords": [
         "$50",
         "stripe"
@@ -585,11 +550,11 @@
       "keywords": []
     },
     {
-      "text": "Danger Zone",
+      "text": "Get Free Credits",
       "modal": "freeCreditsModal",
       "modalName": "Get Free Credits",
       "section": null,
-      "context": "Danger Zone Regenerate Key This will invalidate your current key immediately. Any scripts using the old key will stop working.",
+      "context": "Log In or Get Free Credits &times; Try MeshOpt for free! Enter your email below to get started with -- free credits. &#10003; Welcome! You're now logged in. We've also emailed your API key for programmatic use. &#10003; Welcome back! You're now logged in. We've also emailed your API key as a reminde",
       "keywords": []
     },
     {
@@ -638,6 +603,14 @@
       "modalName": "Founder's Story",
       "section": null,
       "context": "Founder's Story &times; I was supposed to code a 3D printer project for myself while on a working vacation in NH in early Dec 2025. I told an LLM about my upcoming needs, but it misunderstood me. Instead, it told me about 3D Mesh, which actually sounded interesting. So, I built that instead. I'm not",
+      "keywords": []
+    },
+    {
+      "text": "Danger Zone",
+      "modal": "apiSettingsModal",
+      "modalName": "API Settings",
+      "section": null,
+      "context": "Danger Zone Regenerate Key This will invalidate your current key immediately. Any scripts using the old key will stop working.",
       "keywords": []
     },
     {

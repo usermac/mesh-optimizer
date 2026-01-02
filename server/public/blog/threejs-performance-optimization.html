@@ -381,7 +381,7 @@ function disposeMaterial(material) {
                 <h3>Automated Approach (API)</h3>
 
                 <pre><code>curl -X POST https://webdeliveryengine.com/optimize \
-  -H "X-API-Key: sk_your_key" \
+  -H "Authorization: Bearer sk_your_key" \
   -F "file=@model.glb" \
   -F "mode=decimate" \
   -F "ratio=0.5" \
@@ -407,7 +407,7 @@ async function optimizeModel(inputPath, outputPath) {
     const response = await fetch('https://webdeliveryengine.com/optimize', {
         method: 'POST',
         headers: {
-            'X-API-Key': process.env.MESHOPT_API_KEY
+            'Authorization': `Bearer ${process.env.MESHOPT_API_KEY}`
         },
         body: form
     });

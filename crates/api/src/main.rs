@@ -55,6 +55,112 @@ const ALLOWED_AUXILIARY_EXTENSIONS: &[&str] = &[
     "mtl", "png", "jpg", "jpeg", "tga", "bmp", "tif", "tiff", "bin",
 ];
 
+// --- JSON ERROR RESPONSES ---
+
+/// Structured JSON error response for API clients
+#[derive(Serialize)]
+struct ApiError {
+    error: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    code: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    balance: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    required: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    message: Option<String>,
+}
+
+impl ApiError {
+    fn new(error: impl Into<String>) -> Self {
+        Self {
+            error: error.into(),
+            code: None,
+            balance: None,
+            required: None,
+            message: None,
+        }
+    }
+
+    fn with_code(mut self, code: impl Into<String>) -> Self {
+        self.code = Some(code.into());
+        self
+    }
+
+    fn with_balance(mut self, balance: i32) -> Self {
+        self.balance = Some(balance);
+        self
+    }
+
+    fn with_required(mut self, required: i32) -> Self {
+        self.required = Some(required);
+        self
+    }
+
+    fn with_message(mut self, message: impl Into<String>) -> Self {
+        self.message = Some(message.into());
+        self
+    }
+}
+
+/// Helper to create JSON error responses
+fn json_error(status: StatusCode, error: ApiError) -> Response {
+    (status, Json(error)).into_response()
+}
+
+/// Common error responses
+fn error_unauthorized() -> Response {
+    json_error(
+        StatusCode::UNAUTHORIZED,
+        ApiError::new("Unauthorized")
+            .with_code("unauthorized")
+            .with_message("Invalid or missing API key. Get your key at webdeliveryengine.com"),
+    )
+}
+
+fn error_insufficient_credits(balance: i32, required: i32) -> Response {
+    json_error(
+        StatusCode::PAYMENT_REQUIRED,
+        ApiError::new("Insufficient credits")
+            .with_code("insufficient_credits")
+            .with_balance(balance)
+            .with_required(required)
+            .with_message("Purchase more credits at webdeliveryengine.com"),
+    )
+}
+
+fn error_bad_request(error: impl Into<String>) -> Response {
+    json_error(
+        StatusCode::BAD_REQUEST,
+        ApiError::new(error).with_code("bad_request"),
+    )
+}
+
+fn error_not_found(error: impl Into<String>) -> Response {
+    json_error(
+        StatusCode::NOT_FOUND,
+        ApiError::new(error).with_code("not_found"),
+    )
+}
+
+fn error_server(error: impl Into<String>) -> Response {
+    json_error(
+        StatusCode::INTERNAL_SERVER_ERROR,
+        ApiError::new(error)
+            .with_code("server_error")
+            .with_message("Please try again or contact support@webdeliveryengine.com"),
+    )
+}
+
+fn error_transaction_failed() -> Response {
+    json_error(
+        StatusCode::PAYMENT_REQUIRED,
+        ApiError::new("Transaction failed")
+            .with_code("transaction_failed")
+            .with_message("Credit deduction failed. Please try again."),
+    )
+}
+
 // --- PRICING CONFIGURATION ---
 const PRICING_FILE: &str = "server/pricing.json";
 
@@ -346,6 +452,7 @@ async fn main() -> Result<()> {
                 .allow_origin(AllowOrigin::list([
                     "https://www.webdeliveryengine.com".parse().unwrap(),
                     "https://webdeliveryengine.com".parse().unwrap(),
+                    "https://api.webdeliveryengine.com".parse().unwrap(),
                     "http://localhost:3000".parse().unwrap(),
                 ]))
                 .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
@@ -374,12 +481,12 @@ async fn auth_middleware(
     jar: CookieJar,
     mut req: Request,
     next: Next,
-) -> Result<Response, StatusCode> {
+) -> Response {
     // 1. Check for session cookie first (web app users)
     if let Some(session_cookie) = jar.get(SESSION_COOKIE_NAME) {
         if let Some(api_key) = state.db.validate_session(session_cookie.value()).await {
             req.extensions_mut().insert(AuthKey(api_key));
-            return Ok(next.run(req).await);
+            return next.run(req).await;
         }
     }
 
@@ -402,9 +509,9 @@ async fn auth_middleware(
     match token {
         Some(t) if state.db.is_valid_key(&t).await => {
             req.extensions_mut().insert(AuthKey(t));
-            Ok(next.run(req).await)
+            next.run(req).await
         }
-        _ => Err(StatusCode::UNAUTHORIZED),
+        _ => error_unauthorized(),
     }
 }
 
@@ -904,6 +1011,8 @@ fn format_job_status(status: &JobStatus, job_id: &str, msgs: &[String]) -> serde
             original_faces,
             output_faces,
             remesh_method,
+            credits_used,
+            credits_remaining,
         } => {
             let base = "https://webdeliveryengine.com";
             let full_glb = format!("{}{}", base, glb_url);
@@ -919,7 +1028,9 @@ fn format_job_status(status: &JobStatus, job_id: &str, msgs: &[String]) -> serde
                         "expires_at": expires_at,
                         "original_faces": original_faces,
                         "output_faces": output_faces,
-                        "remesh_method": remesh_method
+                        "remesh_method": remesh_method,
+                        "credits_used": credits_used,
+                        "credits_remaining": credits_remaining
                     }
                 },
                 "download_commands": {
@@ -985,9 +1096,18 @@ async fn job_status_handler(
     Json(json!({ "error": "Job not found" }))
 }
 
+/// Query parameters for optimize endpoint
+#[derive(Debug, Deserialize)]
+struct OptimizeQuery {
+    /// If true, wait for processing to complete and return the result directly
+    #[serde(default)]
+    blocking: bool,
+}
+
 async fn optimize_handler(
     State(state): State<AppState>,
     Extension(auth_key): Extension<AuthKey>,
+    Query(query): Query<OptimizeQuery>,
     headers: HeaderMap,
     mut multipart: Multipart,
 ) -> Response {
@@ -1003,7 +1123,7 @@ async fn optimize_handler(
 
     if let Err(e) = fs::create_dir_all(&batch_dir) {
         error!("Failed to create batch dir: {:?}", e);
-        return (StatusCode::INTERNAL_SERVER_ERROR, "Server Error").into_response();
+        return error_server("Failed to initialize processing");
     }
 
     {
@@ -1051,14 +1171,10 @@ async fn optimize_handler(
                         ext, ALLOWED_EXTENSIONS, ALLOWED_AUXILIARY_EXTENSIONS
                     );
                     let _ = fs::remove_dir_all(&batch_dir);
-                    return (
-                        StatusCode::BAD_REQUEST,
-                        format!(
-                            "Invalid file type. Allowed: {}",
-                            ALLOWED_EXTENSIONS.join(", ")
-                        ),
-                    )
-                        .into_response();
+                    return error_bad_request(format!(
+                        "Invalid file type. Allowed: {}",
+                        ALLOWED_EXTENSIONS.join(", ")
+                    ));
                 }
 
                 // Stream file to disk
@@ -1235,7 +1351,7 @@ async fn optimize_handler(
         Some(f) => f,
         None => {
             let _ = fs::remove_dir_all(&batch_dir);
-            return (StatusCode::BAD_REQUEST, "No supported 3D model found").into_response();
+            return error_bad_request("No supported 3D model found");
         }
     };
 
@@ -1267,16 +1383,16 @@ async fn optimize_handler(
                     }
                     if !missing_buffers.is_empty() {
                         let _ = fs::remove_dir_all(&batch_dir);
-                        return (
+                        return json_error(
                             StatusCode::BAD_REQUEST,
-                            format!(
-                                "This GLTF file references external buffers that were not uploaded: {}. \
-                                Please either: (1) Upload a ZIP containing the .gltf and all .bin files, \
-                                or (2) Convert to GLB format which embeds all data in a single file.",
-                                missing_buffers.join(", ")
-                            ),
-                        )
-                            .into_response();
+                            ApiError::new("Missing external buffers")
+                                .with_code("missing_buffers")
+                                .with_message(format!(
+                                    "GLTF references external buffers not uploaded: {}. \
+                                    Upload a ZIP with .gltf and .bin files, or convert to GLB.",
+                                    missing_buffers.join(", ")
+                                )),
+                        );
                     }
                 }
             }
@@ -1324,14 +1440,7 @@ async fn optimize_handler(
         let current_balance = state.db.get_credits(&auth_key.0).await.unwrap_or(0);
         if current_balance < required_credits {
             let _ = fs::remove_dir_all(&batch_dir);
-            return (
-                StatusCode::PAYMENT_REQUIRED,
-                format!(
-                    "Insufficient Credits. Need {}, Have {}",
-                    required_credits, current_balance
-                ),
-            )
-                .into_response();
+            return error_insufficient_credits(current_balance, required_credits);
         }
 
         info!(
@@ -1373,7 +1482,7 @@ async fn optimize_handler(
             Err(e) => {
                 error!("Failed to deduct credit for key={}: {:?}", &auth_key.0, e);
                 let _ = fs::remove_dir_all(&batch_dir);
-                return (StatusCode::PAYMENT_REQUIRED, "Transaction Failed.").into_response();
+                return error_transaction_failed();
             }
         }
     } else {
@@ -1409,6 +1518,7 @@ async fn optimize_handler(
     }
 
     let credits_remaining = state.db.get_credits(&auth_key.0).await.unwrap_or(0);
+    let credits_used = if deducted { required_credits } else { 0 };
 
     // Collect metrics identifiers
     // If X-Session-ID header is present (Web UI), use that. Otherwise use API Key.
@@ -1432,6 +1542,8 @@ async fn optimize_handler(
     let callback_url_clone = callback_url.clone();
     let target_percentage_clone = target_percentage;
     let target_faces_clone = target_faces;
+    let credits_used_clone = credits_used;
+    let credits_remaining_clone = credits_remaining;
 
     // Slot Cost Logic
     let slot_cost_decimate = std::env::var("SLOT_COST_DECIMATE")
@@ -1442,6 +1554,10 @@ async fn optimize_handler(
         .ok()
         .and_then(|v| v.parse::<u32>().ok())
         .unwrap_or(5);
+
+    // For blocking mode, we use a oneshot channel to get the result
+    let (result_tx, result_rx) = tokio::sync::oneshot::channel::<JobStatus>();
+    let is_blocking = query.blocking;
 
     tokio::spawn(async move {
         // Helper to send webhook callback
@@ -1554,6 +1670,7 @@ async fn optimize_handler(
                     .save_job(&batch_id_clone, &failed_status)
                     .await;
                 send_webhook(&batch_id_clone, &failed_status, &callback_url_clone).await;
+                let _ = result_tx.send(failed_status);
                 return;
             }
         };
@@ -1627,6 +1744,7 @@ async fn optimize_handler(
                         &source,
                     )
                     .await;
+                let _ = result_tx.send(failed_status);
                 return;
             }
             Err(_) => {
@@ -1671,6 +1789,7 @@ async fn optimize_handler(
                         &source,
                     )
                     .await;
+                let _ = result_tx.send(failed_status);
                 return;
             }
         };
@@ -1721,6 +1840,7 @@ async fn optimize_handler(
                 .save_job(&batch_id_clone, &failed_status)
                 .await;
             send_webhook(&batch_id_clone, &failed_status, &callback_url_clone).await;
+            let _ = result_tx.send(failed_status);
             return;
         }
 
@@ -1765,6 +1885,7 @@ async fn optimize_handler(
                         .save_job(&batch_id_clone, &failed_status)
                         .await;
                     send_webhook(&batch_id_clone, &failed_status, &callback_url_clone).await;
+                    let _ = result_tx.send(failed_status);
                     return;
                 }
             };
@@ -1805,6 +1926,7 @@ async fn optimize_handler(
                             .save_job(&batch_id_clone, &failed_status)
                             .await;
                         send_webhook(&batch_id_clone, &failed_status, &callback_url_clone).await;
+                        let _ = result_tx.send(failed_status);
                         return;
                     }
                 }
@@ -1822,6 +1944,7 @@ async fn optimize_handler(
                         .save_job(&batch_id_clone, &failed_status)
                         .await;
                     send_webhook(&batch_id_clone, &failed_status, &callback_url_clone).await;
+                    let _ = result_tx.send(failed_status);
                     return;
                 }
             }
@@ -1903,6 +2026,7 @@ async fn optimize_handler(
                 .save_job(&batch_id_clone, &failed_status)
                 .await;
             send_webhook(&batch_id_clone, &failed_status, &callback_url_clone).await;
+            let _ = result_tx.send(failed_status);
             return;
         }
 
@@ -1974,6 +2098,8 @@ async fn optimize_handler(
             original_faces,
             output_faces,
             remesh_method,
+            credits_used: Some(credits_used_clone),
+            credits_remaining: Some(credits_remaining_clone),
         };
         {
             let mut jobs = state_clone.jobs.write().await;
@@ -1986,20 +2112,65 @@ async fn optimize_handler(
 
         // Send webhook callback if configured
         send_webhook(&batch_id_clone, &completed_status, &callback_url_clone).await;
+
+        // Send result through channel for blocking mode
+        let _ = result_tx.send(completed_status);
     });
 
-    let mut response = Json(json!({
-        "jobId": batch_id,
-        "status": "processing"
-    }))
-    .into_response();
+    // Handle blocking vs non-blocking response
+    if is_blocking {
+        // Wait for the job to complete (with timeout)
+        let timeout_duration = Duration::from_secs(600); // 10 minute timeout
+        match tokio::time::timeout(timeout_duration, result_rx).await {
+            Ok(Ok(status)) => {
+                // Get processing messages for the response
+                let messages = if mode == "remesh" {
+                    &state.processing_messages.remesh
+                } else {
+                    &state.processing_messages.decimate
+                };
+                let mut response = Json(format_job_status(&status, &batch_id, messages)).into_response();
+                response.headers_mut().insert(
+                    "X-Credits-Remaining",
+                    credits_remaining.to_string().parse().unwrap(),
+                );
+                response
+            }
+            Ok(Err(_)) => {
+                // Channel was dropped - this shouldn't happen
+                error_server("Job processing failed unexpectedly")
+            }
+            Err(_) => {
+                // Timeout
+                json_error(
+                    StatusCode::GATEWAY_TIMEOUT,
+                    ApiError::new("Job timed out")
+                        .with_code("timeout")
+                        .with_message(format!(
+                            "Processing exceeded {} seconds. Check job status at /job/{}",
+                            timeout_duration.as_secs(),
+                            batch_id
+                        )),
+                )
+            }
+        }
+    } else {
+        // Non-blocking: return immediately with job ID
+        let mut response = Json(json!({
+            "jobId": batch_id,
+            "status": "processing",
+            "credits_used": credits_used,
+            "credits_remaining": credits_remaining
+        }))
+        .into_response();
 
-    response.headers_mut().insert(
-        "X-Credits-Remaining",
-        credits_remaining.to_string().parse().unwrap(),
-    );
+        response.headers_mut().insert(
+            "X-Credits-Remaining",
+            credits_remaining.to_string().parse().unwrap(),
+        );
 
-    response
+        response
+    }
 }
 
 // --- CLEANUP ---
@@ -2517,24 +2688,102 @@ async fn admin_list_users(
 async fn credits_handler(
     State(state): State<AppState>,
     Extension(auth_key): Extension<AuthKey>,
-) -> Result<Json<serde_json::Value>, StatusCode> {
+) -> Response {
     info!("Credits request for key={}", &auth_key.0);
     match state.db.get_credits(&auth_key.0).await {
         Some(credits) => {
             info!("Retrieved credits for key={}: {}", &auth_key.0, credits);
-            Ok(Json(json!({ "credits": credits })))
+            Json(json!({ "credits": credits })).into_response()
         }
         None => {
             error!("Key not found: {}", &auth_key.0);
-            Err(StatusCode::NOT_FOUND)
+            error_not_found("API key not found")
         }
     }
+}
+
+/// Structured history entry for API responses
+#[derive(Debug, Serialize)]
+struct HistoryEntry {
+    id: i64,
+    timestamp: String,
+    #[serde(rename = "type")]
+    entry_type: String,
+    credits: i32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    filename: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    mode: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    parameters: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    is_free_reopt: Option<bool>,
+    /// Raw description for entries that can't be fully parsed
+    #[serde(skip_serializing_if = "Option::is_none")]
+    raw_description: Option<String>,
+}
+
+/// Parse a transaction description into structured fields
+fn parse_transaction_description(description: &str) -> (String, Option<String>, Option<String>, Option<String>, bool) {
+    // Format examples:
+    // "hero.glb; Dec; 50%" -> (optimize, hero.glb, decimate, 50%)
+    // "hero.glb (zip); Rem; 5000 faces; 2048px" -> (optimize, hero.glb, remesh, 5000 faces @ 2048px)
+    // "hero.glb; Dec; 50% (free re-opt)" -> free re-optimization
+    // "system_error_refund" -> (refund, None, None, None)
+    // "process_failure_refund: hero.glb" -> (refund, hero.glb, None, None)
+    // "free_initial_credits" -> (credit, None, None, None)
+    // "transfer_from_regenerated_key" -> (transfer, None, None, None)
+
+    let is_free_reopt = description.contains("(free re-opt)");
+    let desc = description.replace(" (free re-opt)", "");
+
+    // Check for refund patterns
+    if desc.contains("_refund") {
+        let filename = if desc.contains(": ") {
+            desc.split(": ").nth(1).map(|s| s.to_string())
+        } else {
+            None
+        };
+        return ("refund".to_string(), filename, None, None, is_free_reopt);
+    }
+
+    // Check for credit/transfer patterns
+    if desc == "free_initial_credits" || desc.contains("bonus") {
+        return ("credit".to_string(), None, None, None, false);
+    }
+    if desc.contains("transfer") || desc.contains("regenerated") {
+        return ("transfer".to_string(), None, None, None, false);
+    }
+
+    // Parse optimization entries: "filename; Mode; params"
+    let parts: Vec<&str> = desc.split("; ").collect();
+    if parts.len() >= 3 {
+        let filename = parts[0].replace(" (zip)", "").to_string();
+        let mode = match parts[1] {
+            "Dec" => "decimate",
+            "Rem" => "remesh",
+            _ => parts[1],
+        }.to_string();
+
+        let params = if parts.len() >= 4 {
+            // Remesh: "5000 faces; 2048px"
+            format!("{} @ {}", parts[2], parts[3])
+        } else {
+            // Decimate: "50%"
+            parts[2].to_string()
+        };
+
+        return ("optimize".to_string(), Some(filename), Some(mode), Some(params), is_free_reopt);
+    }
+
+    // Can't parse - return raw
+    ("other".to_string(), None, None, None, false)
 }
 
 async fn history_handler(
     State(state): State<AppState>,
     Extension(auth_key): Extension<AuthKey>,
-) -> Result<Json<serde_json::Value>, StatusCode> {
+) -> Response {
     info!("History request for key={}", &auth_key.0);
     match state.db.get_history(&auth_key.0, 50).await {
         Ok(transactions) => {
@@ -2543,11 +2792,42 @@ async fn history_handler(
                 transactions.len(),
                 &auth_key.0
             );
-            Ok(Json(serde_json::to_value(transactions).unwrap()))
+
+            // Convert to structured entries
+            let entries: Vec<HistoryEntry> = transactions
+                .into_iter()
+                .map(|tx| {
+                    let (entry_type, filename, mode, parameters, is_free_reopt) =
+                        parse_transaction_description(&tx.description);
+
+                    // Convert unix timestamp to ISO 8601
+                    let timestamp = chrono::DateTime::from_timestamp(tx.created_at, 0)
+                        .map(|dt| dt.to_rfc3339())
+                        .unwrap_or_else(|| tx.created_at.to_string());
+
+                    HistoryEntry {
+                        id: tx.id,
+                        timestamp,
+                        entry_type: entry_type.clone(),
+                        credits: tx.amount,
+                        filename,
+                        mode,
+                        parameters,
+                        is_free_reopt: if is_free_reopt { Some(true) } else { None },
+                        raw_description: if entry_type == "other" {
+                            Some(tx.description)
+                        } else {
+                            None
+                        },
+                    }
+                })
+                .collect();
+
+            Json(json!({ "history": entries })).into_response()
         }
         Err(e) => {
             error!("Failed to get history for key={}: {:?}", &auth_key.0, e);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
+            error_server("Failed to retrieve history")
         }
     }
 }
@@ -2922,6 +3202,8 @@ mod tests {
             original_faces: Some(10000),
             output_faces: Some(5000),
             remesh_method: Some("quadriflow".to_string()),
+            credits_used: Some(2),
+            credits_remaining: Some(15),
         };
 
         // Call the ACTUAL function that the handler uses
