@@ -1066,16 +1066,26 @@
                             <p class="text-muted">Get your transaction history (last 50). <strong>Requires authentication.</strong></p>
 
                             <h4>Response</h4>
-                            <pre class="code-block"><code>[
-  {
-    "id": 42,
-    "user_key": "sk_...",
-    "amount": -1,
-    "description": "chair.obj; Dec; 50%",
-    "reference_job_hash": "abc123...",
-    "created_at": 1734012345678
-  }
-]</code></pre>
+                            <pre class="code-block"><code>{
+  "history": [
+    {
+      "id": 42,
+      "timestamp": "2024-12-16T15:30:00Z",
+      "type": "optimize",
+      "credits": -1,
+      "filename": "chair.obj",
+      "mode": "decimate",
+      "parameters": "50%"
+    },
+    {
+      "id": 41,
+      "timestamp": "2024-12-15T10:00:00Z",
+      "type": "purchase",
+      "credits": 100
+    }
+  ]
+}</code></pre>
+                            <p class="text-muted text-small">Entry types: <code>optimize</code>, <code>purchase</code>, <code>refund</code>, <code>free_credits</code>, <code>other</code>. Fields like <code>filename</code>, <code>mode</code>, <code>parameters</code> only appear for optimize entries.</p>
                         </section>
 
                         <section class="content-section">

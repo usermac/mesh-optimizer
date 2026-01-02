@@ -9,3 +9,7 @@ webdeliveryengine.com, www.webdeliveryengine.com {
 lists.webdeliveryengine.com {
     reverse_proxy 172.17.0.1:9000
 }
+
+api.webdeliveryengine.com {
+    reverse_proxy localhost:3000
+}
