@@ -138,8 +138,8 @@
                     Clear
                 </button>
                 <div class="mb-10">
-                    <label>Material (.mtl) <span class="text-darker">(Optional)</span></label>
-                    <div class="dropzone-mini" id="mtlDropzone" role="button" tabindex="0" aria-label="Upload material file. Drag and drop or click to select.">
+                    <label id="mtlDropzoneLabel">Material (.mtl) <span class="text-darker">(Optional)</span></label>
+                    <div class="dropzone-mini" id="mtlDropzone" role="button" tabindex="0" aria-labelledby="mtlDropzoneLabel" aria-describedby="mtlDropText">
                         <div id="mtlDropText" class="drop-text">Drop .mtl file here or click</div>
                         <div id="mtlFileInfo" class="file-info" style="display: none;">
                             <span id="mtlFileName"></span>
@@ -149,8 +149,8 @@
                     </div>
                 </div>
                 <div>
-                    <label>Textures (Max 50) <span class="text-darker">(Optional)</span></label>
-                    <div class="dropzone-mini" id="texDropzone" role="button" tabindex="0" aria-label="Upload texture files. Drag and drop or click to select. Maximum 50 files.">
+                    <label id="texDropzoneLabel">Textures (Max 50) <span class="text-darker">(Optional)</span></label>
+                    <div class="dropzone-mini" id="texDropzone" role="button" tabindex="0" aria-labelledby="texDropzoneLabel" aria-describedby="texDropText">
                         <div id="texDropText" class="drop-text">Drop textures here or click</div>
                         <div id="texFileInfo" class="file-info" style="display: none;">
                             <span id="texFileName"></span>
@@ -226,7 +226,7 @@
                         class="font-bold text-small"
                         >Help & Guide</a
                     >
-                    <button type="button" id="changelogLink" class="text-small text-muted" style="background:none; border:none; padding:0; margin:0; cursor:pointer; font-family: inherit;">v1.0.5beta <span class="text-primary">(2025-12-29)</span></button>
+                    <button type="button" id="changelogLink" class="text-small text-muted" style="background:none; border:none; padding:0; margin:0; cursor:pointer; font-family: inherit;" aria-label="View changelog, current version 1.0.5 beta">v1.0.5beta <span class="text-primary">(2025-12-29)</span></button>
                 </div>
             </header>
 
@@ -432,7 +432,7 @@
                         <button type="button" class="modal-close" onclick="closeModal('historyModal')" aria-label="Close transaction history">&times;</button>
                     </div>
                     <div class="d-flex gap-10 mb-15 align-center">
-                        <button id="downloadHistoryBtn" class="btn-sm">
+                        <button id="downloadHistoryBtn" class="btn-sm" aria-label="Download transaction history as CSV">
                             Download CSV
                         </button>
                         <input
@@ -680,8 +680,9 @@
                                     name="email"
                                     required
                                     placeholder="your.email@example.com"
+                                    aria-describedby="contact-email-help"
                                 />
-                                <div class="helper-text">
+                                <div class="helper-text" id="contact-email-help">
                                     We'll use this to respond to your inquiry
                                 </div>
                             </div>
@@ -720,8 +721,9 @@
                                     name="message"
                                     required
                                     placeholder="Please describe your question or concern in detail..."
+                                    aria-describedby="contact-message-help"
                                 ></textarea>
-                                <div class="helper-text">
+                                <div class="helper-text" id="contact-message-help">
                                     Be as specific as possible to help us assist you better
                                 </div>
                             </div>
@@ -733,8 +735,9 @@
                                     id="contact-api-key"
                                     name="api_key"
                                     placeholder="Your API key (if relevant to your inquiry)"
+                                    aria-describedby="contact-api-key-help"
                                 />
-                                <div class="helper-text">
+                                <div class="helper-text" id="contact-api-key-help">
                                     For account/credits issues, include your key (find it via the "API Key" button when logged in)
                                 </div>
                             </div>
@@ -1472,8 +1475,9 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                                     name="email"
                                     required
                                     placeholder="your.email@example.com"
+                                    aria-describedby="free-credits-email-help"
                                 />
-                                <div class="helper-text">
+                                <div class="helper-text" id="free-credits-email-help">
                                     We'll send your API key to this address
                                 </div>
                             </div>
