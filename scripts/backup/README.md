@@ -2,15 +2,13 @@
 
 ## 📦 Overview
 
-This automated backup system protects your Mesh Optimizer and Listmonk databases by:
+This automated backup system protects your Mesh Optimizer database by:
 
 - **Backing up** `stats.db` (SQLite) and `database.json` every 6 hours
-- **Backing up** Listmonk PostgreSQL database daily
 - **Storing backups** locally (7 days) and on Hetzner Storage Box (30 days)
 - **Sending email notifications** via Resend API on success/failure
 - **Verifying integrity** with checksums and archive validation
 - **Providing easy restoration** with dedicated restore scripts
-- **Single-user export** for Listmonk subscriber data recovery
 
 ---
 
@@ -53,9 +51,6 @@ This will:
 - 06:00 (6 AM)
 - 12:00 (noon)
 - 18:00 (6 PM)
-
-**Listmonk backups** run daily:
-- 03:00 (3 AM)
 
 ---
 
@@ -123,83 +118,6 @@ bash /root/mesh-optimizer/scripts/backup/restore.sh latest
 - Requires confirmation (`yes`) before restoring
 - Verifies checksums before restoration
 - Logs all actions
-
----
-
-### `listmonk-backup.sh` - Listmonk PostgreSQL Backup
-
-**Purpose:** Backs up the Listmonk newsletter database (PostgreSQL)
-
-**Usage:**
-```bash
-bash /root/mesh-optimizer/scripts/backup/listmonk-backup.sh
-```
-
-**What it does:**
-1. Runs `pg_dump` on the `listmonk_db` Docker container
-2. Compresses to `.sql.gz` file
-3. Stores locally in `/root/backups/listmonk`
-4. Uploads to Hetzner Storage Box (`/backups/listmonk/`)
-5. Sends email notification with subscriber count
-6. Cleans up old backups
-
-**Schedule:** Daily at 3:00 AM
-
-**Retention:**
-- Local: 7 days
-- Storage Box: 30 days
-
----
-
-### `listmonk-restore.sh` - Listmonk Restore & User Export
-
-**Purpose:** Restore Listmonk database or export individual subscriber data
-
-**Usage:**
-
-List available backups:
-```bash
-bash /root/mesh-optimizer/scripts/backup/listmonk-restore.sh
-```
-
-List backups on Storage Box:
-```bash
-bash /root/mesh-optimizer/scripts/backup/listmonk-restore.sh storage-box
-```
-
-Restore full database:
-```bash
-bash /root/mesh-optimizer/scripts/backup/listmonk-restore.sh 20250108_030000
-```
-
-Restore latest backup:
-```bash
-bash /root/mesh-optimizer/scripts/backup/listmonk-restore.sh latest
-```
-
-**Export single user's data** (from latest backup):
-```bash
-bash /root/mesh-optimizer/scripts/backup/listmonk-restore.sh user john@example.com
-```
-
-**Export single user from specific backup:**
-```bash
-bash /root/mesh-optimizer/scripts/backup/listmonk-restore.sh user john@example.com 20250108_030000
-```
-
-**What the user export includes:**
-- Subscriber record (email, name, attributes, status, created_at)
-- List memberships (which lists they subscribed to)
-- Campaign views (which emails they opened)
-- Link clicks (which links they clicked)
-
-**Output:** JSON file at `/root/backups/listmonk/user-exports/`
-
-**Safety Features:**
-- Creates pre-restore backup before full restore
-- Requires confirmation (`yes`) before full restore
-- User export uses temporary database (non-destructive)
-- Stops/starts Listmonk container during full restore
 
 ---
 
@@ -275,15 +193,8 @@ Contains:
 ├── backups/                           # Local backup storage
 │   ├── mesh-backup-20250108_000000.tar.gz
 │   ├── mesh-backup-20250108_060000.tar.gz
-│   ├── pre-restore/                   # Safety backups before restore
-│   │   └── before-restore-20250108_123000.tar.gz
-│   │
-│   └── listmonk/                      # Listmonk backups
-│       ├── listmonk-backup-20250108_030000.sql.gz
-│       ├── pre-restore/               # Safety backups before restore
-│       │   └── before-restore-20250108_123000.sql.gz
-│       └── user-exports/              # Single-user data exports
-│           └── john_example_com_20250108_030000.json
+│   └── pre-restore/                   # Safety backups before restore
+│       └── before-restore-20250108_123000.tar.gz
 │
 ├── mesh-optimizer/
 │   ├── server/
@@ -293,15 +204,12 @@ Contains:
 │   └── scripts/backup/
 │       ├── backup.sh                  # Main backup script
 │       ├── restore.sh                 # Restore script
-│       ├── listmonk-backup.sh         # Listmonk backup script
-│       ├── listmonk-restore.sh        # Listmonk restore script
 │       ├── verify_backup.sh           # Verification script
 │       ├── setup.sh                   # Setup script
 │       └── README.md                  # This file
 │
 └── /var/log/mesh/
-    ├── backup.log                     # Mesh backup logs
-    ├── listmonk-backup.log            # Listmonk backup logs
+    ├── backup.log                     # Backup logs
     ├── restore.log                    # Restore logs
     └── verify.log                     # Verification logs
 ```
@@ -312,12 +220,7 @@ u518013.your-storagebox.de:/backups/
 ├── mesh-backup-20250101_000000.tar.gz
 ├── mesh-backup-20250101_060000.tar.gz
 ├── mesh-backup-20250101_120000.tar.gz
-├── ... (30 days of mesh backups)
-│
-└── listmonk/
-    ├── listmonk-backup-20250101_030000.sql.gz
-    ├── listmonk-backup-20250102_030000.sql.gz
-    └── ... (30 days of listmonk backups)
+└── ... (30 days of backups)
 ```
 
 ---
@@ -454,53 +357,7 @@ ls -lh
 
 ---
 
-### Scenario 3: Listmonk Database Recovery
-
-**If Listmonk database is corrupted or needs restoration:**
-
-1. **List available Listmonk backups:**
-   ```bash
-   bash /root/mesh-optimizer/scripts/backup/listmonk-restore.sh
-   ```
-
-2. **Restore the database:**
-   ```bash
-   bash /root/mesh-optimizer/scripts/backup/listmonk-restore.sh 20250108_030000
-   # Type 'yes' to confirm
-   ```
-
-3. **Verify restoration:**
-   ```bash
-   docker exec listmonk_db psql -U listmonk -d listmonk -c "SELECT COUNT(*) FROM subscribers;"
-   ```
-
----
-
-### Scenario 4: Export Single Subscriber's Data (GDPR Request)
-
-**If a user requests their data or you need to recover a specific subscriber:**
-
-1. **Export user data from latest backup:**
-   ```bash
-   bash /root/mesh-optimizer/scripts/backup/listmonk-restore.sh user john@example.com
-   ```
-
-2. **Or from a specific backup:**
-   ```bash
-   bash /root/mesh-optimizer/scripts/backup/listmonk-restore.sh user john@example.com 20250108_030000
-   ```
-
-3. **Find the exported JSON:**
-   ```bash
-   ls -la /root/backups/listmonk/user-exports/
-   cat /root/backups/listmonk/user-exports/john_example_com_*.json
-   ```
-
-The export includes: subscriber info, list memberships, campaign opens, and link clicks.
-
----
-
-### Scenario 5: Test Restore (Monthly Recommended)
+### Scenario 3: Test Restore (Monthly Recommended)
 
 **You should test restores regularly to ensure backups work!**
 
@@ -707,18 +564,16 @@ If you encounter issues:
 ## 🎉 You're Protected!
 
 Your databases are now:
-- ✅ **Mesh Optimizer** backed up every 6 hours automatically
-- ✅ **Listmonk** backed up daily at 3 AM
+- ✅ Backed up every 6 hours automatically
 - ✅ Stored safely off-site (Hetzner Storage Box)
 - ✅ Monitored via email notifications
 - ✅ Verified weekly for integrity
 - ✅ Easy to restore in emergencies
-- ✅ Single-user export available for Listmonk subscribers
 
 Sleep well knowing your data is safe! 🛡️
 
 ---
 
-**Last Updated:** January 2025  
-**Version:** 1.0  
+**Last Updated:** January 2025
+**Version:** 2.0
 **Maintainer:** Mesh Optimizer Team

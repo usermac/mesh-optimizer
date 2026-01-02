@@ -2109,90 +2109,6 @@ body.content-page::after {
     color: var(--cp-warning);
 }
 
-/* Email Capture with terminal styling */
-.email-capture {
-    background: linear-gradient(135deg, rgba(0, 212, 255, 0.03) 0%, rgba(180, 248, 74, 0.02) 100%);
-    border: 1px solid var(--cp-border);
-    padding: 48px 40px;
-    margin: 56px 0;
-    text-align: center;
-    position: relative;
-    animation: fadeInUp 0.6s ease 0.3s backwards;
-}
-
-.email-capture::before {
-    content: '';
-    position: absolute;
-    top: -1px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 100px;
-    height: 3px;
-    background: linear-gradient(90deg, var(--cp-accent), var(--cp-accent-secondary));
-}
-
-.email-capture h3 {
-    font-family: var(--cp-font-display);
-    margin-top: 0;
-    margin-bottom: 12px;
-    font-size: 1.3rem;
-    color: var(--cp-text);
-}
-
-.email-capture > p {
-    color: var(--cp-text-dim);
-    margin-bottom: 28px;
-    font-size: 1rem;
-}
-
-.email-capture-form {
-    display: flex;
-    gap: 0;
-    max-width: 480px;
-    margin: 0 auto;
-}
-
-.email-capture-form input[type="email"] {
-    flex: 1;
-    background: #000;
-    border: 1px solid var(--cp-border);
-    border-right: none;
-    color: var(--cp-text);
-    padding: 14px 18px;
-    font-family: var(--cp-font-display);
-    font-size: 0.9rem;
-}
-
-.email-capture-form input[type="email"]:focus {
-    outline: none;
-    border-color: var(--cp-accent);
-}
-
-.email-capture-form input[type="email"]::placeholder {
-    color: var(--cp-text-dim);
-}
-
-.email-capture-form button {
-    background: var(--cp-accent);
-    color: #000;
-    border: 1px solid var(--cp-accent);
-    padding: 14px 28px;
-    font-family: var(--cp-font-display);
-    font-weight: 600;
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    white-space: nowrap;
-}
-
-.email-capture-form button:hover {
-    background: var(--cp-accent-secondary);
-    border-color: var(--cp-accent-secondary);
-    color: #000;
-}
-
 /* CTA Box with glowing border */
 .cta-box {
     background: var(--cp-panel);
@@ -2566,22 +2482,8 @@ body.content-page::after {
         grid-template-columns: repeat(2, 1fr);
     }
 
-    .email-capture,
     .cta-box {
         padding: 32px 24px;
-    }
-
-    .email-capture-form {
-        flex-direction: column;
-    }
-
-    .email-capture-form input[type="email"] {
-        border-right: 1px solid var(--cp-border);
-        border-bottom: none;
-    }
-
-    .email-capture-form button {
-        width: 100%;
     }
 
     .cards-grid {

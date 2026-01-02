@@ -2,8 +2,6 @@
 
 **Get your databases protected in 5 minutes!**
 
-Covers both **Mesh Optimizer** (SQLite) and **Listmonk** (PostgreSQL) backups.
-
 ---
 
 ## ✅ Prerequisites
@@ -84,29 +82,24 @@ The setup will:
 
 ## 🎉 You're Done!
 
-**Mesh Optimizer** is backed up every 6 hours:
+Backups run every 6 hours:
 - **00:00** (midnight)
 - **06:00** (6 AM)
 - **12:00** (noon)
 - **18:00** (6 PM)
 
-**Listmonk** is backed up daily:
-- **03:00** (3 AM)
-
 Backups are stored:
-- **Locally:** `/root/backups` and `/root/backups/listmonk` (kept 7 days)
+- **Locally:** `/root/backups` (kept 7 days)
 - **Storage Box:** `u518013.your-storagebox.de:/backups` (kept 30 days)
 
 You'll receive email notifications for:
-- ✅ Every successful backup (mesh + listmonk)
+- ✅ Every successful backup
 - ❌ Any backup failures
 - 📊 Weekly verification reports
 
 ---
 
 ## 🔧 Quick Commands
-
-### Mesh Optimizer
 
 **Run backup manually:**
 ```bash
@@ -123,34 +116,9 @@ bash /root/mesh-optimizer/scripts/backup/restore.sh
 bash /root/mesh-optimizer/scripts/backup/restore.sh 20250108_120000
 ```
 
-### Listmonk
-
-**Run backup manually:**
-```bash
-bash /root/mesh-optimizer/scripts/backup/listmonk-backup.sh
-```
-
-**List available backups:**
-```bash
-bash /root/mesh-optimizer/scripts/backup/listmonk-restore.sh
-```
-
-**Restore a backup:**
-```bash
-bash /root/mesh-optimizer/scripts/backup/listmonk-restore.sh 20250108_030000
-```
-
-**Export single user's data:**
-```bash
-bash /root/mesh-optimizer/scripts/backup/listmonk-restore.sh user john@example.com
-```
-
-### General
-
 **Check logs:**
 ```bash
-tail -f /var/log/mesh/backup.log          # Mesh
-tail -f /var/log/mesh/listmonk-backup.log # Listmonk
+tail -f /var/log/mesh/backup.log
 ```
 
 **View cron schedule:**
@@ -209,12 +177,11 @@ grep CRON /var/log/syslog | tail -20
 
 ## ✨ That's It!
 
-Your Mesh Optimizer and Listmonk databases are now protected. Sleep well! 🛡️
+Your Mesh Optimizer database is now protected. Sleep well! 🛡️
 
 **Next steps:**
 1. Check your email for the first backup notification
 2. Test a restore next week to verify everything works
 3. Monitor backup logs occasionally
-4. Use single-user export if you need to recover subscriber data
 
 **Questions?** Check the full README.md for detailed documentation.
