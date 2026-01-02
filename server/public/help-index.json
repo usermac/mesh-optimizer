@@ -1,5 +1,5 @@
 {
-  "generated": "2026-01-02T16:12:39.358Z",
+  "generated": "2026-01-02T23:32:50.671Z",
   "version": "1.0",
   "entries": [
     {
@@ -556,6 +556,16 @@
       "section": null,
       "context": "Log In or Get Free Credits &times; Try MeshOpt for free! Enter your email below to get started with -- free credits. &#10003; Welcome! You're now logged in. We've also emailed your API key for programmatic use. &#10003; Welcome back! You're now logged in. We've also emailed your API key as a reminde",
       "keywords": []
+    },
+    {
+      "text": "v1.0.6beta (2026-01-02)",
+      "modal": "changelogModal",
+      "modalName": "Changelog",
+      "section": null,
+      "context": "v1.0.6beta (2026-01-02) - MCP Server: Added Model Context Protocol (MCP) server for AI assistant integration. Claude Desktop, Cursor, and other MCP-compatible tools can now optimize meshes directly vi",
+      "keywords": [
+        "/history"
+      ]
     },
     {
       "text": "v1.0.5beta (2025-12-29)",
