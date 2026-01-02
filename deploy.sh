@@ -18,7 +18,7 @@ echo "📚 Building help search index..."
 node scripts/build-help-index.js
 
 echo "📰 Building blog search index..."
-node scripts/build-blog-index.js
+./deploy_blog.sh --index-only
 
 # Ensure remote directory exists
 ssh $SERVER "mkdir -p $REMOTE_DIR"
