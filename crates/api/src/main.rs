@@ -2800,8 +2800,8 @@ async fn history_handler(
                     let (entry_type, filename, mode, parameters, is_free_reopt) =
                         parse_transaction_description(&tx.description);
 
-                    // Convert unix timestamp to ISO 8601
-                    let timestamp = chrono::DateTime::from_timestamp(tx.created_at, 0)
+                    // Convert unix timestamp (milliseconds) to ISO 8601
+                    let timestamp = chrono::DateTime::from_timestamp(tx.created_at / 1000, 0)
                         .map(|dt| dt.to_rfc3339())
                         .unwrap_or_else(|| tx.created_at.to_string());
 

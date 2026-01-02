@@ -1975,15 +1975,18 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
 
                 tbody.innerHTML = "";
                 dataToRender.forEach((tx) => {
-                    const date = new Date(tx.created_at).toLocaleString();
+                    const date = new Date(tx.timestamp).toLocaleString();
                     const colorClass =
-                        tx.amount > 0 ? "text-success" : "text-error";
+                        tx.credits > 0 ? "text-success" : "text-error";
+                    // Reconstruct description from parsed fields
+                    const description = tx.raw_description ||
+                        (tx.filename ? `${tx.filename}${tx.mode ? '; ' + tx.mode : ''}${tx.parameters ? '; ' + tx.parameters : ''}` : tx.type);
                     const row = `
                     <tr>
                         <td class="text-muted text-small" style="width: 160px;">${date}</td>
-                        <td style="width: auto;">${tx.description}</td>
+                        <td style="width: auto;">${description}</td>
                         <td class="${colorClass} font-bold" style="width: 70px; text-align: right;">
-                            ${tx.amount > 0 ? "+" : ""}${tx.amount}
+                            ${tx.credits > 0 ? "+" : ""}${tx.credits}
                         </td>
                     </tr>
                 `;
@@ -2043,7 +2046,7 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                     const term = textSearch.toLowerCase();
 
                     filteredHistoryData = currentHistoryData.filter((tx) => {
-                        const txDate = new Date(tx.created_at);
+                        const txDate = new Date(tx.timestamp);
 
                         // Date range filter
                         if (startDate && txDate < startDate) return false;
@@ -2051,11 +2054,13 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
 
                         // Text filter - split into terms, ALL must match somewhere
                         if (term) {
-                            const date = new Date(tx.created_at)
+                            const date = new Date(tx.timestamp)
                                 .toLocaleString()
                                 .toLowerCase();
-                            const description = tx.description.toLowerCase();
-                            const amount = tx.amount.toString();
+                            // Search across all parsed fields
+                            const description = (tx.raw_description ||
+                                `${tx.filename || ''} ${tx.mode || ''} ${tx.parameters || ''} ${tx.type || ''}`).toLowerCase();
+                            const amount = tx.credits.toString();
                             const allFields = `${date} ${description} ${amount}`;
 
                             const terms = term.split(/\s+/).filter(t => t.length > 0);
@@ -2086,12 +2091,15 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
 
                 // Add data rows
                 dataToExport.forEach((tx) => {
-                    const date = new Date(tx.created_at).toLocaleString();
+                    const date = new Date(tx.timestamp).toLocaleString();
+                    // Reconstruct description from parsed fields
+                    const descriptionRaw = tx.raw_description ||
+                        (tx.filename ? `${tx.filename}${tx.mode ? '; ' + tx.mode : ''}${tx.parameters ? '; ' + tx.parameters : ''}` : tx.type);
                     // Escape quotes in description and wrap in quotes if contains comma
-                    const description = tx.description.includes(",")
-                        ? `"${tx.description.replace(/"/g, '""')}"`
-                        : tx.description;
-                    const amount = tx.amount;
+                    const description = descriptionRaw.includes(",")
+                        ? `"${descriptionRaw.replace(/"/g, '""')}"`
+                        : descriptionRaw;
+                    const amount = tx.credits;
                     csvRows.push([date, description, amount].join(","));
                 });
 
@@ -2633,8 +2641,8 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                         });
                         const data = await res.json();
 
-                        // Store data globally for CSV download
-                        currentHistoryData = data;
+                        // Store data globally for CSV download (API returns { history: [...] })
+                        currentHistoryData = data.history || [];
 
                         // Fetch current credit balance using session cookie
                         const creditsRes = await fetch("/credits", {
@@ -2648,7 +2656,7 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                             "";
 
                         // Render all data
-                        renderHistoryTable(data);
+                        renderHistoryTable(currentHistoryData);
                     } catch (err) {
                         tbody.innerHTML =
                             '<tr><td colspan="3">Failed to load history</td></tr>';
