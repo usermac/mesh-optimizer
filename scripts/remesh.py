@@ -272,6 +272,17 @@ def process(input_path, output_path, target_faces, texture_size):
     )
     bpy.ops.object.mode_set(mode="OBJECT")
 
+    # Recalculate normals - QuadriFlow can produce inconsistent normals
+    # that cause black spots during baking
+    bpy.ops.object.select_all(action="DESELECT")
+    low_poly.select_set(True)
+    bpy.context.view_layer.objects.active = low_poly
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.select_all(action="SELECT")
+    bpy.ops.mesh.normals_make_consistent(inside=False)
+    bpy.ops.object.mode_set(mode="OBJECT")
+    print("[INFO] Recalculated normals for consistent baking")
+
     # Calculate dynamic bake settings based on model size
     # This prevents black artifacts on clean geometry while handling messy AI meshes
     dimensions = low_poly.dimensions
