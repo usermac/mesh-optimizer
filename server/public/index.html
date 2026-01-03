@@ -226,7 +226,7 @@
                         class="font-bold text-small"
                         >Help & Guide</a
                     >
-                    <button type="button" id="changelogLink" class="text-small text-muted" style="background:none; border:none; padding:0; margin:0; cursor:pointer; font-family: inherit;" aria-label="View changelog, current version 1.0.6 beta">v1.0.6beta <span class="text-primary">(2026-01-02)</span></button>
+                    <button type="button" id="changelogLink" class="text-small text-muted" style="background:none; border:none; padding:0; margin:0; cursor:pointer; font-family: inherit;" aria-label="View changelog, current version 1.0.7 beta">v1.0.7beta <span class="text-primary">(2026-01-03)</span></button>
                 </div>
             </header>
 
@@ -1378,6 +1378,13 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                         <button type="button" class="modal-close" onclick="closeModal('changelogModal')" aria-label="Close changelog">&times;</button>
                     </div>
                     <div class="modal-body">
+                        <section class="content-section">
+                            <h3>v1.0.7beta <span class="text-muted">(2026-01-03)</span></h3>
+                            <ul class="pl-20">
+                                <li><strong>AI Mesh Support:</strong> Added automatic vertex merging and cleanup for AI-generated meshes. Both Decimate and Remesh modes now handle overlapping vertices and loose geometry that previously caused failures.</li>
+                                <li><strong>Remesh Quality:</strong> Improved normal map baking pipeline with proper mesh preprocessing for higher fidelity detail capture on low-poly output.</li>
+                            </ul>
+                        </section>
                         <section class="content-section">
                             <h3>v1.0.6beta <span class="text-muted">(2026-01-02)</span></h3>
                             <ul class="pl-20">
