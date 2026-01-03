@@ -143,6 +143,11 @@ def process(input_path, output_path, target_faces, texture_size):
     )
     bpy.context.scene.cycles.use_adaptive_sampling = False
 
+    # Set color management for accurate baking - Standard = raw sRGB, no cinematic grading
+    bpy.context.scene.display_settings.display_device = 'sRGB'
+    bpy.context.scene.view_settings.view_transform = 'Standard'
+    print("[INFO] Color management set to Standard for accurate baking")
+
     # 1. Import
     high_poly = import_model(input_path)
     original_face_count = len(high_poly.data.polygons)
@@ -329,8 +334,56 @@ def process(input_path, output_path, target_faces, texture_size):
         node.location = (-300, 200 if is_color else -200)
         return node
 
-    # 6. Bake Diffuse
-    print("[INFO] Baking Diffuse...")
+    def setup_emission_for_bake(obj):
+        """Convert materials to emission shaders for accurate color baking.
+
+        This ensures we bake pure albedo (Color In = Color Out) without
+        any lighting/shading contribution from Principled BSDF.
+        """
+        for mat in obj.data.materials:
+            if mat is None or not mat.use_nodes:
+                continue
+            mat_nodes = mat.node_tree.nodes
+            mat_links = mat.node_tree.links
+
+            # Find the Principled BSDF
+            principled = None
+            for node in mat_nodes:
+                if node.type == 'BSDF_PRINCIPLED':
+                    principled = node
+                    break
+
+            if principled is None:
+                continue
+
+            # Get the Base Color input (could be texture or color value)
+            base_color_input = principled.inputs.get('Base Color')
+            if base_color_input is None:
+                continue
+
+            # Create Emission shader
+            emission = mat_nodes.new('ShaderNodeEmission')
+            emission.location = (principled.location.x, principled.location.y - 200)
+
+            # Copy color or link texture to emission
+            if base_color_input.is_linked:
+                # Texture connected - relink it to emission
+                from_socket = base_color_input.links[0].from_socket
+                mat_links.new(from_socket, emission.inputs['Color'])
+            else:
+                # Just a color value
+                emission.inputs['Color'].default_value = base_color_input.default_value
+
+            emission.inputs['Strength'].default_value = 1.0
+
+            # Find Material Output and connect emission
+            for node in mat_nodes:
+                if node.type == 'OUTPUT_MATERIAL':
+                    mat_links.new(emission.outputs['Emission'], node.inputs['Surface'])
+                    break
+
+    # 6. Bake Color (EMIT) - pure albedo without lighting
+    print("[INFO] Baking Color (EMIT)...")
     diffuse_node = create_bake_image("BakedDiffuse", is_color=True)
     nodes.active = diffuse_node
 
@@ -339,26 +392,29 @@ def process(input_path, output_path, target_faces, texture_size):
     bake_margin = max(4, texture_size // 256)  # 512→2, 1024→4, 2048→8, 4096→16
     print(f"[INFO] Using bake margin: {bake_margin}px for {texture_size}px texture")
 
+    # Convert high-poly materials to emission for accurate color baking
+    print("[INFO] Setting up emission shaders for color bake...")
+    setup_emission_for_bake(high_poly)
+
     # Selection: Select High, then Low (Active)
     bpy.ops.object.select_all(action="DESELECT")
     high_poly.select_set(True)
     low_poly.select_set(True)
     bpy.context.view_layer.objects.active = low_poly
 
-    # Bake call with dynamic cage_extrusion based on model size
+    # Bake EMIT for pure albedo (no lighting/shading contribution)
     try:
         bpy.ops.object.bake(
-            type="DIFFUSE",
-            pass_filter={"COLOR"},
+            type="EMIT",  # EMIT = raw color, no lighting
             use_selected_to_active=True,
-            cage_extrusion=cage_ext,   # Dynamic: 1% of model size
-            max_ray_distance=ray_dist, # 1.5x cage for safety margin
+            cage_extrusion=cage_ext,
+            max_ray_distance=ray_dist,
             margin=bake_margin,
-            margin_type='EXTEND',      # Prevents black seam bleeding
+            margin_type='EXTEND',
         )
-        print("[INFO] Diffuse bake completed")
+        print("[INFO] Color bake completed")
     except Exception as e:
-        print(f"[WARN] Diffuse bake failed: {e}")
+        print(f"[WARN] Color bake failed: {e}")
 
     # Connect Diffuse
     mat.node_tree.links.new(diffuse_node.outputs["Color"], bsdf.inputs["Base Color"])
