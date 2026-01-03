@@ -128,6 +128,60 @@ fn compact_vertices(vertices: &[Vertex], indices: &[u32]) -> (Vec<Vertex>, Vec<u
     (new_vertices, new_indices)
 }
 
+/// Merge vertices with positions within threshold distance.
+/// Critical for AI-generated meshes that have overlapping vertices.
+fn merge_duplicate_vertices(vertices: &mut Vec<Vertex>, indices: &mut Vec<u32>, threshold: f32) {
+    use std::collections::HashMap;
+
+    // Quantize positions to grid for fast lookup
+    let quantize = |v: f32| -> i32 { (v / threshold).round() as i32 };
+
+    // Map: quantized_position -> canonical vertex index
+    let mut pos_to_idx: HashMap<(i32, i32, i32), u32> = HashMap::new();
+    // Map: old vertex index -> new vertex index
+    let mut remap: Vec<u32> = Vec::with_capacity(vertices.len());
+
+    let verts_before = vertices.len();
+
+    for v in vertices.iter() {
+        let key = (quantize(v.pos[0]), quantize(v.pos[1]), quantize(v.pos[2]));
+
+        if let Some(&canonical_idx) = pos_to_idx.get(&key) {
+            // Duplicate - map to existing vertex
+            remap.push(canonical_idx);
+        } else {
+            // New unique position
+            let new_idx = pos_to_idx.len() as u32;
+            pos_to_idx.insert(key, new_idx);
+            remap.push(new_idx);
+        }
+    }
+
+    // Build new vertex array with only unique positions
+    let mut new_vertices: Vec<Vertex> = vec![Vertex::default(); pos_to_idx.len()];
+    for (old_idx, v) in vertices.iter().enumerate() {
+        let new_idx = remap[old_idx] as usize;
+        new_vertices[new_idx] = *v;
+    }
+
+    // Remap indices
+    for idx in indices.iter_mut() {
+        *idx = remap[*idx as usize];
+    }
+
+    let verts_after = new_vertices.len();
+    if verts_before != verts_after {
+        println!(
+            "MERGE_VERTICES: {} -> {} ({} duplicates removed)",
+            verts_before,
+            verts_after,
+            verts_before - verts_after
+        );
+    }
+
+    *vertices = new_vertices;
+}
+
 fn process_image(img: DynamicImage) -> Option<Vec<u8>> {
     println!("TEXTURE_OPENED: {}x{}", img.width(), img.height());
     let (w, h) = img.dimensions();
@@ -165,7 +219,7 @@ fn main() -> Result<()> {
 
     // 2. Load Geometry based on format
     println!("LOADING_GEOMETRY_START");
-    let (vertices, indices, texture_data, base_color) = match extension.as_str() {
+    let (mut vertices, mut indices, texture_data, base_color) = match extension.as_str() {
         "obj" => load_obj(&args.input)?,
         "glb" | "gltf" => load_gltf(&args.input)?,
         "fbx" => load_fbx(&args.input)?,
@@ -183,6 +237,9 @@ fn main() -> Result<()> {
     if vertices.is_empty() {
         return Err(anyhow!("Model contains no vertices"));
     }
+
+    // 2.5. Merge duplicate vertices (fixes AI-generated meshes)
+    merge_duplicate_vertices(&mut vertices, &mut indices, 0.0001);
 
     // 3. Optimize (Decimate)
     println!("SIMPLIFICATION_START");
