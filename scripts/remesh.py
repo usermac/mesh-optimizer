@@ -272,6 +272,16 @@ def process(input_path, output_path, target_faces, texture_size):
     )
     bpy.ops.object.mode_set(mode="OBJECT")
 
+    # Calculate dynamic bake settings based on model size
+    # This prevents black artifacts on clean geometry while handling messy AI meshes
+    dimensions = low_poly.dimensions
+    max_dim = max(dimensions)
+    # Scale cage_extrusion: ~1% of model size, clamped to reasonable range
+    # Small models (0.3 units): 0.003, Large models (10 units): 0.1
+    cage_ext = max(0.001, min(0.1, max_dim * 0.01))
+    ray_dist = cage_ext * 1.5  # Ray distance slightly larger than cage
+    print(f"[INFO] Model size: {max_dim:.3f}, cage_extrusion: {cage_ext:.4f}, ray_dist: {ray_dist:.4f}")
+
     # 5. Prepare Materials for Baking
     print("[INFO] Preparing materials for baking...")
     mat = bpy.data.materials.new(name="BakedMaterial")
@@ -314,17 +324,16 @@ def process(input_path, output_path, target_faces, texture_size):
     low_poly.select_set(True)
     bpy.context.view_layer.objects.active = low_poly
 
-    # Bake call with cage_extrusion for AI meshes with overlapping geometry
-    # 0.1 is a good middle ground - too small = black spots, too big = ghosting
+    # Bake call with dynamic cage_extrusion based on model size
     try:
         bpy.ops.object.bake(
             type="DIFFUSE",
             pass_filter={"COLOR"},
             use_selected_to_active=True,
-            cage_extrusion=0.1,     # Handle messy AI geometry
-            max_ray_distance=0.15,  # Slightly larger to catch offset surfaces
+            cage_extrusion=cage_ext,   # Dynamic: 1% of model size
+            max_ray_distance=ray_dist, # 1.5x cage for safety margin
             margin=bake_margin,
-            margin_type='EXTEND',   # Prevents black seam bleeding
+            margin_type='EXTEND',      # Prevents black seam bleeding
         )
         print("[INFO] Diffuse bake completed")
     except Exception as e:
@@ -348,10 +357,10 @@ def process(input_path, output_path, target_faces, texture_size):
         bpy.ops.object.bake(
             type="NORMAL",
             use_selected_to_active=True,
-            cage_extrusion=0.1,     # Match diffuse cage for consistency
-            max_ray_distance=0.15,  # Match diffuse ray distance
+            cage_extrusion=cage_ext,   # Dynamic: matches diffuse
+            max_ray_distance=ray_dist, # Dynamic: matches diffuse
             margin=bake_margin,
-            margin_type='EXTEND',   # Prevents black seam bleeding
+            margin_type='EXTEND',      # Prevents black seam bleeding
         )
         print("[INFO] Normal bake completed")
     except Exception as e:
