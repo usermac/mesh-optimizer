@@ -220,7 +220,13 @@ def process(input_path, output_path, target_faces, texture_size):
     bpy.context.view_layer.objects.active = low_poly
     bpy.ops.object.mode_set(mode="EDIT")
     bpy.ops.mesh.select_all(action="SELECT")
-    bpy.ops.uv.smart_project(island_margin=0.01)
+    bpy.ops.uv.smart_project(
+        angle_limit=1.15192,  # 66 degrees - reduces tiny islands
+        island_margin=0.02,   # Increased spacing between islands
+        area_weight=0.0,
+        correct_aspect=True,
+        scale_to_bounds=False,
+    )
     bpy.ops.object.mode_set(mode="OBJECT")
 
     # 5. Prepare Materials for Baking
@@ -254,6 +260,11 @@ def process(input_path, output_path, target_faces, texture_size):
     diffuse_node = create_bake_image("BakedDiffuse", is_color=True)
     nodes.active = diffuse_node
 
+    # Calculate dynamic margin based on texture size
+    # Rule: ~4 pixels per 1024px of resolution (scales with texture)
+    bake_margin = max(4, texture_size // 256)  # 512→2, 1024→4, 2048→8, 4096→16
+    print(f"[INFO] Using bake margin: {bake_margin}px for {texture_size}px texture")
+
     # Selection: Select High, then Low (Active)
     bpy.ops.object.select_all(action="DESELECT")
     high_poly.select_set(True)
@@ -267,7 +278,8 @@ def process(input_path, output_path, target_faces, texture_size):
             pass_filter={"COLOR"},
             use_selected_to_active=True,
             max_ray_distance=0.1,
-            margin=16,
+            margin=bake_margin,
+            margin_type='EXTEND',  # Prevents black seam bleeding
         )
         print("[INFO] Diffuse bake completed")
     except Exception as e:
@@ -292,7 +304,8 @@ def process(input_path, output_path, target_faces, texture_size):
             type="NORMAL",
             use_selected_to_active=True,
             max_ray_distance=0.1,
-            margin=16,
+            margin=bake_margin,
+            margin_type='EXTEND',  # Prevents black seam bleeding
         )
         print("[INFO] Normal bake completed")
     except Exception as e:
