@@ -266,9 +266,9 @@ def process(input_path, output_path, target_faces, texture_size):
     # CRITICAL: Use Blender 3.6+ packer for near-xatlas quality
     # This is much better than the old packer and stable on all platforms
     bpy.ops.uv.pack_islands(
-        margin=0.005,              # Tight packing margin
-        rotate=True,               # Allow rotation for better fit
-        shape_method='CONVEX_HULL' # Best balance of speed/density
+        margin=0.005,           # Tight packing margin
+        rotate=True,            # Allow rotation for better fit
+        shape_method='AABB'     # Fast axis-aligned bounding box (CONCAVE/CONVEX/AABB)
     )
     bpy.ops.object.mode_set(mode="OBJECT")
 
