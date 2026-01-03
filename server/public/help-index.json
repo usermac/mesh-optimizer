@@ -1,5 +1,5 @@
 {
-  "generated": "2026-01-03T06:28:55.892Z",
+  "generated": "2026-01-03T06:39:26.288Z",
   "version": "1.0",
   "entries": [
     {
@@ -555,6 +555,14 @@
       "modalName": "Get Free Credits",
       "section": null,
       "context": "Log In or Get Free Credits &times; Try MeshOpt for free! Enter your email below to get started with -- free credits. &#10003; Welcome! You're now logged in. We've also emailed your API key for programmatic use. &#10003; Welcome back! You're now logged in. We've also emailed your API key as a reminde",
+      "keywords": []
+    },
+    {
+      "text": "v1.0.8beta (2026-01-03)",
+      "modal": "changelogModal",
+      "modalName": "Changelog",
+      "section": null,
+      "context": "v1.0.8beta (2026-01-03) - UV Pipeline Hardening: Replaced xatlas with native Blender UV tools for cross-platform stability. No more C++ build failures on Apple Silicon or Linux. - Bake Quality: Added",
       "keywords": []
     },
     {

@@ -226,7 +226,7 @@
                         class="font-bold text-small"
                         >Help & Guide</a
                     >
-                    <button type="button" id="changelogLink" class="text-small text-muted" style="background:none; border:none; padding:0; margin:0; cursor:pointer; font-family: inherit;" aria-label="View changelog, current version 1.0.7 beta">v1.0.7beta <span class="text-primary">(2026-01-03)</span></button>
+                    <button type="button" id="changelogLink" class="text-small text-muted" style="background:none; border:none; padding:0; margin:0; cursor:pointer; font-family: inherit;" aria-label="View changelog, current version 1.0.8 beta">v1.0.8beta <span class="text-primary">(2026-01-03)</span></button>
                 </div>
             </header>
 
@@ -1378,6 +1378,14 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                         <button type="button" class="modal-close" onclick="closeModal('changelogModal')" aria-label="Close changelog">&times;</button>
                     </div>
                     <div class="modal-body">
+                        <section class="content-section">
+                            <h3>v1.0.8beta <span class="text-muted">(2026-01-03)</span></h3>
+                            <ul class="pl-20">
+                                <li><strong>UV Pipeline Hardening:</strong> Replaced xatlas with native Blender UV tools for cross-platform stability. No more C++ build failures on Apple Silicon or Linux.</li>
+                                <li><strong>Bake Quality:</strong> Added automatic normal recalculation after QuadriFlow remesh. Dynamic cage/ray settings based on mesh complexity - dense meshes get tight tolerances, simple meshes get generous settings.</li>
+                                <li><strong>Black Spot Fix:</strong> Eliminated baking artifacts on clean geometry while preserving detail on complex textured scenes.</li>
+                            </ul>
+                        </section>
                         <section class="content-section">
                             <h3>v1.0.7beta <span class="text-muted">(2026-01-03)</span></h3>
                             <ul class="pl-20">
