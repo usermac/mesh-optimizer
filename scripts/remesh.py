@@ -253,14 +253,22 @@ def process(input_path, output_path, target_faces, texture_size):
     print(f"[INFO] Mesh has {island_count} disconnected islands - this affects UV quality")
     bpy.ops.mesh.select_all(action='SELECT')
 
-    # UV unwrap with aggressive settings to minimize island count
-    # Higher angle_limit = more faces merged into each island
+    # Smart UV Project with tuned settings for production
+    # 66° angle = fewer islands with acceptable distortion
     bpy.ops.uv.smart_project(
-        angle_limit=1.22173,  # 70 degrees - balance between islands and distortion
-        island_margin=0.005,  # Tighter margin for better UV space utilization
+        angle_limit=1.1519,   # 66 degrees - fewer islands, acceptable distortion
+        island_margin=0.01,   # Small gap to prevent texture bleed
         area_weight=0.0,
         correct_aspect=True,
-        scale_to_bounds=True,  # Use full UV space
+        scale_to_bounds=True,
+    )
+
+    # CRITICAL: Use Blender 3.6+ packer for near-xatlas quality
+    # This is much better than the old packer and stable on all platforms
+    bpy.ops.uv.pack_islands(
+        margin=0.005,              # Tight packing margin
+        rotate=True,               # Allow rotation for better fit
+        shape_method='CONVEX_HULL' # Best balance of speed/density
     )
     bpy.ops.object.mode_set(mode="OBJECT")
 
@@ -306,15 +314,17 @@ def process(input_path, output_path, target_faces, texture_size):
     low_poly.select_set(True)
     bpy.context.view_layer.objects.active = low_poly
 
-    # Bake call
+    # Bake call with cage_extrusion for AI meshes with overlapping geometry
+    # 0.1 is a good middle ground - too small = black spots, too big = ghosting
     try:
         bpy.ops.object.bake(
             type="DIFFUSE",
             pass_filter={"COLOR"},
             use_selected_to_active=True,
-            max_ray_distance=0.1,
+            cage_extrusion=0.1,     # Handle messy AI geometry
+            max_ray_distance=0.15,  # Slightly larger to catch offset surfaces
             margin=bake_margin,
-            margin_type='EXTEND',  # Prevents black seam bleeding
+            margin_type='EXTEND',   # Prevents black seam bleeding
         )
         print("[INFO] Diffuse bake completed")
     except Exception as e:
@@ -338,9 +348,10 @@ def process(input_path, output_path, target_faces, texture_size):
         bpy.ops.object.bake(
             type="NORMAL",
             use_selected_to_active=True,
-            max_ray_distance=0.1,
+            cage_extrusion=0.1,     # Match diffuse cage for consistency
+            max_ray_distance=0.15,  # Match diffuse ray distance
             margin=bake_margin,
-            margin_type='EXTEND',  # Prevents black seam bleeding
+            margin_type='EXTEND',   # Prevents black seam bleeding
         )
         print("[INFO] Normal bake completed")
     except Exception as e:
