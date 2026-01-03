@@ -220,12 +220,47 @@ def process(input_path, output_path, target_faces, texture_size):
     bpy.context.view_layer.objects.active = low_poly
     bpy.ops.object.mode_set(mode="EDIT")
     bpy.ops.mesh.select_all(action="SELECT")
+
+    # Clean up mesh before UV unwrap - merge loose geometry
+    # This prevents fragmented UV islands from disconnected faces
+    bpy.ops.mesh.remove_doubles(threshold=0.0001)
+
+    # Diagnostic: count disconnected mesh islands
+    bpy.ops.mesh.select_all(action='DESELECT')
+    bpy.ops.mesh.select_all(action='SELECT')
+    # Get island count by selecting linked and counting iterations
+    import bmesh
+    bm_check = bmesh.from_edit_mesh(low_poly.data)
+    island_count = 0
+    unvisited = set(range(len(bm_check.verts)))
+    bm_check.verts.ensure_lookup_table()
+    while unvisited:
+        start_idx = next(iter(unvisited))
+        stack = [start_idx]
+        island = set()
+        while stack:
+            vi = stack.pop()
+            if vi in island:
+                continue
+            island.add(vi)
+            unvisited.discard(vi)
+            v = bm_check.verts[vi]
+            for e in v.link_edges:
+                ov = e.other_vert(v)
+                if ov.index in unvisited:
+                    stack.append(ov.index)
+        island_count += 1
+    print(f"[INFO] Mesh has {island_count} disconnected islands - this affects UV quality")
+    bpy.ops.mesh.select_all(action='SELECT')
+
+    # UV unwrap with aggressive settings to minimize island count
+    # Higher angle_limit = more faces merged into each island
     bpy.ops.uv.smart_project(
-        angle_limit=1.15192,  # 66 degrees - reduces tiny islands
-        island_margin=0.02,   # Increased spacing between islands
+        angle_limit=1.22173,  # 70 degrees - balance between islands and distortion
+        island_margin=0.005,  # Tighter margin for better UV space utilization
         area_weight=0.0,
         correct_aspect=True,
-        scale_to_bounds=False,
+        scale_to_bounds=True,  # Use full UV space
     )
     bpy.ops.object.mode_set(mode="OBJECT")
 
