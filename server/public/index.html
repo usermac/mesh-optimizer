@@ -189,7 +189,6 @@
                 <div style="flex: 1;">
                     <label for="targetFaces">Target Faces</label>
                     <input type="number" id="targetFaces" value="5000" aria-label="Target number of faces for remesh" />
-                    <span id="remeshFaceResult" class="text-muted text-small"></span>
                 </div>
                 <div style="flex: 1;">
                     <label for="textureSize">Texture Size (px)</label>
@@ -201,6 +200,7 @@
                     </select>
                 </div>
             </div>
+            <div id="remeshFaceResult" class="text-muted text-small d-none" style="white-space: nowrap;"></div>
 
             <button id="processBtn" disabled aria-describedby="processStatus">OPTIMIZE MESH</button>
             <span id="processStatus" class="visually-hidden" aria-live="polite"></span>
@@ -2204,7 +2204,9 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 // Restore original helper text for decimate slider
                 document.getElementById("ratioHelp").textContent = "Lower = Less Detail. Higher = More Detail.";
                 // Clear remesh face result
-                document.getElementById("remeshFaceResult").textContent = "";
+                const remeshResult = document.getElementById("remeshFaceResult");
+                remeshResult.textContent = "";
+                remeshResult.style.display = "none";
                 processBtn.disabled = false;
                 updateProcessButton();
             }
@@ -2222,6 +2224,7 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 } else {
                     decimateControls.style.display = "flex";
                     remeshControls.style.display = "none";
+                    document.getElementById("remeshFaceResult").style.display = "none";
                 }
                 resetToOptimize();
             });
@@ -2576,7 +2579,9 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                         // Show method prefix (Remesh = quadriflow, Dec = decimate fallback)
                         const methodPrefix = data.remeshMethod === "quadriflow" ? "Remesh" : "Dec";
                         const faceCountText = `${methodPrefix} ${orig} \u2192 ${out} faces`;
-                        document.getElementById("remeshFaceResult").textContent = faceCountText;
+                        const remeshResultEl = document.getElementById("remeshFaceResult");
+                        remeshResultEl.textContent = faceCountText;
+                        remeshResultEl.style.display = "block";
                     }
                 } catch (e) {
                     announceStatus("Error: " + e.message);
