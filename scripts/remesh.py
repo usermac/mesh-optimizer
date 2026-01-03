@@ -283,23 +283,23 @@ def process(input_path, output_path, target_faces, texture_size):
     bpy.ops.object.mode_set(mode="OBJECT")
     print("[INFO] Recalculated normals for consistent baking")
 
-    # Calculate dynamic bake settings based on model size AND complexity
+    # Calculate dynamic bake settings based on model complexity
     dimensions = low_poly.dimensions
     max_dim = max(dimensions)
     high_poly_faces = len(high_poly.data.polygons)
 
-    # High-poly models (>100k faces): tight settings to preserve detail
-    # Low-poly models (<100k faces): generous settings for QuadriFlow differences
+    # High-poly models (>100k faces): use proven fixed values
+    # Low-poly models (<100k faces): generous dynamic settings for QuadriFlow gaps
     if high_poly_faces > 100000:
-        # Dense mesh - use tight tolerances to avoid ghosting
-        cage_ext = max(0.001, min(0.1, max_dim * 0.001))  # 0.1% of model
-        ray_dist = max(0.01, min(0.2, max_dim * 0.002))   # 0.2% of model
-        print(f"[INFO] Dense mesh ({high_poly_faces} faces): tight bake settings")
+        # Dense mesh - fixed values that worked well for textured models
+        cage_ext = 0.1
+        ray_dist = 0.15
+        print(f"[INFO] Dense mesh ({high_poly_faces} faces): fixed bake settings")
     else:
-        # Simple mesh - generous settings for topology differences
+        # Simple mesh - scale to model size for clean geometry
         cage_ext = max(0.001, min(0.5, max_dim * 0.005))  # 0.5% of model
         ray_dist = max(0.01, max_dim * 0.05)              # 5% of model
-        print(f"[INFO] Simple mesh ({high_poly_faces} faces): generous bake settings")
+        print(f"[INFO] Simple mesh ({high_poly_faces} faces): dynamic bake settings")
 
     print(f"[INFO] Model size: {max_dim:.3f}, cage_extrusion: {cage_ext:.4f}, ray_dist: {ray_dist:.4f}")
 
