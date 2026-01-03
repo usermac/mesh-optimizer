@@ -93,6 +93,30 @@ def import_model(filepath):
     high_poly.select_set(True)
     bpy.context.view_layer.objects.active = high_poly
 
+    # Clean up mesh - critical for AI-generated meshes and many exports
+    # Without this, QuadriFlow fails and baking produces artifacts
+    verts_before = len(high_poly.data.vertices)
+    print(f"[INFO] Cleaning mesh ({verts_before} vertices)...")
+
+    # Use bmesh for reliable vertex merging (works in all Blender contexts)
+    import bmesh
+    bm = bmesh.new()
+    bm.from_mesh(high_poly.data)
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)  # 0.1mm threshold
+    # Remove loose verts/edges
+    loose_verts = [v for v in bm.verts if not v.link_faces]
+    bmesh.ops.delete(bm, geom=loose_verts, context='VERTS')
+    loose_edges = [e for e in bm.edges if not e.link_faces]
+    bmesh.ops.delete(bm, geom=loose_edges, context='EDGES')
+    bm.to_mesh(high_poly.data)
+    bm.free()
+    high_poly.data.update()
+
+    verts_after = len(high_poly.data.vertices)
+    verts_removed = verts_before - verts_after
+    if verts_removed > 0:
+        print(f"[INFO] Mesh cleanup removed {verts_removed} duplicate/loose vertices")
+
     print(f"[INFO] HighPoly mesh created with {len(high_poly.data.polygons)} faces")
     return high_poly
 
