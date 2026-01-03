@@ -4,6 +4,7 @@ import sys
 import traceback
 
 import bpy
+import numpy as np
 
 
 def reset_scene():
@@ -382,6 +383,84 @@ def process(input_path, output_path, target_faces, texture_size):
                     mat_links.new(emission.outputs['Emission'], node.inputs['Surface'])
                     break
 
+    def setup_metallic_emission_for_bake(obj):
+        """Route Metallic value to Emission shader for baking.
+
+        Blender has no direct METALLIC bake type, so we route the metallic
+        value through an Emission shader and bake EMIT.
+        """
+        for mat in obj.data.materials:
+            if mat is None or not mat.use_nodes:
+                continue
+            mat_nodes = mat.node_tree.nodes
+            mat_links = mat.node_tree.links
+
+            # Find the Principled BSDF
+            principled = None
+            for node in mat_nodes:
+                if node.type == 'BSDF_PRINCIPLED':
+                    principled = node
+                    break
+
+            if principled is None:
+                continue
+
+            # Get Metallic input (could be texture or value)
+            metallic_input = principled.inputs.get('Metallic')
+            if metallic_input is None:
+                continue
+
+            # Create Emission shader
+            emission = mat_nodes.new('ShaderNodeEmission')
+            emission.location = (principled.location.x, principled.location.y - 400)
+
+            # Copy metallic value or link texture to emission
+            if metallic_input.is_linked:
+                # Texture connected - relink it to emission
+                from_socket = metallic_input.links[0].from_socket
+                mat_links.new(from_socket, emission.inputs['Color'])
+            else:
+                # Just a value - convert to grayscale color
+                metallic_value = metallic_input.default_value
+                emission.inputs['Color'].default_value = (metallic_value, metallic_value, metallic_value, 1.0)
+
+            emission.inputs['Strength'].default_value = 1.0
+
+            # Find Material Output and connect emission
+            for node in mat_nodes:
+                if node.type == 'OUTPUT_MATERIAL':
+                    mat_links.new(emission.outputs['Emission'], node.inputs['Surface'])
+                    break
+
+    def pack_orm_texture(ao_img, rough_img, metal_img, tex_size):
+        """Pack AO, Roughness, Metallic into single ORM texture.
+
+        Channel layout (glTF 2.0 standard):
+        - Red: Ambient Occlusion
+        - Green: Roughness
+        - Blue: Metallic
+        """
+        size = tex_size * tex_size
+
+        # Extract first channel (grayscale) from each image
+        ao_pixels = np.array(ao_img.pixels[:]).reshape(-1, 4)[:, 0]
+        rough_pixels = np.array(rough_img.pixels[:]).reshape(-1, 4)[:, 0]
+        metal_pixels = np.array(metal_img.pixels[:]).reshape(-1, 4)[:, 0]
+
+        # Create ORM image
+        orm_img = bpy.data.images.new("BakedORM", tex_size, tex_size)
+        orm_img.colorspace_settings.name = 'Non-Color'
+
+        # Pack channels
+        orm_pixels = np.zeros((size, 4), dtype=np.float32)
+        orm_pixels[:, 0] = ao_pixels       # R = AO
+        orm_pixels[:, 1] = rough_pixels    # G = Roughness
+        orm_pixels[:, 2] = metal_pixels    # B = Metallic
+        orm_pixels[:, 3] = 1.0             # A = opaque
+
+        orm_img.pixels[:] = orm_pixels.flatten()
+        return orm_img
+
     # 6. Bake Color (EMIT) - pure albedo without lighting
     print("[INFO] Baking Color (EMIT)...")
     diffuse_node = create_bake_image("BakedDiffuse", is_color=True)
@@ -451,7 +530,106 @@ def process(input_path, output_path, target_faces, texture_size):
     )
     mat.node_tree.links.new(normal_map_node.outputs["Normal"], bsdf.inputs["Normal"])
 
-    # 8. Export
+    # 8. Bake AO (Ambient Occlusion)
+    print("[INFO] Baking Ambient Occlusion...")
+    ao_node = create_bake_image("BakeAO", is_color=False)
+    nodes.active = ao_node
+
+    # AO bake only needs low-poly (bakes self-occlusion)
+    bpy.ops.object.select_all(action="DESELECT")
+    low_poly.select_set(True)
+    bpy.context.view_layer.objects.active = low_poly
+
+    try:
+        bpy.ops.object.bake(
+            type='AO',
+            margin=bake_margin,
+            margin_type='EXTEND',
+        )
+        print("[INFO] AO bake completed")
+    except Exception as e:
+        print(f"[WARN] AO bake failed: {e}")
+
+    # 9. Bake Roughness
+    print("[INFO] Baking Roughness...")
+    rough_node = create_bake_image("BakeRoughness", is_color=False)
+    nodes.active = rough_node
+
+    # Re-select for roughness bake (high to low)
+    bpy.ops.object.select_all(action="DESELECT")
+    high_poly.select_set(True)
+    low_poly.select_set(True)
+    bpy.context.view_layer.objects.active = low_poly
+
+    try:
+        bpy.ops.object.bake(
+            type='ROUGHNESS',
+            use_selected_to_active=True,
+            cage_extrusion=cage_ext,
+            max_ray_distance=ray_dist,
+            margin=bake_margin,
+            margin_type='EXTEND',
+        )
+        print("[INFO] Roughness bake completed")
+    except Exception as e:
+        print(f"[WARN] Roughness bake failed: {e}")
+
+    # 10. Bake Metallic (via EMIT workaround - Blender has no METALLIC bake type)
+    print("[INFO] Baking Metallic...")
+    metal_node = create_bake_image("BakeMetal", is_color=False)
+    nodes.active = metal_node
+
+    # Setup emission routing for metallic on high-poly
+    setup_metallic_emission_for_bake(high_poly)
+
+    # Re-select for metallic bake
+    bpy.ops.object.select_all(action="DESELECT")
+    high_poly.select_set(True)
+    low_poly.select_set(True)
+    bpy.context.view_layer.objects.active = low_poly
+
+    try:
+        bpy.ops.object.bake(
+            type='EMIT',
+            use_selected_to_active=True,
+            cage_extrusion=cage_ext,
+            max_ray_distance=ray_dist,
+            margin=bake_margin,
+            margin_type='EXTEND',
+        )
+        print("[INFO] Metallic bake completed")
+    except Exception as e:
+        print(f"[WARN] Metallic bake failed: {e}")
+
+    # 11. Pack ORM texture
+    print("[INFO] Packing ORM texture...")
+    orm_img = pack_orm_texture(
+        ao_node.image,
+        rough_node.image,
+        metal_node.image,
+        texture_size
+    )
+    print("[INFO] ORM texture packed (R=AO, G=Roughness, B=Metallic)")
+
+    # Create ORM texture node with Separate Color for glTF export
+    orm_tex_node = nodes.new("ShaderNodeTexImage")
+    orm_tex_node.image = orm_img
+    orm_tex_node.location = (-500, -400)
+
+    separate_node = nodes.new("ShaderNodeSeparateColor")
+    separate_node.location = (-200, -400)
+    mat.node_tree.links.new(orm_tex_node.outputs["Color"], separate_node.inputs["Color"])
+
+    # Connect to Principled BSDF (glTF exporter recognizes this pattern)
+    mat.node_tree.links.new(separate_node.outputs["Green"], bsdf.inputs["Roughness"])
+    mat.node_tree.links.new(separate_node.outputs["Blue"], bsdf.inputs["Metallic"])
+
+    # Cleanup temp bake images (keep only packed ORM)
+    for img_name in ['BakeAO', 'BakeRoughness', 'BakeMetal']:
+        if img_name in bpy.data.images:
+            bpy.data.images.remove(bpy.data.images[img_name])
+
+    # 12. Export
     # Delete High Poly so it doesn't get exported
     bpy.ops.object.select_all(action="DESELECT")
     high_poly.select_set(True)
@@ -463,11 +641,12 @@ def process(input_path, output_path, target_faces, texture_size):
     bpy.context.view_layer.objects.active = low_poly
 
     # Export GLB
+    # Note: AUTO uses PNG for non-color data (ORM, Normal), JPEG for color (Diffuse)
     bpy.ops.export_scene.gltf(
         filepath=output_path,
         use_selection=True,
         export_format="GLB",
-        export_image_format="JPEG",
+        export_image_format="AUTO",
     )
 
     # Verify GLB output was created
