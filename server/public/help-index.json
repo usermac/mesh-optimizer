@@ -1,5 +1,5 @@
 {
-  "generated": "2026-01-02T23:32:50.671Z",
+  "generated": "2026-01-03T03:50:22.759Z",
   "version": "1.0",
   "entries": [
     {
@@ -555,6 +555,14 @@
       "modalName": "Get Free Credits",
       "section": null,
       "context": "Log In or Get Free Credits &times; Try MeshOpt for free! Enter your email below to get started with -- free credits. &#10003; Welcome! You're now logged in. We've also emailed your API key for programmatic use. &#10003; Welcome back! You're now logged in. We've also emailed your API key as a reminde",
+      "keywords": []
+    },
+    {
+      "text": "v1.0.7beta (2026-01-03)",
+      "modal": "changelogModal",
+      "modalName": "Changelog",
+      "section": null,
+      "context": "v1.0.7beta (2026-01-03) - AI Mesh Support: Added automatic vertex merging and cleanup for AI-generated meshes. Both Decimate and Remesh modes now handle overlapping vertices and loose geometry that pr",
       "keywords": []
     },
     {

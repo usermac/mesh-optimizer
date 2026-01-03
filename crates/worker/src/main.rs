@@ -33,6 +33,10 @@ struct Args {
 
     #[arg(long, default_value_t = false)]
     usdz: bool,
+
+    /// Only output face count, don't process
+    #[arg(long, default_value_t = false)]
+    info: bool,
 }
 
 #[repr(C)]
@@ -228,6 +232,14 @@ fn main() -> Result<()> {
     println!("LOADING_GEOMETRY_END");
 
     println!("STATS: {} verts, {} indices", vertices.len(), indices.len());
+
+    // Info-only mode: just output face count and exit
+    if args.info {
+        let face_count = indices.len() / 3;
+        println!("FACE_COUNT: {}", face_count);
+        return Ok(());
+    }
+
     if let Some(ref tex) = texture_data {
         println!("TEXTURE: Found ({} bytes)", tex.len());
     }

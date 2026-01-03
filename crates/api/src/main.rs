@@ -1606,6 +1606,66 @@ async fn optimize_handler(
             );
         }
 
+        // Auto-decimation for high-poly remesh jobs
+        const AUTO_DECIMATE_THRESHOLD: usize = 500_000;
+        const AUTO_DECIMATE_TARGET: usize = 300_000;
+
+        let mut actual_input = input_filename_clone.clone();
+
+        if mode_clone == "remesh" {
+            // Get face count using mesh-optimizer --info
+            let info_output = tokio::process::Command::new("mesh-optimizer")
+                .arg("--input")
+                .arg(&input_filename_clone)
+                .arg("--output")
+                .arg("dummy.glb") // Required arg but not used with --info
+                .arg("--info")
+                .current_dir(&batch_dir_clone)
+                .output()
+                .await;
+
+            if let Ok(output) = info_output {
+                let stdout = String::from_utf8_lossy(&output.stdout);
+                if let Some(count_str) = stdout
+                    .lines()
+                    .find(|l| l.starts_with("FACE_COUNT: "))
+                    .map(|l| &l[12..])
+                {
+                    if let Ok(face_count) = count_str.trim().parse::<usize>() {
+                        if face_count > AUTO_DECIMATE_THRESHOLD {
+                            info!(
+                                "AUTO_DECIMATE: {} faces > {}k threshold, pre-decimating to {}k",
+                                face_count,
+                                AUTO_DECIMATE_THRESHOLD / 1000,
+                                AUTO_DECIMATE_TARGET / 1000
+                            );
+
+                            let pre_dec_output = batch_dir_clone.join("pre_decimated.glb");
+                            let dec_result = tokio::process::Command::new("mesh-optimizer")
+                                .arg("--input")
+                                .arg(&input_filename_clone)
+                                .arg("--output")
+                                .arg(&pre_dec_output)
+                                .arg("--target-faces")
+                                .arg(AUTO_DECIMATE_TARGET.to_string())
+                                .current_dir(&batch_dir_clone)
+                                .output()
+                                .await;
+
+                            if let Ok(r) = dec_result {
+                                if r.status.success() && pre_dec_output.exists() {
+                                    actual_input = pre_dec_output.to_string_lossy().to_string();
+                                    info!("AUTO_DECIMATE: success, using pre-decimated file");
+                                } else {
+                                    warn!("AUTO_DECIMATE: failed, using original file");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         // Run Command
         let mut cmd = if mode_clone == "remesh" {
             let script_path = std::env::current_dir()
@@ -1620,7 +1680,7 @@ async fn optimize_handler(
                 .arg(script_path)
                 .arg("--")
                 .arg("--input")
-                .arg(&input_filename_clone)
+                .arg(&actual_input)
                 .arg("--output")
                 .arg(&output_filename_clone)
                 .arg("--faces")
