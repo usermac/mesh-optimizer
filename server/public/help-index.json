@@ -1,5 +1,5 @@
 {
-  "generated": "2026-01-03T06:39:26.288Z",
+  "generated": "2026-01-04T16:02:08.720Z",
   "version": "1.0",
   "entries": [
     {
@@ -33,9 +33,11 @@
       "modal": "helpModal",
       "modalName": "Help & Guide",
       "section": null,
-      "context": "Premium Remesh (Bake) Cost: 2 Credits Best for: 3D Scans, Photogrammetry, and Organic shapes. How it works: It builds a brand new \"clean\" mesh (Retopology) and \"bakes\" the details from the high-qualit",
+      "context": "Premium Remesh (Bake) Cost: 2 Credits Best for: 3D Scans, Photogrammetry, Organic shapes, AI meshes, and messy CAD exports. How it works: It builds a brand new \"clean\" mesh (Retopology) and \"bakes\" th",
       "keywords": [
-        "cost:"
+        "cost:",
+        "balanced",
+        "high-fidelity"
       ]
     },
     {
@@ -309,6 +311,115 @@
       ]
     },
     {
+      "text": "What is MCP?",
+      "modal": "mcpModal",
+      "modalName": "MCP Integration",
+      "section": null,
+      "context": "What is MCP? Model Context Protocol (MCP) is an open standard that allows AI assistants to use external tools. By adding MeshOpt as an MCP server, your AI can optimize 3D meshes directly from conversa",
+      "keywords": []
+    },
+    {
+      "text": "Works With",
+      "modal": "mcpModal",
+      "modalName": "MCP Integration",
+      "section": null,
+      "context": "Works With - Claude Desktop - Anthropic's desktop app - Cursor - AI-powered code editor - Other MCP clients - Any app supporting the MCP specification (opens in new tab)",
+      "keywords": [
+        "cursor"
+      ]
+    },
+    {
+      "text": "Installation",
+      "modal": "mcpModal",
+      "modalName": "MCP Integration",
+      "section": null,
+      "context": "Installation Download the MCP connector (a small local tool that lets your AI talk to our API): Download for macOS / Linux / Windows (opens in new tab) Extract and note the path to meshopt-mcp-server",
+      "keywords": [
+        "meshopt-mcp-server"
+      ]
+    },
+    {
+      "text": "Your Current Settings",
+      "modal": "mcpModal",
+      "modalName": "MCP Integration",
+      "section": null,
+      "context": "Your Current Settings Loading...",
+      "keywords": []
+    },
+    {
+      "text": "Configuration",
+      "modal": "mcpModal",
+      "modalName": "MCP Integration",
+      "section": null,
+      "context": "Configuration Claude Desktop Cursor Copy Add to ~/Library/Application Support/Claude/claude_desktop_config.json : Copied to clipboard!",
+      "keywords": []
+    },
+    {
+      "text": "Available Tools",
+      "modal": "mcpModal",
+      "modalName": "MCP Integration",
+      "section": null,
+      "context": "Available Tools",
+      "keywords": []
+    },
+    {
+      "text": "optimize_mesh",
+      "modal": "mcpModal",
+      "modalName": "MCP Integration",
+      "section": null,
+      "context": "optimize_mesh Optimize a 3D mesh file for web/mobile delivery. Parameter Description file_path (required) Path to 3D file (GLB, OBJ, FBX, GLTF, ZIP). Supports ~ for home. mode (required) decimate (fas",
+      "keywords": [
+        "file_path",
+        "mode",
+        "decimate",
+        "remesh",
+        "ratio",
+        "faces",
+        "texture_size",
+        "format",
+        "glb",
+        "usdz",
+        "both",
+        "output_dir"
+      ]
+    },
+    {
+      "text": "check_balance",
+      "modal": "mcpModal",
+      "modalName": "MCP Integration",
+      "section": null,
+      "context": "check_balance Check your current credit balance. No parameters required.",
+      "keywords": []
+    },
+    {
+      "text": "get_usage",
+      "modal": "mcpModal",
+      "modalName": "MCP Integration",
+      "section": null,
+      "context": "get_usage View your optimization history. limit Number of entries to return (1-100). Default: 10",
+      "keywords": [
+        "limit"
+      ]
+    },
+    {
+      "text": "Example Prompts",
+      "modal": "mcpModal",
+      "modalName": "MCP Integration",
+      "section": null,
+      "context": "Example Prompts Try these prompts with your AI assistant after setup:",
+      "keywords": []
+    },
+    {
+      "text": "Pricing",
+      "modal": "mcpModal",
+      "modalName": "MCP Integration",
+      "section": null,
+      "context": "Pricing - Decimate mode: 1 credit per optimization - Remesh mode: 2 credits per optimization - Re-optimization: Free if same file within 24 hours",
+      "keywords": [
+        "re-optimization:"
+      ]
+    },
+    {
       "text": "Buy Credits",
       "modal": "purchaseModal",
       "modalName": "Buy Credits",
@@ -558,11 +669,22 @@
       "keywords": []
     },
     {
+      "text": "v1.0.9beta (2026-01-04)",
+      "modal": "changelogModal",
+      "modalName": "Changelog",
+      "section": null,
+      "context": "v1.0.9beta (2026-01-04) - Simpler Remesh Settings: No more guessing polygon counts! Choose from three presets optimized for your use case: - Mobile AR - Fast-loading models for Shopify, Instagram filt",
+      "keywords": [
+        "balanced",
+        "high-fidelity"
+      ]
+    },
+    {
       "text": "v1.0.8beta (2026-01-03)",
       "modal": "changelogModal",
       "modalName": "Changelog",
       "section": null,
-      "context": "v1.0.8beta (2026-01-03) - UV Pipeline Hardening: Replaced xatlas with native Blender UV tools for cross-platform stability. No more C++ build failures on Apple Silicon or Linux. - Bake Quality: Added",
+      "context": "v1.0.8beta (2026-01-03) - Bake Quality: Added automatic normal recalculation after retopology. Dynamic cage/ray settings based on mesh complexity - dense meshes get tight tolerances, simple meshes get",
       "keywords": []
     },
     {

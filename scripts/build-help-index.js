@@ -22,6 +22,7 @@ const MODAL_NAMES = {
     'apiDocsModal': 'API Documentation',
     'apiCodeModal': 'API Code Generator',
     'batchScriptModal': 'Batch Script Generator',
+    'mcpModal': 'MCP Integration',
     'purchaseModal': 'Buy Credits',
     'historyModal': 'Transaction History',
     'contactModal': 'Contact Us',

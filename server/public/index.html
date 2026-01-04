@@ -227,6 +227,7 @@
             <div class="d-flex justify-center gap-20 mt-5">
                 <a href="#" id="apiCodeLinkSidebar" class="text-muted text-small">Get API Code</a>
                 <a href="#" id="batchScriptLinkSidebar" class="text-muted text-small">Batch Script</a>
+                <a href="#" id="mcpLinkSidebar" class="text-muted text-small">MCP</a>
             </div>
 
             <!-- Fair Use Policy -->
@@ -1333,6 +1334,134 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                         <p class="text-muted text-small m-0">
                             Run this script from your terminal. Optimized files will be saved to <code>./output/</code>
                         </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MCP Integration Modal -->
+            <div id="mcpModal" class="modal-overlay" role="dialog" aria-labelledby="mcpModalTitle" aria-modal="true">
+                <div class="modal-window modal-window-large">
+                    <div class="modal-header">
+                        <h2 class="m-0" id="mcpModalTitle">MCP Integration</h2>
+                        <button type="button" class="modal-close" onclick="closeModal('mcpModal')" aria-label="Close MCP integration">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- What is MCP -->
+                        <section class="content-section">
+                            <h3>What is MCP?</h3>
+                            <p class="text-muted">
+                                <strong>Model Context Protocol (MCP)</strong> is an open standard that allows AI assistants to use external tools.
+                                By adding MeshOpt as an MCP server, your AI can optimize 3D meshes directly from conversation.
+                            </p>
+                            <div class="highlight-box">
+                                <h4 class="m-0 mb-10">Works With</h4>
+                                <ul class="pl-20 mb-0">
+                                    <li class="mb-5"><strong>Claude Desktop</strong> - Anthropic's desktop app</li>
+                                    <li class="mb-5"><strong>Cursor</strong> - AI-powered code editor</li>
+                                    <li><strong>Other MCP clients</strong> - Any app supporting the <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">MCP specification<span class="visually-hidden"> (opens in new tab)</span></a></li>
+                                </ul>
+                            </div>
+                        </section>
+
+                        <!-- Installation -->
+                        <section class="content-section">
+                            <h3>Installation</h3>
+                            <p class="text-muted text-small m-0 mb-10">
+                                Download the MCP connector (a small local tool that lets your AI talk to our API):
+                            </p>
+                            <div class="d-flex gap-10 mb-10" style="flex-wrap: wrap;">
+                                <a href="https://github.com/brianginn/meshopt-mcp-server/releases/latest" target="_blank" rel="noopener" class="btn-sm" style="text-decoration: none;">Download for macOS / Linux / Windows<span class="visually-hidden"> (opens in new tab)</span></a>
+                            </div>
+                            <p class="text-muted text-small m-0">
+                                Extract and note the path to <code>meshopt-mcp-server</code> for the configuration below.
+                            </p>
+                        </section>
+
+                        <!-- Current Settings Summary -->
+                        <section class="content-section">
+                            <div class="highlight-box">
+                                <h4 class="m-0 mb-10">Your Current Settings</h4>
+                                <p class="m-0 text-small" id="mcpSettingsSummary" aria-live="polite">Loading...</p>
+                            </div>
+                        </section>
+
+                        <!-- Configuration -->
+                        <section class="content-section">
+                            <div class="d-flex justify-between align-center mb-10">
+                                <div class="d-flex align-center gap-10">
+                                    <h3 class="m-0">Configuration</h3>
+                                    <div class="tabs" style="margin-bottom: 0; border-bottom: none;" role="tablist" aria-label="MCP client selection">
+                                        <button class="tab-btn active" onclick="switchMcpClientTab('claude')" role="tab" aria-selected="true" aria-controls="mcpConfigBlock" id="tab-mcp-claude">Claude Desktop</button>
+                                        <button class="tab-btn" onclick="switchMcpClientTab('cursor')" role="tab" aria-selected="false" aria-controls="mcpConfigBlock" id="tab-mcp-cursor">Cursor</button>
+                                    </div>
+                                </div>
+                                <button id="copyMcpConfigBtn" class="btn-sm" aria-label="Copy configuration to clipboard">Copy</button>
+                            </div>
+                            <p class="text-muted text-small m-0 mb-10" id="mcpConfigPath">
+                                Add to <code>~/Library/Application Support/Claude/claude_desktop_config.json</code>:
+                            </p>
+                            <pre id="mcpConfigBlock" class="code-block" role="tabpanel" aria-labelledby="tab-mcp-claude"><code></code></pre>
+                            <p id="mcpConfigCopyFeedback" class="text-success text-small m-0 mt-10" style="display: none;" aria-live="polite">Copied to clipboard!</p>
+                        </section>
+
+                        <!-- Available Tools -->
+                        <section class="content-section">
+                            <h3>Available Tools</h3>
+
+                            <h4>optimize_mesh</h4>
+                            <p class="text-muted text-small">Optimize a 3D mesh file for web/mobile delivery.</p>
+                            <table class="text-small" style="width: 100%; border-collapse: collapse;" aria-label="optimize_mesh parameters">
+                                <thead>
+                                    <tr style="border-bottom: 1px solid var(--border);">
+                                        <th scope="col" style="text-align: left; padding: 8px 0;">Parameter</th>
+                                        <th scope="col" style="text-align: left; padding: 8px 0;">Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td style="padding: 4px 0;"><code>file_path</code> <em>(required)</em></td><td>Path to 3D file (GLB, OBJ, FBX, GLTF, ZIP). Supports <code>~</code> for home.</td></tr>
+                                    <tr><td style="padding: 4px 0;"><code>mode</code> <em>(required)</em></td><td><code>decimate</code> (fast polygon reduction) or <code>remesh</code> (retopology + bake)</td></tr>
+                                    <tr><td style="padding: 4px 0;"><code>ratio</code></td><td>Quality ratio for decimate (0.0-1.0). Default: <span id="mcpDefaultRatio">0.5</span></td></tr>
+                                    <tr><td style="padding: 4px 0;"><code>faces</code></td><td>Target face count for remesh. Default: <span id="mcpDefaultFaces">10000</span></td></tr>
+                                    <tr><td style="padding: 4px 0;"><code>texture_size</code></td><td>Texture resolution for remesh (256-8192). Default: <span id="mcpDefaultTexture">1024</span></td></tr>
+                                    <tr><td style="padding: 4px 0;"><code>format</code></td><td><code>glb</code>, <code>usdz</code>, or <code>both</code>. Default: <code>glb</code></td></tr>
+                                    <tr><td style="padding: 4px 0;"><code>output_dir</code></td><td>Output directory. Default: same as input file</td></tr>
+                                </tbody>
+                            </table>
+
+                            <h4 class="mt-20">check_balance</h4>
+                            <p class="text-muted text-small m-0">Check your current credit balance. No parameters required.</p>
+
+                            <h4 class="mt-20">get_usage</h4>
+                            <p class="text-muted text-small">View your optimization history.</p>
+                            <table class="text-small" style="width: 100%; border-collapse: collapse;" aria-label="get_usage parameters">
+                                <tbody>
+                                    <tr><td style="padding: 4px 0; width: 30%;"><code>limit</code></td><td>Number of entries to return (1-100). Default: 10</td></tr>
+                                </tbody>
+                            </table>
+                        </section>
+
+                        <!-- Example Prompts -->
+                        <section class="content-section">
+                            <h3>Example Prompts</h3>
+                            <p class="text-muted text-small m-0 mb-10">
+                                Try these prompts with your AI assistant after setup:
+                            </p>
+                            <ul class="pl-20 mb-0" id="mcpExamplePrompts">
+                                <!-- Populated dynamically -->
+                            </ul>
+                        </section>
+
+                        <!-- Pricing -->
+                        <section class="content-section">
+                            <div class="highlight-box" style="background: rgba(234, 179, 8, 0.1); border-color: #eab308;">
+                                <h4 class="m-0 mb-10" style="color: #eab308;">Pricing</h4>
+                                <ul class="pl-20 mb-0 text-small">
+                                    <li class="mb-5"><strong>Decimate mode:</strong> <span id="mcp-cost-decimate">1</span> <span id="mcp-label-decimate">credit</span> per optimization</li>
+                                    <li class="mb-5"><strong>Remesh mode:</strong> <span id="mcp-cost-remesh">2</span> <span id="mcp-label-remesh">credits</span> per optimization</li>
+                                    <li><strong>Re-optimization:</strong> Free if same file within <span id="mcp-free-hours">24</span> hours</li>
+                                </ul>
+                            </div>
+                        </section>
                     </div>
                 </div>
             </div>
@@ -2948,6 +3077,21 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                     }
                 }
 
+                // Update MCP modal pricing if opening MCP modal
+                if (modalId === "mcpModal") {
+                    if (pricingConfig.cost_decimate !== undefined) {
+                        document.getElementById("mcp-cost-decimate").innerText = pricingConfig.cost_decimate;
+                        document.getElementById("mcp-label-decimate").innerText = pricingConfig.cost_decimate === 1 ? "credit" : "credits";
+                    }
+                    if (pricingConfig.cost_remesh !== undefined) {
+                        document.getElementById("mcp-cost-remesh").innerText = pricingConfig.cost_remesh;
+                        document.getElementById("mcp-label-remesh").innerText = pricingConfig.cost_remesh === 1 ? "credit" : "credits";
+                    }
+                    if (pricingConfig.pricing && pricingConfig.pricing.free_reoptimization_hours !== undefined) {
+                        document.getElementById("mcp-free-hours").innerText = pricingConfig.pricing.free_reoptimization_hours;
+                    }
+                }
+
                 // Set focus to the first focusable element in the modal (usually close button)
                 requestAnimationFrame(() => {
                     const closeBtn = modal.querySelector('.modal-close');
@@ -2977,7 +3121,7 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
             // Close any open modal on ESC key
             document.addEventListener("keydown", function (e) {
                 if (e.key === "Escape") {
-                    const modals = ["purchaseModal", "historyModal", "helpModal", "contactModal", "privacyModal", "apiCodeModal", "tosModal", "apiDocsModal", "batchScriptModal", "founderModal", "freeCreditsModal", "changelogModal", "apiSettingsModal"];
+                    const modals = ["purchaseModal", "historyModal", "helpModal", "contactModal", "privacyModal", "apiCodeModal", "tosModal", "apiDocsModal", "batchScriptModal", "mcpModal", "founderModal", "freeCreditsModal", "changelogModal", "apiSettingsModal"];
                     modals.forEach(function(modalId) {
                         const modal = document.getElementById(modalId);
                         if (modal && modal.style.display === "flex") {
@@ -3906,6 +4050,149 @@ Write-Host "Batch complete! Files saved to $OutputDir"`;
                 });
             });
 
+            // --- MCP Integration ---
+            let currentMcpClient = 'claude';
+
+            function getMcpSettings() {
+                const mode = document.getElementById('modeSelect').value;
+                const ratio = document.getElementById('ratio').value;
+                const remeshValues = getRemeshValues();
+                return {
+                    mode: mode,
+                    ratio: ratio,
+                    faces: remeshValues.faces,
+                    textureSize: remeshValues.textureSize
+                };
+            }
+
+            function updateMcpSettingsSummary() {
+                const s = getMcpSettings();
+                const el = document.getElementById('mcpSettingsSummary');
+                // Clear and rebuild with DOM methods (values from controlled UI elements)
+                el.textContent = '';
+                const strong = document.createElement('strong');
+                strong.textContent = 'Mode:';
+                el.appendChild(strong);
+                if (s.mode === 'decimate') {
+                    el.appendChild(document.createTextNode(' Decimate @ ' + s.ratio + '%'));
+                } else {
+                    el.appendChild(document.createTextNode(' Remesh @ ' + Number(s.faces).toLocaleString() + ' faces, ' + s.textureSize + 'px textures'));
+                }
+            }
+
+            function switchMcpClientTab(client) {
+                currentMcpClient = client;
+                document.querySelectorAll('#mcpModal .tab-btn').forEach(function(btn) {
+                    const isActive = btn.id === 'tab-mcp-' + client;
+                    btn.classList.toggle('active', isActive);
+                    btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                });
+                // Update tabpanel aria-labelledby for screen readers
+                var configBlock = document.getElementById('mcpConfigBlock');
+                if (configBlock) {
+                    configBlock.setAttribute('aria-labelledby', 'tab-mcp-' + client);
+                }
+                updateMcpConfig();
+            }
+
+            function updateMcpConfig() {
+                const pathEl = document.getElementById('mcpConfigPath');
+                const codeEl = document.getElementById('mcpConfigBlock').querySelector('code');
+
+                let config;
+                if (currentMcpClient === 'claude') {
+                    pathEl.textContent = '';
+                    pathEl.appendChild(document.createTextNode('Add to '));
+                    const code = document.createElement('code');
+                    code.textContent = '~/Library/Application Support/Claude/claude_desktop_config.json';
+                    pathEl.appendChild(code);
+                    pathEl.appendChild(document.createTextNode(':'));
+                } else {
+                    pathEl.textContent = 'Add to your Cursor MCP configuration:';
+                }
+
+                config = {
+                    "mcpServers": {
+                        "meshopt": {
+                            "command": "/path/to/meshopt-mcp-server",
+                            "env": {
+                                "MESHOPT_API_KEY": "<YOUR_API_KEY>"
+                            }
+                        }
+                    }
+                };
+
+                codeEl.textContent = JSON.stringify(config, null, 2);
+            }
+
+            function updateMcpDefaults() {
+                const s = getMcpSettings();
+                document.getElementById('mcpDefaultRatio').textContent = (parseFloat(s.ratio) / 100).toFixed(2);
+                document.getElementById('mcpDefaultFaces').textContent = Number(s.faces).toLocaleString();
+                document.getElementById('mcpDefaultTexture').textContent = s.textureSize;
+            }
+
+            function generateMcpExamplePrompts() {
+                const s = getMcpSettings();
+                const container = document.getElementById('mcpExamplePrompts');
+                container.textContent = '';
+
+                let prompts = [];
+                if (s.mode === 'decimate') {
+                    prompts = [
+                        'Optimize ~/models/chair.glb to ' + s.ratio + '% quality for web',
+                        'Decimate all GLB files in ./models/ folder',
+                        'Reduce the polygon count of product.obj to make it load faster',
+                        'Check my MeshOpt credit balance'
+                    ];
+                } else {
+                    prompts = [
+                        'Remesh ~/scans/sculpture.obj to ' + Number(s.faces).toLocaleString() + ' faces with ' + s.textureSize + 'px textures',
+                        'Convert high-poly scan.glb to clean quads for animation',
+                        'Retopologize all OBJ files in ./raw-scans/ with baked normals',
+                        'Show my last 5 MeshOpt optimizations'
+                    ];
+                }
+
+                prompts.forEach(function(p) {
+                    const li = document.createElement('li');
+                    li.className = 'mb-5';
+                    const code = document.createElement('code');
+                    code.textContent = '"' + p + '"';
+                    li.appendChild(code);
+                    container.appendChild(li);
+                });
+            }
+
+            function updateMcpModal() {
+                updateMcpSettingsSummary();
+                updateMcpConfig();
+                updateMcpDefaults();
+                generateMcpExamplePrompts();
+            }
+
+            // Open MCP modal
+            document.getElementById('mcpLinkSidebar').addEventListener('click', function(e) {
+                e.preventDefault();
+                updateMcpModal();
+                openModal('mcpModal', this);
+            });
+
+            // Copy MCP config to clipboard
+            document.getElementById('copyMcpConfigBtn').addEventListener('click', function() {
+                const codeText = document.getElementById('mcpConfigBlock').querySelector('code').textContent;
+                navigator.clipboard.writeText(codeText).then(function() {
+                    const btn = document.getElementById('copyMcpConfigBtn');
+                    const originalText = btn.textContent;
+                    btn.textContent = 'Copied!';
+                    setTimeout(function() {
+                        btn.textContent = originalText;
+                    }, 2000);
+                }).catch(function(err) {
+                    console.error('Failed to copy: ', err);
+                });
+            });
+
             // Link from privacy modal to contact modal
             document.getElementById("privacyToContactLink").addEventListener("click", function(e) {
                 e.preventDefault();
@@ -3917,7 +4204,7 @@ Write-Host "Batch complete! Files saved to $OutputDir"`;
             });
 
             // Close modal when clicking outside the modal window
-            ["helpModal", "contactModal", "privacyModal", "historyModal", "apiCodeModal", "tosModal", "apiDocsModal", "batchScriptModal", "founderModal"].forEach(function(modalId) {
+            ["helpModal", "contactModal", "privacyModal", "historyModal", "apiCodeModal", "tosModal", "apiDocsModal", "batchScriptModal", "mcpModal", "founderModal"].forEach(function(modalId) {
                 document.getElementById(modalId).addEventListener("click", function(e) {
                     if (e.target === this) {
                         closeModal(modalId);
