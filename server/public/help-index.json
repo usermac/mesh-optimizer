@@ -1,5 +1,5 @@
 {
-  "generated": "2026-01-04T16:02:08.720Z",
+  "generated": "2026-01-04T18:43:42.865Z",
   "version": "1.0",
   "entries": [
     {
@@ -329,6 +329,17 @@
       ]
     },
     {
+      "text": "Single Files & Batch Processing",
+      "modal": "mcpModal",
+      "modalName": "MCP Integration",
+      "section": null,
+      "context": "Single Files & Batch Processing Process individual files or entire folders with a single command. Use prompts like \"Optimize ~/models/chair.glb\" for single files, or \"Batch optimize all GLB files in ~",
+      "keywords": [
+        "\"optimize ~/models/chair.glb\"",
+        "\"batch optimize all glb files in ~/models/\""
+      ]
+    },
+    {
       "text": "Installation",
       "modal": "mcpModal",
       "modalName": "MCP Integration",
@@ -370,6 +381,30 @@
       "context": "optimize_mesh Optimize a 3D mesh file for web/mobile delivery. Parameter Description file_path (required) Path to 3D file (GLB, OBJ, FBX, GLTF, ZIP). Supports ~ for home. mode (required) decimate (fas",
       "keywords": [
         "file_path",
+        "mode",
+        "decimate",
+        "remesh",
+        "ratio",
+        "faces",
+        "texture_size",
+        "format",
+        "glb",
+        "usdz",
+        "both",
+        "output_dir"
+      ]
+    },
+    {
+      "text": "optimize_batch",
+      "modal": "mcpModal",
+      "modalName": "MCP Integration",
+      "section": null,
+      "context": "optimize_batch Optimize multiple 3D files in a directory. Processes files one-by-one with immediate download. Parameter Description directory (required) Directory path containing 3D files. Supports ~",
+      "keywords": [
+        "directory",
+        "pattern",
+        "*.glb",
+        "*.fbx",
         "mode",
         "decimate",
         "remesh",
@@ -666,6 +701,14 @@
       "modalName": "Get Free Credits",
       "section": null,
       "context": "Log In or Get Free Credits &times; Try MeshOpt for free! Enter your email below to get started with -- free credits. &#10003; Welcome! You're now logged in. We've also emailed your API key for programmatic use. &#10003; Welcome back! You're now logged in. We've also emailed your API key as a reminde",
+      "keywords": []
+    },
+    {
+      "text": "v1.0.10beta (2026-01-04)",
+      "modal": "changelogModal",
+      "modalName": "Changelog",
+      "section": null,
+      "context": "v1.0.10beta (2026-01-04) - MCP Batch Processing: The MCP connector now supports batch optimization! Process entire folders of 3D files with a single command. Use prompts like \"Batch optimize all GLB f",
       "keywords": []
     },
     {

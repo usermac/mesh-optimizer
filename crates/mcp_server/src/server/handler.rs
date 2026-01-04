@@ -3,7 +3,7 @@
 //! Implements the Model Context Protocol (MCP) over stdio using JSON-RPC 2.0.
 
 use crate::api::MeshOptClient;
-use crate::tools::{self, balance, optimize, usage};
+use crate::tools::{self, balance, batch, optimize, usage};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tracing::{debug, error, info, warn};
@@ -197,6 +197,21 @@ impl McpHandler {
                     }
                 };
                 let output = optimize::execute(&self.client, input).await;
+                serde_json::to_value(output).unwrap_or(json!({"error": "Serialization failed"}))
+            }
+
+            "optimize_batch" => {
+                let input: batch::OptimizeBatchInput = match serde_json::from_value(arguments) {
+                    Ok(input) => input,
+                    Err(e) => {
+                        return JsonRpcResponse::error(
+                            id,
+                            INVALID_PARAMS,
+                            format!("Invalid arguments: {}", e),
+                        );
+                    }
+                };
+                let output = batch::execute(&self.client, input).await;
                 serde_json::to_value(output).unwrap_or(json!({"error": "Serialization failed"}))
             }
 
