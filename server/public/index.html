@@ -185,19 +185,39 @@
             </div>
 
             <!-- Remesh Controls -->
-            <div id="remeshControls" class="d-flex gap-15 d-none" role="group" aria-label="Remesh settings">
-                <div style="flex: 1;">
-                    <label for="targetFaces">Target Faces</label>
-                    <input type="number" id="targetFaces" value="5000" aria-label="Target number of faces for remesh" />
+            <div id="remeshControls" class="d-none" role="group" aria-label="Remesh settings">
+                <div class="preset-cards" role="radiogroup" aria-label="Quality preset">
+                    <button type="button" class="preset-card" data-faces="8000" data-texture="1024" aria-pressed="false">
+                        <span class="preset-icon">⚡</span>
+                        <span class="preset-label">Mobile AR</span>
+                        <span class="preset-desc">Shopify, Instagram, iPhone AR</span>
+                    </button>
+                    <button type="button" class="preset-card selected" data-faces="25000" data-texture="2048" aria-pressed="true">
+                        <span class="preset-icon">⚖️</span>
+                        <span class="preset-label">Balanced</span>
+                        <span class="preset-desc">Web viewers, 3D configurators</span>
+                    </button>
+                    <button type="button" class="preset-card" data-faces="80000" data-texture="4096" aria-pressed="false">
+                        <span class="preset-icon">💎</span>
+                        <span class="preset-label">High-Fidelity</span>
+                        <span class="preset-desc">Close-up, fullscreen showcase</span>
+                    </button>
                 </div>
-                <div style="flex: 1;">
-                    <label for="textureSize">Texture Size (px)</label>
-                    <select id="textureSize" aria-label="Select texture size in pixels">
-                        <option value="512">512</option>
-                        <option value="1024">1024</option>
-                        <option value="2048" selected>2048</option>
-                        <option value="4096">4096</option>
-                    </select>
+                <button type="button" id="customToggle">Custom...</button>
+                <div id="customRemeshInputs" class="d-none d-flex gap-15" style="margin-top: 10px;">
+                    <div style="flex: 1;">
+                        <label for="targetFaces">Target Faces</label>
+                        <input type="number" id="targetFaces" value="10000" aria-label="Target number of faces for remesh" />
+                    </div>
+                    <div style="flex: 1;">
+                        <label for="textureSize">Texture Size (px)</label>
+                        <select id="textureSize" aria-label="Select texture size in pixels">
+                            <option value="512">512</option>
+                            <option value="1024">1024</option>
+                            <option value="2048" selected>2048</option>
+                            <option value="4096">4096</option>
+                        </select>
+                    </div>
                 </div>
             </div>
             <div id="remeshFaceResult" class="text-muted text-small d-none" style="white-space: nowrap;"></div>
@@ -2220,11 +2240,60 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
             modeSelect.addEventListener("change", (e) => {
                 if (e.target.value === "remesh") {
                     decimateControls.style.display = "none";
-                    remeshControls.style.display = "flex";
+                    remeshControls.style.display = "block";
                 } else {
                     decimateControls.style.display = "flex";
                     remeshControls.style.display = "none";
                     document.getElementById("remeshFaceResult").style.display = "none";
+                }
+                resetToOptimize();
+            });
+
+            // Remesh preset card handlers
+            const presetCards = document.querySelectorAll(".preset-card");
+            const customToggle = document.getElementById("customToggle");
+            const customRemeshInputs = document.getElementById("customRemeshInputs");
+
+            presetCards.forEach((card) => {
+                card.addEventListener("click", () => {
+                    // Select this card, deselect others
+                    presetCards.forEach((c) => {
+                        c.classList.remove("selected");
+                        c.setAttribute("aria-pressed", "false");
+                    });
+                    card.classList.add("selected");
+                    card.setAttribute("aria-pressed", "true");
+                    // Hide custom inputs
+                    customRemeshInputs.classList.add("d-none");
+                    customToggle.textContent = "Custom...";
+                    resetToOptimize();
+                });
+            });
+
+            customToggle.addEventListener("click", () => {
+                const isCustomOpen = !customRemeshInputs.classList.contains("d-none");
+                if (isCustomOpen) {
+                    // Close custom, revert to Balanced preset
+                    customRemeshInputs.classList.add("d-none");
+                    customToggle.textContent = "Custom...";
+                    // Select Balanced preset
+                    presetCards.forEach((c) => {
+                        c.classList.remove("selected");
+                        c.setAttribute("aria-pressed", "false");
+                    });
+                    const balancedCard = document.querySelector('.preset-card[data-faces="25000"]');
+                    if (balancedCard) {
+                        balancedCard.classList.add("selected");
+                        balancedCard.setAttribute("aria-pressed", "true");
+                    }
+                } else {
+                    // Open custom, deselect all presets
+                    customRemeshInputs.classList.remove("d-none");
+                    customToggle.textContent = "Use Preset";
+                    presetCards.forEach((c) => {
+                        c.classList.remove("selected");
+                        c.setAttribute("aria-pressed", "false");
+                    });
                 }
                 resetToOptimize();
             });
@@ -2455,14 +2524,20 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 const mode = modeSelect.value;
                 formData.append("mode", mode);
                 if (mode === "remesh") {
-                    formData.append(
-                        "faces",
-                        document.getElementById("targetFaces").value,
-                    );
-                    formData.append(
-                        "texture_size",
-                        document.getElementById("textureSize").value,
-                    );
+                    // Check if a preset card is selected
+                    const selectedPreset = document.querySelector(".preset-card.selected");
+                    if (selectedPreset) {
+                        formData.append("faces", selectedPreset.dataset.faces);
+                        formData.append("texture_size", selectedPreset.dataset.texture);
+                    } else {
+                        // Use custom inputs (fallback to 10000 if empty)
+                        const facesVal = document.getElementById("targetFaces").value || "10000";
+                        formData.append("faces", facesVal);
+                        formData.append(
+                            "texture_size",
+                            document.getElementById("textureSize").value,
+                        );
+                    }
                 }
 
                 try {
@@ -3032,14 +3107,30 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 generateApiCode();
             }
 
+            // Helper to get remesh values from preset or custom inputs
+            function getRemeshValues() {
+                const selectedPreset = document.querySelector(".preset-card.selected");
+                if (selectedPreset) {
+                    return {
+                        faces: selectedPreset.dataset.faces,
+                        textureSize: selectedPreset.dataset.texture
+                    };
+                }
+                return {
+                    faces: document.getElementById('targetFaces').value || '10000',
+                    textureSize: document.getElementById('textureSize').value
+                };
+            }
+
             // Generate dynamic API code based on current UI settings
             function generateApiCode() {
                 // Always use placeholder - users get their API key from API Settings page
                 const apiKey = '<YOUR_API_KEY>';
                 const mode = document.getElementById('modeSelect').value;
                 const ratio = document.getElementById('ratio').value;
-                const targetFaces = document.getElementById('targetFaces').value;
-                const textureSize = document.getElementById('textureSize').value;
+                const remeshValues = getRemeshValues();
+                const targetFaces = remeshValues.faces;
+                const textureSize = remeshValues.textureSize;
 
                 // Build file list
                 let files = [];
@@ -3311,8 +3402,9 @@ Get-ChildItem -Filter "*.zip" | ForEach-Object {
             function getBatchSettings() {
                 const mode = document.getElementById('modeSelect').value;
                 const ratio = document.getElementById('ratio').value;
-                const faces = document.getElementById('targetFaces').value;
-                const textureSize = document.getElementById('textureSize').value;
+                const remeshValues = getRemeshValues();
+                const faces = remeshValues.faces;
+                const textureSize = remeshValues.textureSize;
                 // Always use placeholder - users get their API key from API Settings page
                 const apiKey = '<YOUR_API_KEY>';
                 const format = currentBatchFormat;
