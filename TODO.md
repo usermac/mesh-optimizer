@@ -272,11 +272,76 @@ curl -H "Authorization: Bearer sk_their_key" https://webdeliveryengine.com/credi
 ### Admin Endpoints TODO
 
 - [ ] `POST /admin/ban-key` - Set key `active: false`
-- [ ] `POST /admin/unban-key` - Set key `active: true`  
+- [ ] `POST /admin/unban-key` - Set key `active: true`
 - [ ] `POST /admin/lookup-key-by-email` - Find key(s) for an email
 - [ ] `POST /admin/get-key-info` - Get full info for a key (email, credits, created, active)
 - [ ] `POST /admin/list-keys` - List all keys (paginated) for admin dashboard
 - [ ] `POST /promo/claim` - Self-service promo key generation (with email)
+- [ ] `POST /admin/delete-user` - GDPR-compliant user deletion: sets `active=false`, clears `email` field. Transaction records in SQLite remain with opaque `user_key` (already pseudonymized via `user_hash`). Keeps audit trail intact while removing PII from `database.json`.
+
+---
+
+## MCP Connector GitHub Release Setup
+
+**Status:** Workflow created, needs GitHub authentication to push and trigger.
+
+### What's Done
+- [x] `optimize_batch` tool implemented in Rust (`crates/mcp_server/src/tools/batch.rs`)
+- [x] GitHub Actions workflow created (`.github/workflows/release-mcp.yml`)
+- [x] Workflow committed to local git server
+
+### What's Needed
+
+#### 1. Configure GitHub Authentication (choose one)
+
+**Option A: GitHub CLI (recommended)**
+```bash
+brew install gh
+gh auth login
+```
+
+**Option B: Personal Access Token**
+1. Go to https://github.com/settings/tokens
+2. Generate new token (classic) with `repo` scope
+3. Use as password when pushing
+
+**Option C: SSH Key**
+```bash
+ssh-keygen -t ed25519 -C "your-email@example.com"
+cat ~/.ssh/id_ed25519.pub
+# Add output to: https://github.com/settings/ssh/new
+```
+
+#### 2. Push to GitHub
+```bash
+git push github main
+```
+
+#### 3. Create a Release (triggers cross-platform builds)
+```bash
+git tag mcp-v0.1.0
+git push github mcp-v0.1.0
+```
+
+This triggers GitHub Actions to build binaries for:
+- macOS ARM64 (Apple Silicon M1/M2/M3)
+- macOS x64 (Intel)
+- Linux x64
+- Windows x64
+
+All binaries are automatically attached to the GitHub release.
+
+#### 4. Update MCP Modal Download Link
+After first release, verify the link in `server/public/index.html` points to correct repo:
+```
+https://github.com/usermac/mesh-optimizer/releases/latest
+```
+(Currently points to `brianginn/meshopt-mcp-server` - needs updating)
+
+### Files Involved
+- `.github/workflows/release-mcp.yml` - GitHub Actions workflow
+- `crates/mcp_server/` - MCP connector source code
+- `server/public/index.html` - Download link in MCP modal
 
 ---
 
