@@ -64,8 +64,8 @@ rsync -avz \
 echo "🔧 Setting backup script permissions..."
 ssh $SERVER "chmod +x $REMOTE_DIR/scripts/backup/*.sh 2>/dev/null || true"
 
-echo "⏰ Ensuring daily backup cron job is configured..."
-ssh $SERVER "crontab -l 2>/dev/null | grep -q 'backup.sh' || (crontab -l 2>/dev/null; echo '0 2 * * * /root/mesh-optimizer/scripts/backup/backup.sh >> /var/log/mesh/backup.log 2>&1') | crontab -"
+echo "⏰ Ensuring 6-hourly backup cron job is configured..."
+ssh $SERVER "crontab -l 2>/dev/null | grep -q 'backup.sh' || (crontab -l 2>/dev/null; echo '0 */6 * * * /bin/bash /root/mesh-optimizer/scripts/backup/backup.sh >> /var/log/mesh/backup.log 2>&1') | crontab -"
 
 echo "✅ Files Synced."
 echo "🔨 Rebuilding Docker Container..."
