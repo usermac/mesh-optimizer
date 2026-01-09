@@ -285,6 +285,29 @@ curl -H "Authorization: Bearer sk_their_key" https://webdeliveryengine.com/credi
 
 **Status:** Workflow created, needs GitHub authentication to push and trigger.
 
+### Summary (2026-01-06)
+
+Added batch processing support to the MCP connector:
+
+1. **New `optimize_batch` tool** - Process entire directories of 3D files with a single command
+   - Accepts directory path + glob pattern (e.g., `*.glb`, `*.fbx`)
+   - Sequential processing with one-by-one download for reliability
+   - Continues on individual file failures, returns aggregated results
+   - Tracks total credits used across all files
+
+2. **Frontend updates** (`server/public/index.html`)
+   - Added `optimize_batch` documentation to MCP modal
+   - Green highlight box explaining single file vs batch processing
+   - Dynamic example prompts for batch operations
+   - Bumped to v1.0.10beta with changelog entry
+
+3. **GitHub Actions workflow** (`.github/workflows/release-mcp.yml`)
+   - Triggers on `mcp-v*` tags (e.g., `mcp-v0.1.0`)
+   - Builds cross-platform binaries: macOS ARM64, macOS Intel, Linux x64, Windows x64
+   - Auto-creates GitHub release with all binaries attached
+
+4. **Deployed to production** - All changes live at webdeliveryengine.com
+
 ### What's Done
 - [x] `optimize_batch` tool implemented in Rust (`crates/mcp_server/src/tools/batch.rs`)
 - [x] GitHub Actions workflow created (`.github/workflows/release-mcp.yml`)
