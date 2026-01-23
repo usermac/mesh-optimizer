@@ -141,9 +141,11 @@ setup_scripts() {
     chmod +x "$script_dir/verify_backup.sh"
     chmod +x "$script_dir/health_check.sh"
     chmod +x "$script_dir/send_report.sh"
+    chmod +x "$script_dir/send_html_report.sh"
     chmod +x "$script_dir/listmonk-backup.sh"
     chmod +x "$script_dir/listmonk-restore.sh"
     chmod +x "/root/mesh-optimizer/scripts/reports/daily_stats.sh"
+    chmod +x "/root/mesh-optimizer/scripts/reports/daily_metrics.sh"
     chmod +x "/root/mesh-optimizer/scripts/reports/blender_health_check.sh"
 
     # Create listmonk backup directory
@@ -190,6 +192,7 @@ setup_cron() {
     local verify_script="/root/mesh-optimizer/scripts/backup/verify_backup.sh"
     local health_script="/root/mesh-optimizer/scripts/backup/health_check.sh"
     local stats_script="/root/mesh-optimizer/scripts/reports/daily_stats.sh"
+    local metrics_script="/root/mesh-optimizer/scripts/reports/daily_metrics.sh"
     local blender_check_script="/root/mesh-optimizer/scripts/reports/blender_health_check.sh"
 
     # Remove existing cron jobs for mesh backup (if any) - safer approach
@@ -213,8 +216,11 @@ setup_cron() {
 # Health Check (Hourly)
 0 * * * * /bin/bash -c 'set -a; source /root/mesh-optimizer/.env; set +a; bash $health_script' >> /var/log/mesh/health_check.log 2>&1
 
-# Daily Stats Report (Daily at 00:00)
+# Daily Stats Report (Daily at 00:00 UTC)
 0 0 * * * /bin/bash -c 'set -a; source /root/mesh-optimizer/.env; set +a; bash $stats_script' >> /var/log/mesh/daily_stats.log 2>&1
+
+# Daily Metrics Email Report (00:01 EST = 05:01 UTC)
+1 5 * * * /bin/bash -c 'set -a; source /root/mesh-optimizer/.env; set +a; bash $metrics_script' >> /var/log/mesh/daily_metrics.log 2>&1
 
 # Blender Health Watchdog (Every 30 mins)
 */30 * * * * /bin/bash -c 'set -a; source /root/mesh-optimizer/.env; set +a; bash $blender_check_script' >> /var/log/mesh/blender_monitor.log 2>&1
@@ -230,7 +236,8 @@ EOF
     echo "   - Listmonk Backup: Daily (3:00 AM)"
     echo "   - Verification: Weekly (Sunday 2:00 AM)"
     echo "   - Health Check: Hourly"
-    echo "   - Daily Stats: Daily (00:00)"
+    echo "   - Daily Stats: Daily (00:00 UTC)"
+    echo "   - Metrics Email: Daily (05:01 UTC / 00:01 EST)"
     echo "   - Blender Watchdog: Every 30 mins"
     echo "   - Upload Cleanup: Every 15 mins"
 }
