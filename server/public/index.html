@@ -124,6 +124,9 @@
             <div id="zipNotice" class="text-muted text-small mt-10" style="display: none;">
                 <em>ZIP detected. Make sure your model and textures are inside.</em>
             </div>
+            <div id="gltfNotice" class="text-muted text-small mt-10" style="display: none; color: #f59e0b;">
+                <em>⚠ GLTF files often reference external .bin buffers. If optimization fails, upload as a ZIP containing your .gltf + .bin files, or convert to .glb.</em>
+            </div>
 
             <div
                 id="objInputs"
@@ -2642,23 +2645,34 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                 if (!file) return;
                 selectedFile = file;
 
-                // Show/Hide Optional Inputs and ZIP notice based on extension
+                // Show/Hide Optional Inputs and ZIP/GLTF notices based on extension
                 const ext = file.name.split(".").pop().toLowerCase();
                 const objInputs = document.getElementById("objInputs");
                 const zipNotice = document.getElementById("zipNotice");
+                const gltfNotice = document.getElementById("gltfNotice");
 
                 if (ext === "obj") {
                     objInputs.style.display = "block";
                     zipNotice.style.display = "none";
+                    gltfNotice.style.display = "none";
                 } else if (ext === "zip") {
                     objInputs.style.display = "none";
                     zipNotice.style.display = "block";
+                    gltfNotice.style.display = "none";
                     // Clear optional inputs since they're inside the ZIP
+                    document.getElementById("mtlInput").value = "";
+                    document.getElementById("texInput").value = "";
+                } else if (ext === "gltf") {
+                    objInputs.style.display = "none";
+                    zipNotice.style.display = "none";
+                    gltfNotice.style.display = "block";
+                    // Clear optional inputs
                     document.getElementById("mtlInput").value = "";
                     document.getElementById("texInput").value = "";
                 } else {
                     objInputs.style.display = "none";
                     zipNotice.style.display = "none";
+                    gltfNotice.style.display = "none";
                     // Clear optional inputs if switching away from OBJ
                     document.getElementById("mtlInput").value = "";
                     document.getElementById("texInput").value = "";
@@ -2749,7 +2763,7 @@ curl -O 'https://webdeliveryengine.com/download/JOB_ID/model_opt.usdz'</code></p
                             contentType.includes("application/json")
                         ) {
                             const errorJson = await res.json();
-                            throw new Error(errorJson.error || "Failed");
+                            throw new Error(errorJson.message || errorJson.error || "Failed");
                         } else {
                             const errorText = await res.text();
                             throw new Error(errorText || "Failed");

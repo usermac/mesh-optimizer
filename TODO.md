@@ -1,5 +1,11 @@
 # Project TODO Checklist
 
+## TODO
+
+### Bug: "Missing external buffers" error for GLTF uploads (2026-03-13)
+- [x] **Show detailed error message in frontend**: Changed to `errorJson.message || errorJson.error` so users see the helpful instructions ("Upload a ZIP with .gltf and .bin files, or convert to GLB").
+- [x] **Detect GLTF with external buffers at upload time**: Added amber warning notice when `.gltf` files are selected, advising users to upload as ZIP or convert to GLB.
+
 ## Completed
 
 ### Core Features
