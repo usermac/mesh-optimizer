@@ -5,7 +5,7 @@ edition = "2021"
 description = "MCP server for MeshOpt 3D mesh optimization service"
 authors = ["MeshOpt <support@webdeliveryengine.com>"]
 license = "MIT"
-repository = "https://github.com/meshopt/meshopt-mcp-server"
+repository = "https://github.com/usermac/mesh-optimizer"
 keywords = ["mcp", "mesh", "optimization", "3d", "glb"]
 categories = ["command-line-utilities", "web-programming"]
 

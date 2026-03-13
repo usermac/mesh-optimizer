@@ -1,5 +1,5 @@
 {
-  "generated": "2026-01-26T14:47:31.669Z",
+  "generated": "2026-03-13T16:20:43.289Z",
   "version": "1.0",
   "entries": [
     {
@@ -701,6 +701,14 @@
       "modalName": "Get Free Credits",
       "section": null,
       "context": "Log In or Get Free Credits &times; Try MeshOpt for free! Enter your email below to get started with -- free credits. &#10003; Welcome! You're now logged in. We've also emailed your API key for programmatic use. &#10003; Welcome back! You're now logged in. We've also emailed your API key as a reminde",
+      "keywords": []
+    },
+    {
+      "text": "Beta Extended to 2026-06-01 (2026-03-13)",
+      "modal": "changelogModal",
+      "modalName": "Changelog",
+      "section": null,
+      "context": "Beta Extended to 2026-06-01 (2026-03-13) We're extending the beta to continue improving reliability and error handling. Recent findings include: - GLTF Error Handling: Fixed unclear error when uploadi",
       "keywords": []
     },
     {

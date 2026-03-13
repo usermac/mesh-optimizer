@@ -24,7 +24,7 @@ The binary will be at `target/release/meshopt-mcp-server`.
 
 ### Download Pre-built Binary
 
-Pre-built binaries are available on the [releases page](https://github.com/meshopt/meshopt-mcp-server/releases).
+Pre-built binaries are available on the [releases page](https://github.com/usermac/mesh-optimizer/releases).
 
 ## Configuration
 
