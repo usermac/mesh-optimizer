@@ -1,0 +1,5 @@
+[workspace]
+members = [
+    "crates/mcp_server",
+]
+resolver = "2"
