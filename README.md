@@ -79,11 +79,11 @@ Binary will be at `target/release/meshopt-mcp-server`.
 
 | Input | Output |
 |-------|--------|
-| GLB | GLB |
+| GLB (recommended) | GLB |
 | GLTF | USDZ |
 | OBJ | Both |
 | FBX | |
-| ZIP (recommended) | |
+| ZIP | |
 
 ## Processing Modes
 
